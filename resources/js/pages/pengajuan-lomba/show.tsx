@@ -1,0 +1,466 @@
+import { Head, Link, router } from '@inertiajs/react';
+import {
+    AlertCircle,
+    ArrowLeft,
+    Award,
+    CheckCircle2,
+    Clock,
+    FileCheck,
+    FileText,
+    FolderOpen,
+    History,
+    Layers,
+    Send,
+    ShieldAlert,
+    Sparkles,
+} from 'lucide-react';
+import { useState } from 'react';
+import { HeroBanner } from '@/components/hero-banner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import type { PengajuanLomba } from '@/types/models';
+
+type Props = {
+    pengajuan: PengajuanLomba;
+    canManageInovasiDaerah?: boolean;
+    canRekomendasikan?: boolean;
+};
+
+const statusSteps = [
+    { key: 'dalam_pendampingan', label: 'Dalam Pendampingan' },
+    { key: 'disahkan_opd', label: 'Disahkan OPD' },
+    { key: 'review_internal', label: 'Review Internal' },
+    { key: 'siap_kirim', label: 'Siap Kirim' },
+    { key: 'terkirim', label: 'Terkirim' },
+];
+
+const statusOrder: Record<string, number> = {
+    dalam_pendampingan: 1,
+    disahkan_opd: 2,
+    review_internal: 3,
+    siap_kirim: 4,
+    terkirim: 5,
+};
+
+export default function PengajuanLombaShow({
+    pengajuan,
+    canManageInovasiDaerah = false,
+    canRekomendasikan = false,
+}: Props) {
+    const [actionDialogOpen, setActionDialogOpen] = useState(false);
+    const [actionType, setActionType] = useState<string>('');
+    const [actionCatatan, setActionCatatan] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const inovasi = pengajuan.inovasi;
+    const currentStepIndex = statusOrder[pengajuan.status] ?? 1;
+
+    const openActionDialog = (type: string) => {
+        setActionType(type);
+        setActionCatatan('');
+        setActionDialogOpen(true);
+    };
+
+    const handleExecuteAction = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsProcessing(true);
+
+        const endpoints: Record<string, string> = {
+            rekomendasikan: `/pengajuan-lomba/${pengajuan.id}/rekomendasikan`,
+            sahkan_opd: `/pengajuan-lomba/${pengajuan.id}/sahkan-opd`,
+            review_internal: `/pengajuan-lomba/${pengajuan.id}/review-internal`,
+            siap_kirim: `/pengajuan-lomba/${pengajuan.id}/siap-kirim`,
+            kirim: `/pengajuan-lomba/${pengajuan.id}/kirim`,
+        };
+
+        const targetUrl = endpoints[actionType];
+        if (!targetUrl) return;
+
+        router.post(
+            targetUrl,
+            { catatan: actionCatatan.trim() || null },
+            {
+                onFinish: () => {
+                    setIsProcessing(false);
+                    setActionDialogOpen(false);
+                },
+            }
+        );
+    };
+
+    const toggleInovasiDaerah = () => {
+        router.post(`/pengajuan-lomba/${pengajuan.id}/tetapkan`, {
+            status: !pengajuan.is_inovasi_daerah,
+        });
+    };
+
+    return (
+        <>
+            <Head title={`Pengajuan: ${inovasi?.nama_inovasi} - INOVA-HUB`} />
+
+            <div className="flex flex-col space-y-6 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-16">
+                {/* Header Toolbar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-xs w-fit">
+                        <Link href="/pengajuan-lomba">
+                            <ArrowLeft className="h-3.5 w-3.5" />
+                            <span>Kembali ke Daftar Pengajuan</span>
+                        </Link>
+                    </Button>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Tombol Menuju 20 Indikator */}
+                        <Button asChild size="sm" className="h-8 gap-1.5 text-xs bg-teal-600 hover:bg-teal-700 text-white shadow-xs">
+                            <Link href={`/pengajuan-lomba/${pengajuan.id}/indikator`}>
+                                <FolderOpen className="h-3.5 w-3.5" />
+                                <span>Buka 20 Indikator SID</span>
+                            </Link>
+                        </Button>
+
+                        {/* Wewenang Tim Penilai: Inovasi Daerah */}
+                        {canManageInovasiDaerah && (
+                            <Button
+                                variant={pengajuan.is_inovasi_daerah ? 'secondary' : 'outline'}
+                                size="sm"
+                                onClick={toggleInovasiDaerah}
+                                className="h-8 gap-1.5 text-xs"
+                            >
+                                <Award className="h-3.5 w-3.5" />
+                                <span>{pengajuan.is_inovasi_daerah ? 'Cabut Inovasi Daerah' : 'Tetapkan Inovasi Daerah'}</span>
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Hero Banner Sumbawa */}
+                <HeroBanner
+                    title={inovasi?.nama_inovasi ?? 'Detail Pengajuan Lomba'}
+                    subtitle={`Periode Lomba: ${pengajuan.periode_lomba?.nama ?? '2026'}. Inisiator: ${inovasi?.nama_inisiator} (${inovasi?.opd?.nama ?? 'Umum'}).`}
+                    badgeText="Lembar Pengajuan IGA"
+                />
+
+                {/* 5-Step Status Workflow Stepper */}
+                <Card className="border-border bg-card">
+                    <CardContent className="p-4 sm:p-6">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                            Alur Status Penjaminan Mutu & Pengajuan (5 Langkah)
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                            {statusSteps.map((step, idx) => {
+                                const stepNumber = idx + 1;
+                                const isPassed = currentStepIndex > stepNumber;
+                                const isCurrent = currentStepIndex === stepNumber;
+
+                                return (
+                                    <div
+                                        key={step.key}
+                                        className={`flex sm:flex-col items-center sm:items-start gap-3 p-3 rounded-lg border transition-all ${
+                                            isCurrent
+                                                ? 'bg-teal-50/80 border-teal-500/50 dark:bg-teal-950/30 text-teal-800 dark:text-teal-200 shadow-xs'
+                                                : isPassed
+                                                ? 'bg-muted/40 border-border text-foreground'
+                                                : 'bg-muted/10 border-border/40 text-muted-foreground'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div
+                                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                                                    isCurrent
+                                                        ? 'bg-teal-600 text-white'
+                                                        : isPassed
+                                                        ? 'bg-primary/20 text-primary'
+                                                        : 'bg-muted text-muted-foreground'
+                                                }`}
+                                            >
+                                                {isPassed ? (
+                                                    <CheckCircle2 className="h-4 w-4 text-teal-600" />
+                                                ) : (
+                                                    stepNumber
+                                                )}
+                                            </div>
+                                            <span className="font-semibold text-xs">{step.label}</span>
+                                        </div>
+
+                                        <div className="text-[11px] text-muted-foreground pl-8 sm:pl-0">
+                                            {isCurrent && <span className="font-medium text-teal-700 dark:text-teal-400">Tahap Berjalan</span>}
+                                            {isPassed && <span>Selesai</span>}
+                                            {!isCurrent && !isPassed && <span>Menunggu</span>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Workflow Actions Bar (Role-Based) */}
+                <Card className="border-border bg-card">
+                    <CardContent className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <div className="text-xs font-semibold text-foreground">Aksi Tahapan Lomba</div>
+                            <div className="text-[11px] text-muted-foreground">
+                                Lakukan transisi status sesuai wewenang peran Anda pada proses penjaminan mutu.
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* Rekomendasikan ke OPD (Pendamping) */}
+                            {canRekomendasikan && pengajuan.status === 'dalam_pendampingan' && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => openActionDialog('rekomendasikan')}
+                                    className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white"
+                                >
+                                    Rekomendasikan ke OPD
+                                </Button>
+                            )}
+
+                            {/* Sahkan OPD (Kepala OPD) */}
+                            {pengajuan.status === 'disahkan_opd' && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => openActionDialog('review_internal')}
+                                    className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    Lanjutkan ke Review Internal
+                                </Button>
+                            )}
+
+                            {/* Finalisasi Siap Kirim (Tim Penilai) */}
+                            {canManageInovasiDaerah && pengajuan.status === 'review_internal' && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => openActionDialog('siap_kirim')}
+                                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                >
+                                    Tetapkan Siap Kirim
+                                </Button>
+                            )}
+
+                            {/* Kirim ke Kemendagri */}
+                            {canManageInovasiDaerah && pengajuan.status === 'siap_kirim' && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => openActionDialog('kirim')}
+                                    className="h-8 text-xs bg-blue-700 hover:bg-blue-800 text-white"
+                                >
+                                    Finalisasi Terkirim Kemendagri
+                                </Button>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Details Grid: Profil & 20 Indikator Stats */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Ringkasan Profil Inovasi Master */}
+                    <Card className="lg:col-span-2 border-border bg-card">
+                        <CardHeader className="p-4 pb-2 border-b border-border">
+                            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-teal-600" />
+                                Profil Master Inovasi
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div>
+                                    <span className="text-muted-foreground block text-[11px]">Nama Inovasi:</span>
+                                    <span className="font-semibold text-foreground">{inovasi?.nama_inovasi}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block text-[11px]">Inisiator & OPD:</span>
+                                    <span className="font-semibold text-foreground">
+                                        {inovasi?.nama_inisiator} ({inovasi?.opd?.nama ?? 'Publik'})
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block text-[11px]">Tahapan Inovasi:</span>
+                                    <span className="capitalize font-semibold text-foreground">{inovasi?.tahapan}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block text-[11px]">Urusan Utama:</span>
+                                    <span className="font-semibold text-foreground">{inovasi?.urusan_utama ?? '-'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block text-[11px]">Waktu Penerapan:</span>
+                                    <span className="font-semibold text-foreground">
+                                        {inovasi?.waktu_penerapan?.slice(0, 10) || '-'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block text-[11px]">Kategori Status:</span>
+                                    {pengajuan.is_inovasi_daerah ? (
+                                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[10px]">
+                                            Inovasi Daerah
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="secondary" className="text-[10px]">
+                                            Inovasi Biasa
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Rancang Bangun */}
+                            {inovasi?.rancang_bangun && (
+                                <div className="pt-2 border-t border-border space-y-1">
+                                    <span className="text-[11px] font-semibold text-foreground block">
+                                        Rancang Bangun & Pokok Perubahan:
+                                    </span>
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                        {inovasi.rancang_bangun}
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Ringkasan Skor & Indikator */}
+                    <Card className="border-border bg-card">
+                        <CardHeader className="p-4 pb-2 border-b border-border">
+                            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-teal-600" />
+                                Kematangan Indikator SID
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-4">
+                            <div className="text-center p-4 bg-muted/40 rounded-lg border border-border space-y-1">
+                                <div className="text-xs text-muted-foreground font-medium">Estimasi Skor Kematangan</div>
+                                <div className="text-3xl font-bold tracking-tight text-teal-700 dark:text-teal-400">
+                                    {pengajuan.estimasi_skor_kematangan
+                                        ? pengajuan.estimasi_skor_kematangan.toFixed(2)
+                                        : '0.00'}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">Maksimal 111.00 Poin</div>
+                            </div>
+
+                            <div className="space-y-2 text-xs">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Indikator Terisi:</span>
+                                    <span className="font-bold text-foreground">
+                                        {pengajuan.kelengkapan_indikator?.length ?? 0} dari 20 SID
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Status Periode:</span>
+                                    <span className="font-semibold text-foreground">
+                                        {pengajuan.is_arsip ? 'Arsip Periode Lalu' : 'Periode Aktif'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <Button asChild className="w-full text-xs bg-teal-600 hover:bg-teal-700 text-white shadow-xs">
+                                <Link href={`/pengajuan-lomba/${pengajuan.id}/indikator`}>
+                                    <FolderOpen className="h-3.5 w-3.5 mr-1.5" />
+                                    Buka Lembar 20 Indikator
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Audit Trail / Validasi Log History */}
+                <Card className="border-border bg-card">
+                    <CardHeader className="p-4 pb-2 border-b border-border">
+                        <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                            <History className="h-4 w-4 text-teal-600" />
+                            Riwayat Transisi & Log Penjaminan Mutu
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                        {(!pengajuan.validasi_logs || pengajuan.validasi_logs.length === 0) ? (
+                            <p className="text-xs text-muted-foreground italic text-center py-4">
+                                Belum ada riwayat aktivitas transisi tercatat.
+                            </p>
+                        ) : (
+                            <div className="space-y-3">
+                                {pengajuan.validasi_logs.map((log) => (
+                                    <div
+                                        key={log.id}
+                                        className="flex items-start gap-3 p-3 rounded-lg border border-border/70 bg-muted/20 text-xs"
+                                    >
+                                        <div className="w-2 h-2 rounded-full bg-teal-600 shrink-0 mt-1.5" />
+                                        <div className="flex-1 space-y-0.5">
+                                            <div className="flex flex-wrap items-center justify-between gap-1">
+                                                <span className="font-semibold text-foreground">
+                                                    {log.user?.name ?? 'Sistem'}
+                                                </span>
+                                                <span className="text-[10px] text-muted-foreground font-mono">
+                                                    {log.created_at?.slice(0, 16)}
+                                                </span>
+                                            </div>
+                                            <div className="text-[11px] text-teal-700 dark:text-teal-400 font-medium">
+                                                Transisi: {log.status_sebelum ?? 'Draft'} ➔ {log.status_sesudah}
+                                            </div>
+                                            {log.catatan && (
+                                                <p className="text-muted-foreground leading-relaxed pt-1">
+                                                    {log.catatan}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Dialog Transisi Status */}
+            <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+                <DialogContent className="sm:max-w-[460px]">
+                    <form onSubmit={handleExecuteAction}>
+                        <DialogHeader>
+                            <DialogTitle className="text-foreground text-base">
+                                Konfirmasi Transisi Status
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-muted-foreground">
+                                Masukkan catatan verifikasi atau penjelasan untuk dicatat pada log audit sistem.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="py-3">
+                            <Textarea
+                                placeholder="Catatan verifikasi atau alasan rekomendasi..."
+                                value={actionCatatan}
+                                onChange={(e) => setActionCatatan(e.target.value)}
+                                className="min-h-[90px] text-xs"
+                            />
+                        </div>
+
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setActionDialogOpen(false)}
+                                disabled={isProcessing}
+                            >
+                                Batal
+                            </Button>
+                            <Button
+                                type="submit"
+                                size="sm"
+                                className="bg-teal-600 hover:bg-teal-700 text-white"
+                                disabled={isProcessing}
+                            >
+                                {isProcessing ? 'Memproses...' : 'Konfirmasi Transisi'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}

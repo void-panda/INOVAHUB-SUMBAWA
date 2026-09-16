@@ -1,0 +1,148 @@
+<mxfile host="Electron" modified="2026-09-17T02:46:00.000Z" agent="Antigravity" version="26.0.0">
+  <diagram id="alur-validasi-8-tahap" name="Alur Validasi 8 Tahap Inovasi">
+    <mxGraphModel dx="1422" dy="850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="860" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="ALUR VALIDASI BERJENJANG 8 TAHAPAN INOVASI DAERAH (INOVA-HUB SUMBAWA)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#0f766e;" vertex="1" parent="1">
+          <mxGeometry x="60" y="20" width="1080" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Sesuai Pedoman IGA 2026 &amp; TOR DINOLA §5 — Pencatatan Otomatis pada Audit Trail (validasi_log)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#64748b;" vertex="1" parent="1">
+          <mxGeometry x="60" y="50" width="1080" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Swimlane 1: Inovator -->
+        <mxCell id="lane_inovator" value="1. INOVATOR (OPD &amp; MASYARAKAT)" style="swimlane;html=1;startSize=32;fillColor=#f0fdfa;strokeColor=#0d9488;fontStyle=1;fontSize=13;fontColor=#115e59;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="90" width="270" height="720" as="geometry" />
+        </mxCell>
+
+        <mxCell id="start_node" value="Mulai" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ccfbf1;strokeColor=#0d9488;fontStyle=1;fontSize=12;fontColor=#115e59;" vertex="1" parent="lane_inovator">
+          <mxGeometry x="85" y="50" width="100" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_draft" value="&lt;b&gt;1. draft&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot; color=&quot;#475569&quot;&gt;• Input Profil Inovasi&lt;br&gt;• Unggah Berkas Proposal &amp; SK&lt;br&gt;• Isi 20 Indikator SID&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0d9488;strokeWidth=1.5;fontSize=11;align=center;spacing=4;" vertex="1" parent="lane_inovator">
+          <mxGeometry x="40" y="130" width="190" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_diajukan" value="&lt;b&gt;2. diajukan&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot; color=&quot;#475569&quot;&gt;Inovator Mengajukan Validasi Berkas ke Pendamping&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ccfbf1;strokeColor=#0f766e;strokeWidth=1.5;fontSize=11;align=center;spacing=4;" vertex="1" parent="lane_inovator">
+          <mxGeometry x="40" y="245" width="190" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_revisi" value="&lt;b&gt;4a. revisi&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot; color=&quot;#b91c1c&quot;&gt;Perbaikan Berkas Sesuai Catatan Wajib Pendamping&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef2f2;strokeColor=#ef4444;strokeWidth=1.5;fontSize=11;align=center;spacing=4;" vertex="1" parent="lane_inovator">
+          <mxGeometry x="40" y="375" width="190" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Swimlane 2: Pendamping & Verifikator OPD -->
+        <mxCell id="lane_pendamping" value="2. PENDAMPING &amp; VERIFIKATOR OPD" style="swimlane;html=1;startSize=32;fillColor=#eff6ff;strokeColor=#3b82f6;fontStyle=1;fontSize=13;fontColor=#1e40af;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="340" y="90" width="280" height="720" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_divalidasi" value="&lt;b&gt;3. divalidasi&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot; color=&quot;#475569&quot;&gt;Pemeriksaan Keabsahan &amp; Bukti Dukung 20 SID&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontSize=11;align=center;spacing=4;" vertex="1" parent="lane_pendamping">
+          <mxGeometry x="45" y="245" width="190" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_decision" value="Berkas &amp; Bukti&lt;br&gt;Sesuai?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#f59e0b;strokeWidth=1.5;fontStyle=1;fontSize=11;fontColor=#92400e;" vertex="1" parent="lane_pendamping">
+          <mxGeometry x="75" y="355" width="130" height="85" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_disetujui" value="&lt;b&gt;4b. disetujui&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot; color=&quot;#15803d&quot;&gt;Dokumen Lolos Uji Validasi Berjenjang&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#22c55e;strokeWidth=1.5;fontSize=11;align=center;spacing=4;" vertex="1" parent="lane_pendamping">
+          <mxGeometry x="45" y="490" width="190" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_disahkan" value="&lt;b&gt;5. disahkan_opd&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot; color=&quot;#475569&quot;&gt;Penerbitan &amp; Unggah Lembar Pengesahan Kepala OPD&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontSize=11;align=center;spacing=4;" vertex="1" parent="lane_pendamping">
+          <mxGeometry x="45" y="600" width="190" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Swimlane 3: Tim Penilai & Bappeda Litbang -->
+        <mxCell id="lane_penilai" value="3. TIM PENILAI &amp; BAPPEDA LITBANG" style="swimlane;html=1;startSize=32;fillColor=#faf5ff;strokeColor=#a855f7;fontStyle=1;fontSize=13;fontColor=#6b21a8;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="630" y="90" width="270" height="720" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_review" value="&lt;b&gt;6. review_internal&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot; color=&quot;#475569&quot;&gt;Sinkronisasi Skoring SID &amp; Verifikasi Skor SPD Pemda&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#a855f7;strokeWidth=1.5;fontSize=11;align=center;spacing=4;" vertex="1" parent="lane_penilai">
+          <mxGeometry x="40" y="600" width="190" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_siap_kirim" value="&lt;b&gt;7. siap_kirim&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot; color=&quot;#6b21a8&quot;&gt;Finalisasi Data &amp; Dokumen Siap Lapor ke Nasional&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#9333ea;strokeWidth=1.5;fontSize=11;align=center;spacing=4;" vertex="1" parent="lane_penilai">
+          <mxGeometry x="40" y="470" width="190" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Swimlane 4: Kemendagri IGA -->
+        <mxCell id="lane_pusat" value="4. SISTEM PUSAT (IGA KEMENDAGRI)" style="swimlane;html=1;startSize=32;fillColor=#f8fafc;strokeColor=#64748b;fontStyle=1;fontSize=13;fontColor=#334155;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="910" y="90" width="230" height="720" as="geometry" />
+        </mxCell>
+
+        <mxCell id="node_terkirim" value="&lt;b&gt;8. terkirim&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot; color=&quot;#15803d&quot;&gt;Data Tersinkronisasi ke indeks.inovasi.bskdn.kemendagri.go.id&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;strokeWidth=2;fontSize=11;align=center;spacing=4;" vertex="1" parent="lane_pusat">
+          <mxGeometry x="20" y="470" width="190" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="end_node" value="Selesai" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontStyle=1;fontSize=12;fontColor=#065f46;" vertex="1" parent="lane_pusat">
+          <mxGeometry x="65" y="610" width="100" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- Connectors / Edges -->
+        <!-- Start -> Draft -->
+        <mxCell id="edge_1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=1.5;" edge="1" source="start_node" target="node_draft" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Draft -> Diajukan -->
+        <mxCell id="edge_2" value="Ajukan Validasi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0d9488;strokeWidth=1.5;fontSize=10;fontColor=#0f766e;" edge="1" source="node_draft" target="node_diajukan" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Diajukan -> Divalidasi -->
+        <mxCell id="edge_3" value="Mulai Review" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3b82f6;strokeWidth=1.5;fontSize=10;fontColor=#1d4ed8;" edge="1" source="node_diajukan" target="node_divalidasi" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Divalidasi -> Decision -->
+        <mxCell id="edge_4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3b82f6;strokeWidth=1.5;" edge="1" source="node_divalidasi" target="node_decision" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Decision -> Revisi (Tidak) -->
+        <mxCell id="edge_5" value="Belum Sesuai&lt;br&gt;(Wajib Catatan)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ef4444;strokeWidth=1.5;fontSize=10;fontColor=#b91c1c;align=center;" edge="1" source="node_decision" target="node_revisi" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Revisi -> Diajukan (Perbaikan) -->
+        <mxCell id="edge_6" value="Kirim Perbaikan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ea580c;strokeWidth=1.5;fontSize=10;fontColor=#c2410c;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" source="node_revisi" target="node_diajukan" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Decision -> Disetujui (Ya) -->
+        <mxCell id="edge_7" value="Lolos Verifikasi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#22c55e;strokeWidth=1.5;fontSize=10;fontColor=#15803d;" edge="1" source="node_decision" target="node_disetujui" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Disetujui -> Disahkan OPD -->
+        <mxCell id="edge_8" value="Terbitkan SK / Lembar Pengesahan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3b82f6;strokeWidth=1.5;fontSize=10;fontColor=#1d4ed8;" edge="1" source="node_disetujui" target="node_disahkan" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Disahkan OPD -> Review Internal -->
+        <mxCell id="edge_9" value="Serahkan ke Tim Bappeda" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#a855f7;strokeWidth=1.5;fontSize=10;fontColor=#6b21a8;" edge="1" source="node_disahkan" target="node_review" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Review Internal -> Siap Kirim -->
+        <mxCell id="edge_10" value="Skor &amp; Dokumen Final" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9333ea;strokeWidth=1.5;fontSize=10;fontColor=#6b21a8;" edge="1" source="node_review" target="node_siap_kirim" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Siap Kirim -> Terkirim -->
+        <mxCell id="edge_11" value="Kirim ke Portal IGA" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16a34a;strokeWidth=2;fontSize=10;fontColor=#15803d;" edge="1" source="node_siap_kirim" target="node_terkirim" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Terkirim -> End -->
+        <mxCell id="edge_12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16a34a;strokeWidth=1.5;" edge="1" source="node_terkirim" target="end_node" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
