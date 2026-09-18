@@ -73,9 +73,14 @@ class InovasiController extends Controller
         $files = $request->file('dokumen', []);
         $inovasi = $this->inovasiService->createDraft($request->user(), $dto, $files);
 
-        // Simpan file khusus proposal jika diunggah
+        // Simpan file khusus proposal / profil inovasi jika diunggah
         if ($request->hasFile('proposal')) {
             $this->inovasiService->uploadFiles($inovasi, [$request->file('proposal')], 'proposal');
+        }
+
+        // Simpan file khusus PPT presentasi jika diunggah
+        if ($request->hasFile('ppt')) {
+            $this->inovasiService->uploadFiles($inovasi, [$request->file('ppt')], 'ppt');
         }
 
         // Simpan file khusus sertifikat / penghargaan jika diunggah
@@ -89,6 +94,14 @@ class InovasiController extends Controller
                 $inovasi,
                 (string) $request->input('link_video'),
                 $request->input('nama_video') ? (string) $request->input('nama_video') : null
+            );
+        }
+
+        // Simpan link medsos jika ada
+        if ($request->filled('link_medsos')) {
+            $this->inovasiService->addMedsosLink(
+                $inovasi,
+                (string) $request->input('link_medsos')
             );
         }
 
@@ -160,9 +173,14 @@ class InovasiController extends Controller
         $files = $request->file('dokumen', []);
         $this->inovasiService->updateDraft($inovasi, $dto, $files);
 
-        // Simpan file khusus proposal jika diunggah
+        // Simpan file khusus proposal / profil inovasi jika diunggah
         if ($request->hasFile('proposal')) {
             $this->inovasiService->uploadFiles($inovasi, [$request->file('proposal')], 'proposal');
+        }
+
+        // Simpan file khusus PPT presentasi jika diunggah
+        if ($request->hasFile('ppt')) {
+            $this->inovasiService->uploadFiles($inovasi, [$request->file('ppt')], 'ppt');
         }
 
         // Simpan file khusus sertifikat / penghargaan jika diunggah
@@ -176,6 +194,14 @@ class InovasiController extends Controller
                 $inovasi,
                 (string) $request->input('link_video'),
                 $request->input('nama_video') ? (string) $request->input('nama_video') : null
+            );
+        }
+
+        // Simpan link medsos jika ada
+        if ($request->filled('link_medsos')) {
+            $this->inovasiService->addMedsosLink(
+                $inovasi,
+                (string) $request->input('link_medsos')
             );
         }
 
@@ -357,6 +383,7 @@ class InovasiController extends Controller
             'inovasi' => [
                 'id' => $inovasi->id,
                 'nama_inovasi' => $inovasi->nama_inovasi,
+                'kategori_inovasi' => $inovasi->kategori_inovasi,
                 'nama_inisiator' => $inovasi->nama_inisiator,
                 'jenis_inovasi' => $inovasi->jenis_inovasi,
                 'bentuk_inovasi' => $inovasi->bentuk_inovasi,

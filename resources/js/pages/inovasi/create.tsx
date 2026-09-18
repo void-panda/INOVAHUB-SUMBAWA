@@ -45,6 +45,7 @@ export default function CreateInovasi({
         nama_inovasi: '',
         tahapan: 'inisiatif',
         inisiator: isMasyarakat ? 'masyarakat' : 'opd',
+        kategori_inovasi: isMasyarakat ? 'masyarakat' : 'opd',
         bentuk_inovasi: 'pelayanan_publik',
         jenis_inovasi: 'non_digital',
         klasifikasi: 'non_tematik',
@@ -67,9 +68,11 @@ export default function CreateInovasi({
         manfaat: '',
         hasil_inovasi: '',
         proposal: null,
+        ppt: null,
         sertifikat: null,
         link_video: '',
         nama_video: '',
+        link_medsos: '',
         dokumen: [],
     });
 

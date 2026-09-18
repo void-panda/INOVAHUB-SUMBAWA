@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string $nama_inovasi
  * @property string $tahapan
  * @property string|null $inisiator
+ * @property string|null $kategori_inovasi
  * @property string|null $bentuk_inovasi
  * @property string|null $jenis_inovasi
  * @property string|null $klasifikasi
@@ -43,7 +44,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  */
 #[Fillable([
-    'user_id', 'opd_id', 'is_inovasi_daerah', 'nama_inovasi', 'tahapan', 'inisiator',
+    'user_id', 'opd_id', 'is_inovasi_daerah', 'nama_inovasi', 'tahapan', 'inisiator', 'kategori_inovasi',
     'bentuk_inovasi', 'jenis_inovasi', 'klasifikasi', 'tematik', 'kriteria_inovasi',
     'nama_inisiator', 'koordinat', 'lokasi', 'urusan_utama', 'urusan_wajib',
     'waktu_uji_coba', 'waktu_penerapan', 'waktu_pengembangan',

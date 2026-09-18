@@ -9,6 +9,7 @@ interface PrintProps {
     inovasi: {
         id: number;
         nama_inovasi: string;
+        kategori_inovasi?: string;
         nama_inisiator: string;
         jenis_inovasi: string;
         bentuk_inovasi: string;
@@ -162,6 +163,10 @@ export default function InovasiPrint({ inovasi, rantaiVersi, tanggalCetak }: Pri
                             <tr className="border-b border-slate-200">
                                 <td className="py-2 px-3 font-semibold text-slate-600 bg-slate-50 w-1/3">Nama Inovasi</td>
                                 <td className="py-2 px-3 font-bold text-slate-900">{inovasi.nama_inovasi}</td>
+                            </tr>
+                            <tr className="border-b border-slate-200">
+                                <td className="py-2 px-3 font-semibold text-slate-600 bg-slate-50">Kategori Inovasi Daerah</td>
+                                <td className="py-2 px-3 font-semibold capitalize">{inovasi.kategori_inovasi || 'OPD'}</td>
                             </tr>
                             <tr className="border-b border-slate-200">
                                 <td className="py-2 px-3 font-semibold text-slate-600 bg-slate-50">Nama Inisiator</td>

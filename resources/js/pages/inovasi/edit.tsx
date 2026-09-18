@@ -13,6 +13,7 @@ import {
     Printer,
     Save,
     Send,
+    Share2,
     Trash2,
     UploadCloud,
     Video,
@@ -56,6 +57,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { InovasiListItem } from '@/pages/inovasi/index';
 import {
     INISIATOR_OPTIONS,
+    KATEGORI_INOVASI_OPTIONS,
     KRITERIA_IGA_OPTIONS,
     TEMATIK_OPTIONS,
     countWords,
@@ -83,6 +85,7 @@ type InovasiDetail = InovasiListItem & {
     koordinat: string;
     nama_inisiator: string;
     inisiator?: string;
+    kategori_inovasi?: string;
     bentuk_inovasi?: string;
     jenis_inovasi?: string;
     klasifikasi?: string;
@@ -112,6 +115,40 @@ type InovasiDetail = InovasiListItem & {
 type Option = {
     value: string;
     label: string;
+};
+
+type EditFormData = {
+    nama_inovasi: string;
+    tahapan: string;
+    inisiator: string;
+    kategori_inovasi: string;
+    bentuk_inovasi: string;
+    jenis_inovasi: string;
+    klasifikasi: string;
+    tematik: string;
+    kriteria_inovasi: string;
+    nama_inisiator: string;
+    koordinat: string;
+    lokasi: string;
+    urusan_utama: string;
+    urusan_wajib: string[];
+    waktu_uji_coba: string;
+    waktu_penerapan: string;
+    waktu_pengembangan: string;
+    anggaran_sebelum: number | string;
+    anggaran_sesudah: number | string;
+    is_penghargaan: boolean;
+    nama_penghargaan: string;
+    rancang_bangun: string;
+    tujuan: string;
+    manfaat: string;
+    hasil_inovasi: string;
+    proposal: File | null;
+    ppt: File | null;
+    sertifikat: File | null;
+    link_video: string;
+    nama_video: string;
+    link_medsos: string;
 };
 
 type Props = {
@@ -191,10 +228,33 @@ export default function EditInovasi({
             : [inovasi.urusan_wajib]
         : [];
 
-    const { data, setData, errors, processing, isDirty, post, transform, setDefaults } = useForm({
+    const documentsList = inovasi.dokumen ?? [];
+    const proposalDoc = documentsList.find(
+        (d) => d.jenis === 'proposal' || d.nama_asal?.toLowerCase().includes('proposal')
+    );
+    const pptDoc = documentsList.find(
+        (d) => d.jenis === 'ppt' || d.nama_asal?.toLowerCase().includes('.ppt')
+    );
+    const sertifikatDoc = documentsList.find(
+        (d) =>
+            d.jenis === 'penghargaan' ||
+            d.jenis === 'piagam' ||
+            d.jenis === 'sertifikat' ||
+            d.nama_asal?.toLowerCase().includes('penghargaan') ||
+            d.nama_asal?.toLowerCase().includes('piagam')
+    );
+    const videoDoc = documentsList.find(
+        (d) => d.jenis === 'video'
+    );
+    const medsosDoc = documentsList.find(
+        (d) => d.jenis === 'medsos'
+    );
+
+    const { data, setData, errors, processing, isDirty, post, transform, setDefaults } = useForm<EditFormData>({
         nama_inovasi: inovasi.nama_inovasi || '',
         tahapan: inovasi.tahapan || 'inisiatif',
         inisiator: inovasi.inisiator || 'opd',
+        kategori_inovasi: inovasi.kategori_inovasi || (isMasyarakat ? 'masyarakat' : 'opd'),
         bentuk_inovasi: inovasi.bentuk_inovasi || 'pelayanan_publik',
         jenis_inovasi: inovasi.jenis_inovasi || 'non_digital',
         klasifikasi: inovasi.klasifikasi || 'non_tematik',
@@ -217,9 +277,11 @@ export default function EditInovasi({
         manfaat: inovasi.manfaat || '',
         hasil_inovasi: inovasi.hasil_inovasi || '',
         proposal: null as File | null,
+        ppt: null as File | null,
         sertifikat: null as File | null,
-        link_video: '',
+        link_video: videoDoc ? videoDoc.path : '',
         nama_video: '',
+        link_medsos: medsosDoc ? medsosDoc.path : '',
     });
 
     const [activeTab, setActiveTab] = useState<TabKey>('identitas');
@@ -238,6 +300,7 @@ export default function EditInovasi({
             nama_inovasi: inovasi.nama_inovasi || '',
             tahapan: inovasi.tahapan || 'inisiatif',
             inisiator: inovasi.inisiator || 'opd',
+            kategori_inovasi: inovasi.kategori_inovasi || (isMasyarakat ? 'masyarakat' : 'opd'),
             bentuk_inovasi: inovasi.bentuk_inovasi || 'pelayanan_publik',
             jenis_inovasi: inovasi.jenis_inovasi || 'non_digital',
             klasifikasi: inovasi.klasifikasi || 'non_tematik',
@@ -260,9 +323,11 @@ export default function EditInovasi({
             manfaat: inovasi.manfaat || '',
             hasil_inovasi: inovasi.hasil_inovasi || '',
             proposal: null as File | null,
+            ppt: null as File | null,
             sertifikat: null as File | null,
-            link_video: '',
+            link_video: videoDoc ? videoDoc.path : '',
             nama_video: '',
+            link_medsos: medsosDoc ? medsosDoc.path : '',
         };
         setDefaults(synced);
         setData(synced);
@@ -270,26 +335,11 @@ export default function EditInovasi({
 
     // Drag-and-drop state for Profile Documents
     const [isDraggingProposal, setIsDraggingProposal] = useState(false);
+    const [isDraggingPpt, setIsDraggingPpt] = useState(false);
     const [isDraggingSertifikat, setIsDraggingSertifikat] = useState(false);
     const proposalInputRef = useRef<HTMLInputElement>(null);
+    const pptInputRef = useRef<HTMLInputElement>(null);
     const sertifikatInputRef = useRef<HTMLInputElement>(null);
-
-    // Profile Documents Extraction
-    const documentsList = inovasi.dokumen ?? [];
-    const proposalDoc = documentsList.find(
-        (d) => d.jenis === 'proposal' || d.nama_asal?.toLowerCase().includes('proposal')
-    );
-    const sertifikatDoc = documentsList.find(
-        (d) =>
-            d.jenis === 'penghargaan' ||
-            d.jenis === 'piagam' ||
-            d.jenis === 'sertifikat' ||
-            d.nama_asal?.toLowerCase().includes('penghargaan') ||
-            d.nama_asal?.toLowerCase().includes('piagam')
-    );
-    const videoDoc = documentsList.find(
-        (d) => d.jenis === 'video' || d.mime === 'url'
-    );
 
     const logsList = inovasi.validasi_logs ?? [];
     const latestRevisionLog = logsList
@@ -330,13 +380,14 @@ export default function EditInovasi({
                     const next = {
                         ...prev,
                         proposal: null,
+                        ppt: null,
                         sertifikat: null,
-                        link_video: '',
                     };
                     setDefaults(next);
                     return next;
                 });
                 if (proposalInputRef.current) proposalInputRef.current.value = '';
+                if (pptInputRef.current) pptInputRef.current.value = '';
                 if (sertifikatInputRef.current) sertifikatInputRef.current.value = '';
             },
         });
@@ -727,6 +778,50 @@ export default function EditInovasi({
                                                 );
                                             })}
                                         </div>
+                                    </div>
+
+                                    {/* Kategori Inovasi Daerah (Accessible Native Radiogroup) */}
+                                    <div className="grid gap-2">
+                                        <Label id="label-kategori" className="font-semibold text-xs text-foreground">
+                                            Kategori Inovasi Daerah <span className="text-destructive">*</span>
+                                        </Label>
+                                        <div role="radiogroup" aria-labelledby="label-kategori" className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                            {KATEGORI_INOVASI_OPTIONS.map((opt) => {
+                                                const isSelected = (data.kategori_inovasi || 'opd') === opt.value;
+                                                return (
+                                                    <label
+                                                        key={opt.value}
+                                                        className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${isReadOnly ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'
+                                                            } focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${isSelected
+                                                                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                                                                : 'border-border bg-card hover:bg-muted/40'
+                                                            }`}
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name="kategori_inovasi"
+                                                            value={opt.value}
+                                                            checked={isSelected}
+                                                            disabled={isReadOnly}
+                                                            onChange={() => setData('kategori_inovasi', opt.value)}
+                                                            className="sr-only"
+                                                        />
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="font-bold text-xs text-foreground">{opt.label}</span>
+                                                            <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                                                                {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-[11px] text-muted-foreground leading-relaxed">{opt.desc}</p>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        {errors.kategori_inovasi && (
+                                            <p role="alert" className="text-xs text-destructive font-medium">
+                                                {errors.kategori_inovasi}
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Nama Inisiator */}
@@ -1433,10 +1528,10 @@ export default function EditInovasi({
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <CardTitle className="text-base font-bold">
-                                                    Bagian V: Dokumen Pendukung Profil Inovasi
+                                                    Bagian V: Dokumen Profil Inovasi
                                                 </CardTitle>
                                                 <CardDescription className="text-xs">
-                                                    Khusus berkas proposal, piagam sertifikat penghargaan, dan tautan link video dokumentasi penerapan.
+                                                    Unggah berkas profil inovasi, PPT presentasi, piagam sertifikat penghargaan, serta tautan video dan media sosial.
                                                 </CardDescription>
                                             </div>
                                             {isReadOnly && (
@@ -1448,15 +1543,15 @@ export default function EditInovasi({
                                     </CardHeader>
 
                                     <CardContent className="p-6 space-y-6">
-                                        {/* 1. Dokumen Proposal / Rancang Bangun (Accessible Label Dropzone) */}
+                                        {/* 1. Dokumen Profil Inovasi (Accessible Label Dropzone) */}
                                         <div className="p-4 rounded-xl border bg-card space-y-3">
                                             <div className="flex items-center justify-between flex-wrap gap-2">
                                                 <div className="space-y-0.5">
                                                     <div className="font-bold text-xs text-foreground">
-                                                        1. Dokumen Proposal / Rancang Bangun Inovasi (PDF / DOCX)
+                                                        1. Dokumen Profil Inovasi (PDF / DOCX)
                                                     </div>
                                                     <p className="text-xs text-muted-foreground">
-                                                        Berkas dokumen proposal lengkap memuat latar belakang, metodologi, dan cara kerja.
+                                                        Berkas profil lengkap memuat latar belakang ide, metodologi, dan cara kerja.
                                                     </p>
                                                 </div>
                                                 {proposalDoc && (
@@ -1488,7 +1583,7 @@ export default function EditInovasi({
                                                                 size="sm"
                                                                 className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
                                                                 onClick={() => deleteDokumen(proposalDoc.id)}
-                                                                title="Hapus file proposal"
+                                                                title="Hapus file profil inovasi"
                                                             >
                                                                 <Trash2 className="h-3.5 w-3.5" />
                                                             </Button>
@@ -1557,7 +1652,7 @@ export default function EditInovasi({
                                                             >
                                                                 <UploadCloud className="h-7 w-7 text-primary mx-auto mb-1.5 opacity-80" aria-hidden="true" />
                                                                 <div className="text-xs font-semibold text-foreground">
-                                                                    Tarik & lepas file Proposal di sini, atau <span className="text-primary underline">klik untuk mencari berkas</span>
+                                                                    Tarik & lepas file Profil Inovasi di sini, atau <span className="text-primary underline">klik untuk mencari berkas</span>
                                                                 </div>
                                                                 <div className="text-xs text-muted-foreground mt-1">Format PDF, DOC, DOCX (Maksimal 20MB)</div>
                                                             </label>
@@ -1567,15 +1662,134 @@ export default function EditInovasi({
                                             )}
                                         </div>
 
-                                        {/* 2. Sertifikat / Piagam Penghargaan (Accessible Label Dropzone) */}
+                                        {/* 2. PPT Presentasi Inovasi */}
                                         <div className="p-4 rounded-xl border bg-card space-y-3">
                                             <div className="flex items-center justify-between flex-wrap gap-2">
                                                 <div className="space-y-0.5">
                                                     <div className="font-bold text-xs text-foreground">
-                                                        2. Sertifikat / Piagam Penghargaan Inovasi (PDF / JPG / PNG)
+                                                        2. PPT Presentasi Inovasi (PPT / PPTX / PDF)
                                                     </div>
                                                     <p className="text-xs text-muted-foreground">
-                                                        Bukti sertifikat atau piagam prestasi penghargaan yang pernah diraih (jika ada).
+                                                        Slide bahan paparan atau presentasi inovasi (maksimal 50MB).
+                                                    </p>
+                                                </div>
+                                                {pptDoc && (
+                                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs font-semibold">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1.5" aria-hidden="true" />
+                                                        Terunggah
+                                                    </Badge>
+                                                )}
+                                            </div>
+
+                                            {pptDoc ? (
+                                                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 text-xs">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <FileText className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                                                        <div className="min-w-0">
+                                                            <div className="font-semibold text-foreground truncate">{pptDoc.nama_asal}</div>
+                                                            <div className="text-xs text-muted-foreground">Ukuran: {formatBytes(pptDoc.ukuran)}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        <Button variant="outline" size="sm" asChild className="h-7 text-xs gap-1">
+                                                            <Link href={`/inovasi/dokumen/${pptDoc.id}/download`}>
+                                                                <Download className="h-3.5 w-3.5" /> Unduh
+                                                            </Link>
+                                                        </Button>
+                                                        {!isReadOnly && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                                                                onClick={() => deleteDokumen(pptDoc.id)}
+                                                                title="Hapus file PPT"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                !isReadOnly && (
+                                                    <div className="space-y-2">
+                                                        <input
+                                                            ref={pptInputRef}
+                                                            type="file"
+                                                            id="ppt-upload"
+                                                            accept=".ppt,.pptx,.pdf"
+                                                            className="sr-only"
+                                                            onChange={(e) => {
+                                                                if (e.target.files?.[0]) setData('ppt', e.target.files[0]);
+                                                            }}
+                                                        />
+                                                        {data.ppt ? (
+                                                            <div className="flex items-center justify-between p-2.5 rounded-lg border bg-primary/5 border-primary/20 text-xs">
+                                                                <div className="flex items-center gap-2 truncate">
+                                                                    <FileText className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                                                                    <span className="font-semibold truncate">{data.ppt.name}</span>
+                                                                    <span className="text-muted-foreground">({formatBytes(data.ppt.size)})</span>
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-6 text-xs text-destructive hover:bg-destructive/10"
+                                                                    onClick={() => setData('ppt', null)}
+                                                                >
+                                                                    Batal
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <label
+                                                                htmlFor="ppt-upload"
+                                                                tabIndex={0}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.preventDefault();
+                                                                        pptInputRef.current?.click();
+                                                                    }
+                                                                }}
+                                                                onDragOver={(e) => {
+                                                                    e.preventDefault();
+                                                                    setIsDraggingPpt(true);
+                                                                }}
+                                                                onDragLeave={(e) => {
+                                                                    e.preventDefault();
+                                                                    setIsDraggingPpt(false);
+                                                                }}
+                                                                onDrop={(e) => {
+                                                                    e.preventDefault();
+                                                                    setIsDraggingPpt(false);
+                                                                    if (e.dataTransfer.files?.[0]) {
+                                                                        setData('ppt', e.dataTransfer.files[0]);
+                                                                    }
+                                                                }}
+                                                                className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-all block focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${isDraggingPpt
+                                                                    ? 'border-primary bg-primary/10 scale-[1.01]'
+                                                                    : 'border-border bg-muted/20 hover:border-primary/50 hover:bg-muted/40'
+                                                                    }`}
+                                                            >
+                                                                <UploadCloud className="h-7 w-7 text-primary mx-auto mb-1.5 opacity-80" aria-hidden="true" />
+                                                                <div className="text-xs font-semibold text-foreground">
+                                                                    Tarik & lepas file PPT Presentasi di sini, atau <span className="text-primary underline">klik untuk mencari berkas</span>
+                                                                </div>
+                                                                <div className="text-xs text-muted-foreground mt-1">Format PPT, PPTX, PDF (Maksimal 50MB)</div>
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
+
+                                        {/* 3. Sertifikat / Piagam Penghargaan (Accessible Label Dropzone) */}
+                                        <div className="p-4 rounded-xl border bg-card space-y-3">
+                                            <div className="flex items-center justify-between flex-wrap gap-2">
+                                                <div className="space-y-0.5">
+                                                    <div className="font-bold text-xs text-foreground">
+                                                        3. Piagam Sertifikat Penghargaan (PDF / Gambar - Opsional)
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Bukti penghargaan, juara lomba inovasi, apresiasi resmi, atau sertifikat HKI/paten.
                                                     </p>
                                                 </div>
                                                 {sertifikatDoc && (
@@ -1686,12 +1900,12 @@ export default function EditInovasi({
                                             )}
                                         </div>
 
-                                        {/* 3. Link Video Dokumentasi */}
+                                        {/* 4. Link Video Dokumentasi */}
                                         <div className="p-4 rounded-xl border bg-card space-y-3">
                                             <div className="flex items-center justify-between flex-wrap gap-2">
                                                 <div className="space-y-0.5">
                                                     <div className="font-bold text-xs text-foreground">
-                                                        3. Link Video Dokumentasi Penerapan (YouTube / Drive)
+                                                        4. Link Video Dokumentasi Penerapan (YouTube / Drive)
                                                     </div>
                                                     <p className="text-xs text-muted-foreground">
                                                         Tautan video visualisasi proses dan penerapan inovasi di lapangan.
@@ -1750,6 +1964,77 @@ export default function EditInovasi({
                                                             placeholder="https://www.youtube.com/watch?v=... atau https://drive.google.com/..."
                                                             value={data.link_video}
                                                             onChange={(e) => setData('link_video', e.target.value)}
+                                                            className="text-xs"
+                                                        />
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
+
+                                        {/* 5. Link Postingan Sosial Media */}
+                                        <div className="p-4 rounded-xl border bg-card space-y-3">
+                                            <div className="flex items-center justify-between flex-wrap gap-2">
+                                                <div className="space-y-0.5">
+                                                    <div className="font-bold text-xs text-foreground">
+                                                        5. Link Postingan Sosial Media (Instagram / TikTok / YouTube / FB)
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Tautan publikasi atau sosialisasi inovasi di media sosial untuk transparansi masyarakat.
+                                                    </p>
+                                                </div>
+                                                {medsosDoc && (
+                                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs font-semibold">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1.5" aria-hidden="true" />
+                                                        Tersimpan
+                                                    </Badge>
+                                                )}
+                                            </div>
+
+                                            {medsosDoc ? (
+                                                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 text-xs">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <Share2 className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
+                                                        <div className="min-w-0">
+                                                            <div className="font-semibold text-foreground truncate">{medsosDoc.nama_asal || 'Link Media Sosial'}</div>
+                                                            <a
+                                                                href={medsosDoc.path}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-xs text-primary hover:underline font-mono truncate block"
+                                                            >
+                                                                {medsosDoc.path}
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        <Button variant="outline" size="sm" asChild className="h-7 text-xs gap-1">
+                                                            <a href={medsosDoc.path} target="_blank" rel="noopener noreferrer">
+                                                                <ExternalLink className="h-3.5 w-3.5" /> Buka Medsos
+                                                            </a>
+                                                        </Button>
+                                                        {!isReadOnly && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                                                                onClick={() => deleteDokumen(medsosDoc.id)}
+                                                                title="Hapus tautan media sosial"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                !isReadOnly && (
+                                                    <div className="space-y-2">
+                                                        <Input
+                                                            type="url"
+                                                            id="link_medsos"
+                                                            aria-label="Tautan link postingan media sosial"
+                                                            placeholder="https://www.instagram.com/p/... atau https://vt.tiktok.com/..."
+                                                            value={data.link_medsos || ''}
+                                                            onChange={(e) => setData('link_medsos', e.target.value)}
                                                             className="text-xs"
                                                         />
                                                     </div>
@@ -1829,7 +2114,7 @@ export default function EditInovasi({
                                                 {(inovasi.validasi_logs ?? [])
                                                     .slice()
                                                     .reverse()
-                                                    .map((log) => (
+                                                    .map((log: Log) => (
                                                         <div
                                                             key={log.id}
                                                             className="border rounded-xl p-3.5 text-xs space-y-1.5 bg-card hover:bg-muted/10 transition-colors"

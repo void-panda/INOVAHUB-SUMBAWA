@@ -3,6 +3,8 @@ import {
     AlertCircle,
     Check,
     FileText,
+    Printer,
+    Share2,
     UploadCloud,
     Video,
 } from 'lucide-react';
@@ -24,6 +26,7 @@ export type InovasiFormData = {
     nama_inovasi: string;
     tahapan: string;
     inisiator: string;
+    kategori_inovasi?: string | null;
     bentuk_inovasi: string;
     jenis_inovasi: string;
     klasifikasi: string;
@@ -46,11 +49,20 @@ export type InovasiFormData = {
     manfaat: string;
     hasil_inovasi: string;
     proposal: File | null;
+    ppt?: File | null;
     sertifikat: File | null;
     link_video: string;
     nama_video: string;
+    link_medsos?: string;
     dokumen: File[];
 };
+
+export const KATEGORI_INOVASI_OPTIONS = [
+    { value: 'masyarakat', label: 'Masyarakat', desc: 'Inisiatif warga, kelompok tani/nelayan, komunitas' },
+    { value: 'opd', label: 'OPD', desc: 'Organisasi Perangkat Daerah / Instansi Pemkab' },
+    { value: 'mahasiswa', label: 'Mahasiswa', desc: 'Karya inovatif mahasiswa / perguruan tinggi' },
+    { value: 'pelajar', label: 'Pelajar', desc: 'Karya inovatif siswa SMA/SMK/SMP sederajat' },
+];
 
 export const INISIATOR_OPTIONS = [
     { value: 'kepala_daerah', label: 'Kepala Daerah', desc: 'Inisiatif gagasan langsung Kepala Daerah' },
@@ -206,6 +218,7 @@ export function InovasiFields({
 }: Props) {
     const { data, setData } = form;
     const proposalRef = useRef<HTMLInputElement>(null);
+    const pptRef = useRef<HTMLInputElement>(null);
     const sertifikatRef = useRef<HTMLInputElement>(null);
 
     const isMasyarakat = tipeInovator === 'masyarakat';
@@ -253,11 +266,11 @@ export function InovasiFields({
     // Shared Berkas Dokumen Section
     const renderDokumenSection = () => (
         <div className="grid gap-4">
-            {/* Proposal Inovasi */}
+            {/* 1. Profil Inovasi (Pengganti Proposal) */}
             <div className="p-3.5 rounded-lg border bg-muted/10 space-y-2">
                 <div className="flex items-center justify-between">
                     <Label className="font-semibold text-xs text-foreground">
-                        {isMasyarakat ? 'Dokumen Deskripsi / Proposal Inovasi (PDF / DOCX - Opsional)' : 'Proposal / Dokumen Rancang Bangun (PDF)'}
+                        Profil Inovasi (PDF / DOCX - Format Bebas)
                     </Label>
                     {data.proposal && (
                         <Button
@@ -295,12 +308,59 @@ export function InovasiFields({
                         className="w-full text-xs border-dashed gap-1.5"
                     >
                         <UploadCloud className="h-4 w-4 text-primary" />
-                        Pilih Berkas Proposal (PDF / DOCX)
+                        Pilih Berkas Profil Inovasi (PDF / DOCX)
                     </Button>
                 )}
             </div>
 
-            {/* Sertifikat / Penghargaan */}
+            {/* 2. PPT Presentasi */}
+            <div className="p-3.5 rounded-lg border bg-muted/10 space-y-2">
+                <div className="flex items-center justify-between">
+                    <Label className="font-semibold text-xs text-foreground">
+                        PPT Presentasi Inovasi (PPT / PPTX / PDF - Maks. 50MB)
+                    </Label>
+                    {data.ppt && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs text-destructive hover:bg-destructive/10"
+                            onClick={() => setData('ppt', null)}
+                        >
+                            Hapus
+                        </Button>
+                    )}
+                </div>
+                <input
+                    ref={pptRef}
+                    type="file"
+                    accept=".ppt,.pptx,.pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                        if (e.target.files?.[0]) setData('ppt', e.target.files[0]);
+                    }}
+                />
+                {data.ppt ? (
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-muted border border-border text-xs">
+                        <FileText className="h-4 w-4 text-emerald-600" />
+                        <span className="font-medium truncate">{data.ppt.name}</span>
+                        <span className="text-muted-foreground">({formatBytes(data.ppt.size)})</span>
+                    </div>
+                ) : (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => pptRef.current?.click()}
+                        className="w-full text-xs border-dashed gap-1.5"
+                    >
+                        <UploadCloud className="h-4 w-4 text-primary" />
+                        Pilih Berkas PPT Presentasi (PPT / PPTX / PDF)
+                    </Button>
+                )}
+            </div>
+
+            {/* 3. Sertifikat / Piagam Penghargaan */}
             <div className="p-3.5 rounded-lg border bg-muted/10 space-y-2">
                 <div className="flex items-center justify-between">
                     <Label className="font-semibold text-xs text-foreground">
@@ -347,7 +407,7 @@ export function InovasiFields({
                 )}
             </div>
 
-            {/* Link Video Dokumentasi */}
+            {/* 4. Link Video Dokumentasi */}
             <div className="p-3.5 rounded-lg border bg-muted/10 space-y-2">
                 <Label htmlFor="link_video" className="font-semibold text-xs text-foreground flex items-center gap-1.5">
                     <Video className="h-3.5 w-3.5 text-primary" />
@@ -361,20 +421,281 @@ export function InovasiFields({
                     className="text-xs"
                 />
             </div>
+
+            {/* 5. Link Postingan Sosial Media */}
+            <div className="p-3.5 rounded-lg border bg-muted/10 space-y-2">
+                <Label htmlFor="link_medsos" className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                    <Share2 className="h-3.5 w-3.5 text-primary" />
+                    Tautan / Link Postingan Sosial Media (Instagram, TikTok, YouTube, Facebook - Opsional)
+                </Label>
+                <Input
+                    id="link_medsos"
+                    placeholder="Contoh: https://www.instagram.com/p/... atau https://vt.tiktok.com/..."
+                    value={data.link_medsos || ''}
+                    onChange={(e) => setData('link_medsos', e.target.value)}
+                    className="text-xs"
+                />
+            </div>
         </div>
     );
+
+    // Fungsi Cetak Ringkasan ke PDF
+    const handlePrintRingkasan = () => {
+        const printWindow = window.open('', '_blank', 'width=900,height=750');
+        if (!printWindow) return;
+
+        const formatTanggal = (dStr?: string | null) => {
+            if (!dStr) return '-';
+            try {
+                const d = new Date(dStr);
+                return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            } catch {
+                return dStr;
+            }
+        };
+
+        const todayFormatted = new Date().toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        });
+
+        const katLabel = KATEGORI_INOVASI_OPTIONS.find((k) => k.value === data.kategori_inovasi)?.label || data.kategori_inovasi || (isMasyarakat ? 'Masyarakat' : 'OPD');
+        const inisiatorLabel = INISIATOR_OPTIONS.find((i) => i.value === data.inisiator)?.label || data.inisiator || '-';
+        const bentukLabel = BENTUK_OPTIONS.find((b) => b.value === data.bentuk_inovasi)?.title || data.bentuk_inovasi || '-';
+        const jenisLabel = JENIS_OPTIONS.find((j) => j.value === data.jenis_inovasi)?.title || data.jenis_inovasi || '-';
+        const tahapanLabel = TAHAPAN_OPTIONS.find((t) => t.value === data.tahapan)?.title || data.tahapan || '-';
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="UTF-8">
+                <title>Ringkasan Profil Inovasi - ${data.nama_inovasi || 'INOVA-HUB'}</title>
+                <style>
+                    @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
+                    body {
+                        font-family: 'Times New Roman', Times, serif;
+                        font-size: 11pt;
+                        color: #111;
+                        line-height: 1.35;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .kop-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 8px;
+                        border-bottom: 3px double #000;
+                        padding-bottom: 6px;
+                    }
+                    .kop-table td { vertical-align: middle; }
+                    .kop-text { text-align: center; }
+                    .kop-text h3 { margin: 0; font-size: 12pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .kop-text h2 { margin: 1px 0; font-size: 14pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+                    .kop-text p { margin: 1px 0; font-size: 9.5pt; font-style: italic; }
+                    .doc-header { text-align: center; margin: 12px 0 16px; }
+                    .doc-header h4 { margin: 0; font-size: 12pt; text-transform: uppercase; text-decoration: underline; font-weight: bold; }
+                    .doc-header span { font-size: 9.5pt; color: #444; }
+                    .section-title {
+                        font-size: 10.5pt;
+                        font-weight: bold;
+                        background: #f0f0f0;
+                        padding: 4px 8px;
+                        border: 1px solid #333;
+                        margin-top: 10px;
+                        border-bottom: none;
+                    }
+                    table.data-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 10px;
+                    }
+                    table.data-table th, table.data-table td {
+                        border: 1px solid #333;
+                        padding: 5px 8px;
+                        font-size: 10pt;
+                        vertical-align: top;
+                    }
+                    table.data-table td.label-col {
+                        width: 28%;
+                        font-weight: bold;
+                        background-color: #fafafa;
+                    }
+                    .prose-text {
+                        text-align: justify;
+                        white-space: pre-wrap;
+                        line-height: 1.4;
+                    }
+                    .ttd-container {
+                        width: 100%;
+                        margin-top: 25px;
+                        border-collapse: collapse;
+                    }
+                    .ttd-container td {
+                        width: 50%;
+                        vertical-align: top;
+                        font-size: 10pt;
+                    }
+                    @media print {
+                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+                <table class="kop-table">
+                    <tr>
+                        <td class="kop-text">
+                            <h3>Pemerintah Kabupaten Sumbawa</h3>
+                            <h2>Badan Perencanaan Pembangunan, Penelitian dan Pengembangan Daerah</h2>
+                            <p>Sistem INOVA-HUB (Repository & Pembinaan Inovasi Daerah Kabupaten Sumbawa)</p>
+                            <p>Jalan Garuda No. 1 Sumbawa Besar - Nusa Tenggara Barat | Kode Wilayah: 52.04</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="doc-header">
+                    <h4>Lembar Ringkasan Profil Usulan Inovasi Daerah</h4>
+                    <span>Dicetak otomatis dari Sistem INOVA-HUB Sumbawa pada ${todayFormatted}</span>
+                </div>
+
+                <div class="section-title">I. IDENTITAS & KLASIFIKASI INOVASI</div>
+                <table class="data-table">
+                    <tr>
+                        <td class="label-col">Nama Inovasi</td>
+                        <td style="font-weight: bold; font-size: 10.5pt;">${data.nama_inovasi || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Kategori Inovasi Daerah</td>
+                        <td>${katLabel}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Inisiator & Nama Penggagas</td>
+                        <td>${inisiatorLabel} — ${data.nama_inisiator || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Tahapan Inovasi</td>
+                        <td>${tahapanLabel}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Bentuk & Jenis Inovasi</td>
+                        <td>${bentukLabel} / ${jenisLabel}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Klasifikasi / Tematik</td>
+                        <td>${data.klasifikasi === 'tematik' ? `Tematik (${data.tematik || 'Umum'})` : 'Non-Tematik'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Lokasi & Titik Koordinat</td>
+                        <td>${data.lokasi || '-'} (Koordinat: ${data.koordinat || '-'})</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Waktu Penerapan Resmi</td>
+                        <td>${formatTanggal(data.waktu_penerapan)}</td>
+                    </tr>
+                </table>
+
+                <div class="section-title">II. SUBSTANSI & RANCANG BANGUN INOVASI</div>
+                <table class="data-table">
+                    <tr>
+                        <td class="label-col">Rancang Bangun & Pokok Perubahan</td>
+                        <td class="prose-text">${data.rancang_bangun || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Tujuan Inovasi</td>
+                        <td class="prose-text">${data.tujuan || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Manfaat Inovasi</td>
+                        <td class="prose-text">${data.manfaat || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Hasil Inovasi</td>
+                        <td class="prose-text">${data.hasil_inovasi || '-'}</td>
+                    </tr>
+                </table>
+
+                <div class="section-title">III. KELENGKAPAN BERKAS DOKUMEN PENDUKUNG UMUM</div>
+                <table class="data-table">
+                    <tr>
+                        <td class="label-col">Profil Inovasi</td>
+                        <td>${data.proposal ? data.proposal.name : '(Belum dilampirkan / menyusul)'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">PPT Presentasi Inovasi</td>
+                        <td>${data.ppt ? data.ppt.name : '(Belum dilampirkan / menyusul)'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Sertifikat / Penghargaan</td>
+                        <td>${data.sertifikat ? data.sertifikat.name : (data.is_penghargaan ? data.nama_penghargaan : '-')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Tautan Video Dokumentasi</td>
+                        <td>${data.link_video ? data.link_video : '-'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col">Tautan Postingan Media Sosial</td>
+                        <td>${data.link_medsos ? data.link_medsos : '-'}</td>
+                    </tr>
+                </table>
+
+                <table class="ttd-container">
+                    <tr>
+                        <td>
+                            Mengetahui,<br>
+                            Bappeda Kabupaten Sumbawa<br>
+                            Admin / Verifikator Inovasi
+                            <br><br><br><br>
+                            ( .................................................... )
+                        </td>
+                        <td style="text-align: right;">
+                            Sumbawa Besar, ${todayFormatted}<br>
+                            Inovator / Pengusul Inovasi Daerah,<br>
+                            ${katLabel}
+                            <br><br><br><br>
+                            <strong>${data.nama_inisiator || '( .................................................... )'}</strong>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+        }, 300);
+    };
 
     // Shared Ringkasan Section
     const renderRingkasanSection = () => (
         <div className="rounded-xl border bg-card p-4 text-xs space-y-3 mt-4">
-            <div className="font-bold text-sm text-foreground border-b pb-2">
-                Ringkasan Profil Usulan Inovasi
+            <div className="flex items-center justify-between border-b pb-2">
+                <div className="font-bold text-sm text-foreground">
+                    Ringkasan Profil Usulan Inovasi
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrintRingkasan}
+                    className="gap-1.5 text-xs border-primary/30 hover:bg-primary/10 text-primary h-7"
+                >
+                    <Printer className="h-3.5 w-3.5" />
+                    Cetak PDF Ringkasan
+                </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 leading-relaxed">
                 <div>
                     <span className="text-muted-foreground block text-[11px]">Nama Inovasi:</span>
                     <span className="font-bold text-foreground text-xs">{data.nama_inovasi || '-'}</span>
+                </div>
+                <div>
+                    <span className="text-muted-foreground block text-[11px]">Kategori Inovasi Daerah:</span>
+                    <Badge variant="secondary" className="capitalize text-[10px] font-semibold mt-0.5">
+                        {KATEGORI_INOVASI_OPTIONS.find((k) => k.value === data.kategori_inovasi)?.label || data.kategori_inovasi || (isMasyarakat ? 'Masyarakat' : 'OPD')}
+                    </Badge>
                 </div>
                 <div>
                     <span className="text-muted-foreground block text-[11px]">Nama Inisiator:</span>
@@ -411,6 +732,19 @@ export function InovasiFields({
                     <span className={`font-mono font-bold text-xs ${isWordCountValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
                         {wordCount} / {minWordCount} kata
                     </span>
+                </div>
+                <div>
+                    <span className="text-muted-foreground block text-[11px]">Berkas Dokumen Terlampir:</span>
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                        {data.proposal && <Badge variant="outline" className="text-[10px] text-primary">Profil Inovasi</Badge>}
+                        {data.ppt && <Badge variant="outline" className="text-[10px] text-emerald-600">PPT Presentasi</Badge>}
+                        {data.sertifikat && <Badge variant="outline" className="text-[10px] text-amber-600">Sertifikat</Badge>}
+                        {data.link_video && <Badge variant="outline" className="text-[10px] text-blue-600">Video</Badge>}
+                        {data.link_medsos && <Badge variant="outline" className="text-[10px] text-pink-600">Medsos</Badge>}
+                        {!data.proposal && !data.ppt && !data.sertifikat && !data.link_video && !data.link_medsos && (
+                            <span className="text-[11px] text-muted-foreground italic">Belum ada berkas terunggah</span>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -499,6 +833,56 @@ export function InovasiFields({
                                     );
                                 })}
                             </div>
+                        </div>
+
+                        {/* Kategori Inovasi Daerah */}
+                        <div className="grid gap-2 pt-1">
+                            <Label className="font-semibold text-xs text-foreground">
+                                Kategori Inovasi Daerah <span className="text-destructive">*</span>
+                            </Label>
+                            <div
+                                role="radiogroup"
+                                aria-label="Kategori Inovasi Daerah"
+                                className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
+                            >
+                                {KATEGORI_INOVASI_OPTIONS.map((opt) => {
+                                    const isSelected = (data.kategori_inovasi || 'masyarakat') === opt.value;
+                                    return (
+                                        <button
+                                            type="button"
+                                            role="radio"
+                                            aria-checked={isSelected}
+                                            key={opt.value}
+                                            onClick={() => setData('kategori_inovasi', opt.value)}
+                                            className={`p-3 rounded-lg border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary flex flex-col justify-between ${
+                                                isSelected
+                                                    ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
+                                                    : 'border-border hover:border-primary/40 hover:bg-muted/30'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between w-full mb-1">
+                                                <span className="font-bold text-xs text-foreground">{opt.label}</span>
+                                                <div
+                                                    className={`h-3.5 w-3.5 rounded-full border flex items-center justify-center ${
+                                                        isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'
+                                                    }`}
+                                                >
+                                                    {isSelected && <Check className="h-2 w-2 stroke-[3]" />}
+                                                </div>
+                                            </div>
+                                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                {opt.desc}
+                                            </p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {errors.kategori_inovasi && (
+                                <p className="text-xs text-destructive flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3 shrink-0" />
+                                    {errors.kategori_inovasi}
+                                </p>
+                            )}
                         </div>
 
                         {/* Nama Inisiator */}
@@ -930,6 +1314,56 @@ export function InovasiFields({
                                 );
                             })}
                         </div>
+                    </div>
+
+                    {/* Kategori Inovasi Daerah */}
+                    <div className="grid gap-2 pt-1">
+                        <Label className="font-semibold text-xs text-foreground">
+                            Kategori Inovasi Daerah <span className="text-destructive">*</span>
+                        </Label>
+                        <div
+                            role="radiogroup"
+                            aria-label="Kategori Inovasi Daerah"
+                            className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
+                        >
+                            {KATEGORI_INOVASI_OPTIONS.map((opt) => {
+                                const isSelected = (data.kategori_inovasi || 'opd') === opt.value;
+                                return (
+                                    <button
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={isSelected}
+                                        key={opt.value}
+                                        onClick={() => setData('kategori_inovasi', opt.value)}
+                                        className={`p-3 rounded-lg border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary flex flex-col justify-between ${
+                                            isSelected
+                                                ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
+                                                : 'border-border hover:border-primary/40 hover:bg-muted/30'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between w-full mb-1">
+                                            <span className="font-bold text-xs text-foreground">{opt.label}</span>
+                                            <div
+                                                className={`h-3.5 w-3.5 rounded-full border flex items-center justify-center ${
+                                                    isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'
+                                                }`}
+                                            >
+                                                {isSelected && <Check className="h-2 w-2 stroke-[3]" />}
+                                            </div>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                            {opt.desc}
+                                        </p>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {errors.kategori_inovasi && (
+                            <p className="text-xs text-destructive flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3 shrink-0" />
+                                {errors.kategori_inovasi}
+                            </p>
+                        )}
                     </div>
 
                     {/* Nama Inisiator */}
@@ -1575,29 +2009,19 @@ export function InovasiFields({
                 </div>
             )}
 
-            {/* STEP 5: Dokumen Pendukung & Review */}
+            {/* STEP 5: Dokumen & Review */}
             {step === 4 && (
                 <div className="space-y-5">
                     <div className="border-b pb-3">
                         <h3 className="text-base font-bold text-foreground">
-                            V. Dokumen Pendukung & Ringkasan Draft
+                            V. Dokumen & Ringkasan Draft
                         </h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            Unggah berkas proposal, piagam sertifikat, link video YouTube dokumentasi, dan tinjau ringkasan sebelum menyimpan draft.
+                            Unggah profil inovasi, PPT presentasi, sertifikat/piagam, video, dan link media sosial sebelum menyimpan draft inovasi.
                         </p>
                     </div>
 
                     {renderDokumenSection()}
-
-                    {/* Callout Informasi 20 Indikator SID */}
-                    <div className="p-3.5 rounded-lg border bg-primary/5 border-primary/20 space-y-1.5">
-                        <div className="font-bold text-xs text-primary">
-                            Dokumen Bukti Dukung 20 Indikator SID
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                            Dokumen teknis spesifik indikator (seperti SK Tim, Regulasi/Perbup, Bukti Sosialisasi, Bimtek, dan Kemanfaatan) diunggah terpisah pada lembar kerja <strong>20 Indikator SID</strong> setelah profil inovasi disimpan.
-                        </p>
-                    </div>
 
                     {renderRingkasanSection()}
                 </div>

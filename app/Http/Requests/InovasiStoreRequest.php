@@ -22,6 +22,7 @@ class InovasiStoreRequest extends FormRequest
             'nama_inovasi' => ['required', 'string', 'min:3', 'max:255'],
             'tahapan' => ['required', 'in:inisiatif,ujicoba,penerapan'],
             'inisiator' => ['nullable', 'string', 'in:kepala_daerah,anggota_dprd,opd,asn,masyarakat'],
+            'kategori_inovasi' => ['nullable', 'string', 'in:masyarakat,opd,mahasiswa,pelajar'],
             'bentuk_inovasi' => ['nullable', 'string', 'in:pelayanan_publik,tata_kelola,lainnya'],
             'jenis_inovasi' => ['nullable', 'string', 'in:digital,non_digital'],
             'klasifikasi' => ['nullable', 'string', 'in:tematik,non_tematik'],
@@ -48,8 +49,10 @@ class InovasiStoreRequest extends FormRequest
             'dokumen.*' => ['file', 'max:20480'],
             'proposal' => ['nullable', 'file', 'max:20480'],
             'sertifikat' => ['nullable', 'file', 'max:20480'],
+            'ppt' => ['nullable', 'file', 'mimes:ppt,pptx,pdf', 'max:51200'],
             'link_video' => ['nullable', 'url', 'max:500'],
             'nama_video' => ['nullable', 'string', 'max:255'],
+            'link_medsos' => ['nullable', 'url', 'max:500'],
         ];
     }
 

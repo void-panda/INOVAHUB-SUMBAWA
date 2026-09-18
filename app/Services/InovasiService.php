@@ -124,6 +124,20 @@ class InovasiService
     }
 
     /**
+     * Tambah link postingan media sosial (Instagram, TikTok, YouTube, dll).
+     */
+    public function addMedsosLink(Inovasi $inovasi, string $url): void
+    {
+        $inovasi->dokumen()->create([
+            'jenis' => 'medsos',
+            'path' => $url,
+            'nama_asal' => $url,
+            'mime' => 'url',
+            'ukuran' => 0,
+        ]);
+    }
+
+    /**
      * Hapus satu dokumen pendukung.
      */
     public function deleteDokumen(InovasiDokumen $dokumen): void
