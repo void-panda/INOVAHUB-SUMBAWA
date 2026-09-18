@@ -139,8 +139,9 @@ class PengajuanLombaService
             // Beri notifikasi ke pendamping terkait
             $penugasan = PenugasanPendamping::where('periode_lomba_id', $periode->id)
                 ->where(function (Builder $query) use ($inovasi, $user) {
+                    $query->where('inovasi_id', $inovasi->id);
                     if ($inovasi->opd_id) {
-                        $query->where('opd_id', $inovasi->opd_id);
+                        $query->orWhere('opd_id', $inovasi->opd_id);
                     }
                     $query->orWhere('inovator_id', $user->id);
                 })
@@ -277,8 +278,9 @@ class PengajuanLombaService
     {
         $penugasan = PenugasanPendamping::where('periode_lomba_id', $pengajuan->periode_lomba_id)
             ->where(function (Builder $query) use ($pengajuan) {
+                $query->where('inovasi_id', $pengajuan->inovasi_id);
                 if ($pengajuan->inovasi->opd_id) {
-                    $query->where('opd_id', $pengajuan->inovasi->opd_id);
+                    $query->orWhere('opd_id', $pengajuan->inovasi->opd_id);
                 }
                 $query->orWhere('inovator_id', $pengajuan->user_id);
             })

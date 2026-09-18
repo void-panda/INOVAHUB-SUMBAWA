@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('pendamping_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('opd_id')->nullable()->constrained('opd')->nullOnDelete();
             $table->foreignId('inovator_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('inovasi_id')->nullable()->constrained('inovasi')->cascadeOnDelete();
             $table->foreignId('periode_lomba_id')->constrained('periode_lomba');
             $table->timestamps();
         });

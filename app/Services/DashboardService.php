@@ -181,6 +181,12 @@ class DashboardService
                 })->values(),
             ];
         } elseif ($userRole === 'pendamping' && $user) {
+            $assignedInovasiIds = DB::table('penugasan_pendamping')
+                ->where('pendamping_id', $user->id)
+                ->whereNotNull('inovasi_id')
+                ->pluck('inovasi_id')
+                ->toArray();
+
             $assignedOpdIds = DB::table('penugasan_pendamping')
                 ->where('pendamping_id', $user->id)
                 ->whereNotNull('opd_id')
@@ -193,12 +199,13 @@ class DashboardService
                 ->pluck('inovator_id')
                 ->toArray();
 
-            $assignedItems = $allPengajuan->filter(function ($item) use ($assignedOpdIds, $assignedInovatorIds) {
-                return in_array($item->inovasi?->opd_id, $assignedOpdIds, true)
+            $assignedItems = $allPengajuan->filter(function ($item) use ($assignedInovasiIds, $assignedOpdIds, $assignedInovatorIds) {
+                return in_array($item->inovasi_id, $assignedInovasiIds, true)
+                    || in_array($item->inovasi?->opd_id, $assignedOpdIds, true)
                     || in_array($item->user_id, $assignedInovatorIds, true);
             });
 
-            if ($assignedItems->isEmpty()) {
+            if ($assignedItems->isEmpty() && empty($assignedInovasiIds) && empty($assignedOpdIds) && empty($assignedInovatorIds)) {
                 $assignedItems = $allPengajuan;
             }
 

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Inovasi;
 use App\Models\Opd;
 use App\Models\PenugasanPendamping;
 use App\Models\PeriodeLomba;
@@ -20,58 +21,27 @@ class PenugasanSeeder extends Seeder
         $pendamping1 = User::where('email', 'pendamping@sumbawakab.go.id')->first();
         $pendamping2 = User::where('email', 'pendamping2@sumbawakab.go.id')->first();
 
-        $kominfo = Opd::where('kode', 'DISKOMINFO')->first();
-        $dinkes = Opd::where('kode', 'DINKES')->first();
-        $disdukcapil = Opd::where('kode', 'DISDUKCAPIL')->first();
-        $disdikbud = Opd::where('kode', 'DISDIKBUD')->first();
+        if (! $pendamping1 || ! $pendamping2) {
+            return;
+        }
 
-        $inovatorMasyarakat = User::where('email', 'inovator5@sumbawakab.go.id')->first();
+        $inovasiList = Inovasi::all();
+        foreach ($inovasiList as $idx => $inovasi) {
+            $assignedPendamping = ($idx % 2 === 0) ? $pendamping1 : $pendamping2;
 
-        $assignments = [
-            [
-                'pendamping_id' => $pendamping1?->id,
-                'opd_id' => $kominfo?->id,
-                'inovator_id' => null,
-                'periode_lomba_id' => $periode2026->id,
-            ],
-            [
-                'pendamping_id' => $pendamping1?->id,
-                'opd_id' => $dinkes?->id,
-                'inovator_id' => null,
-                'periode_lomba_id' => $periode2026->id,
-            ],
-            [
-                'pendamping_id' => $pendamping2?->id,
-                'opd_id' => $disdukcapil?->id,
-                'inovator_id' => null,
-                'periode_lomba_id' => $periode2026->id,
-            ],
-            [
-                'pendamping_id' => $pendamping2?->id,
-                'opd_id' => $disdikbud?->id,
-                'inovator_id' => null,
-                'periode_lomba_id' => $periode2026->id,
-            ],
-            [
-                'pendamping_id' => $pendamping1?->id,
-                'opd_id' => null,
-                'inovator_id' => $inovatorMasyarakat?->id,
-                'periode_lomba_id' => $periode2026->id,
-            ],
-        ];
-
-        foreach ($assignments as $assignment) {
-            if ($assignment['pendamping_id']) {
-                PenugasanPendamping::updateOrCreate(
-                    [
-                        'pendamping_id' => $assignment['pendamping_id'],
-                        'periode_lomba_id' => $assignment['periode_lomba_id'],
-                        'opd_id' => $assignment['opd_id'],
-                        'inovator_id' => $assignment['inovator_id'],
-                    ],
-                    $assignment
-                );
-            }
+            PenugasanPendamping::updateOrCreate(
+                [
+                    'inovasi_id' => $inovasi->id,
+                    'periode_lomba_id' => $periode2026->id,
+                ],
+                [
+                    'pendamping_id' => $assignedPendamping->id,
+                    'opd_id' => $inovasi->opd_id,
+                    'inovator_id' => $inovasi->user_id,
+                    'inovasi_id' => $inovasi->id,
+                    'periode_lomba_id' => $periode2026->id,
+                ]
+            );
         }
     }
 }

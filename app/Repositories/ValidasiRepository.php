@@ -27,7 +27,7 @@ class ValidasiRepository
             $query->where('periode_lomba_id', $periodeId);
         }
 
-        return $query->with('opd')->get();
+        return $query->with(['opd', 'inovasi'])->get();
     }
 
     /**
@@ -43,6 +43,7 @@ class ValidasiRepository
     ): array {
         $periodeId = $periode?->id;
 
+        $assignedInovasiIds = $penugasan->pluck('inovasi_id')->filter()->all();
         $assignedOpdIds = $penugasan->pluck('opd_id')->filter()->all();
         $assignedInovatorIds = $penugasan->pluck('inovator_id')->filter()->all();
 
@@ -53,13 +54,24 @@ class ValidasiRepository
             $baseQuery->where('periode_lomba_id', $periodeId);
         }
 
-        if (! empty($assignedOpdIds) || ! empty($assignedInovatorIds)) {
-            $baseQuery->where(function (Builder $query) use ($assignedOpdIds, $assignedInovatorIds) {
+        if (! empty($assignedInovasiIds) || ! empty($assignedOpdIds) || ! empty($assignedInovatorIds)) {
+            $allAssignedInovasiIds = PenugasanPendamping::when($periodeId, fn ($q) => $q->where('periode_lomba_id', $periodeId))
+                ->whereNotNull('inovasi_id')
+                ->pluck('inovasi_id')
+                ->all();
+
+            $baseQuery->where(function (Builder $query) use ($assignedInovasiIds, $assignedOpdIds, $assignedInovatorIds, $allAssignedInovasiIds) {
+                if (! empty($assignedInovasiIds)) {
+                    $query->whereIn('inovasi_id', $assignedInovasiIds);
+                }
                 if (! empty($assignedOpdIds)) {
-                    $query->whereHas('inovasi', fn ($i) => $i->whereIn('opd_id', $assignedOpdIds));
+                    $query->orWhereHas('inovasi', fn ($i) => $i->whereIn('opd_id', $assignedOpdIds));
                 }
                 if (! empty($assignedInovatorIds)) {
                     $query->orWhereIn('user_id', $assignedInovatorIds);
+                }
+                if (! empty($allAssignedInovasiIds)) {
+                    $query->orWhereNotIn('inovasi_id', $allAssignedInovasiIds);
                 }
             });
         }

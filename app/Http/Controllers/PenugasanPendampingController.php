@@ -21,7 +21,7 @@ class PenugasanPendampingController extends Controller
     ) {}
 
     /**
-     * Daftar penugasan pendamping inovasi per OPD/Inovator.
+     * Daftar penugasan pendamping inovasi per Inovasi/OPD.
      */
     public function index(): Response
     {
@@ -30,6 +30,7 @@ class PenugasanPendampingController extends Controller
         return Inertia::render('penugasan/index', [
             'penugasan' => $this->penugasanRepository->getAllForPeriode($periode),
             'pendampingList' => $this->penugasanRepository->getPendampingList(),
+            'inovasiList' => $this->penugasanRepository->getInovasiList($periode),
             'opdList' => $this->penugasanRepository->getOpdList(),
             'inovatorList' => $this->penugasanRepository->getInovatorList(),
             'periode' => $periode,
@@ -46,21 +47,36 @@ class PenugasanPendampingController extends Controller
 
         $validated = $request->validate([
             'pendamping_id' => ['required', 'exists:users,id'],
+            'inovasi_ids' => ['nullable', 'array'],
+            'inovasi_ids.*' => ['exists:inovasi,id'],
+            'inovasi_id' => ['nullable', 'exists:inovasi,id'],
             'opd_id' => ['nullable', 'exists:opd,id'],
             'inovator_id' => ['nullable', 'exists:users,id'],
         ]);
 
-        if (empty($validated['opd_id']) && empty($validated['inovator_id'])) {
-            return back()->withErrors(['opd_id' => 'Pilih salah satu OPD atau Inovator untuk ditugaskan.']);
+        $inovasiIds = $validated['inovasi_ids'] ?? [];
+        if (! empty($validated['inovasi_id'])) {
+            $inovasiIds[] = (int) $validated['inovasi_id'];
+        }
+        $inovasiIds = array_values(array_unique($inovasiIds));
+
+        if (empty($inovasiIds) && empty($validated['opd_id']) && empty($validated['inovator_id'])) {
+            return back()->withErrors(['inovasi_ids' => 'Pilih minimal satu Inovasi untuk ditugaskan.']);
         }
 
-        $dto = PenugasanData::fromArray($validated, $periode->id);
-
-        if ($this->penugasanRepository->exists($dto)) {
-            return back()->withErrors(['pendamping_id' => 'Penugasan ini sudah terdaftar untuk periode aktif.']);
+        if (! empty($inovasiIds)) {
+            $this->penugasanService->assignInovasiBatch(
+                (int) $validated['pendamping_id'],
+                $inovasiIds,
+                $periode->id
+            );
+        } else {
+            $dto = PenugasanData::fromArray($validated, $periode->id);
+            if ($this->penugasanRepository->exists($dto)) {
+                return back()->withErrors(['pendamping_id' => 'Penugasan ini sudah terdaftar untuk periode aktif.']);
+            }
+            $this->penugasanService->createPenugasan($dto);
         }
-
-        $this->penugasanService->createPenugasan($dto);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Penugasan pendamping berhasil disimpan.')]);
 
