@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('p1')->nullable();
             $table->string('p2')->nullable();
             $table->string('p3')->nullable();
+            $table->json('opsi')->nullable();
             $table->timestamps();
         });
     }

@@ -13,13 +13,23 @@ class PeriodeSeeder extends Seeder
         // Periode 2025 (Non-Aktif / Arsip)
         $periode2025 = PeriodeLomba::updateOrCreate(
             ['tahun' => 2025],
-            ['aktif' => false]
+            [
+                'nama' => 'IGA 2025',
+                'aktif' => false,
+                'tanggal_mulai' => '2025-02-16',
+                'tanggal_selesai' => '2025-10-31',
+            ]
         );
 
         // Periode 2026 (Aktif)
         $periode2026 = PeriodeLomba::updateOrCreate(
             ['tahun' => 2026],
-            ['aktif' => true]
+            [
+                'nama' => 'IGA 2026',
+                'aktif' => true,
+                'tanggal_mulai' => '2026-06-01',
+                'tanggal_selesai' => '2026-10-31',
+            ]
         );
 
         $tahapan2025 = [

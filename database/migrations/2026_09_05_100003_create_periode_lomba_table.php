@@ -11,6 +11,9 @@ return new class extends Migration
         Schema::create('periode_lomba', function (Blueprint $table) {
             $table->id();
             $table->integer('tahun')->unique();
+            $table->string('nama')->nullable();
+            $table->date('tanggal_mulai')->nullable();
+            $table->date('tanggal_selesai')->nullable();
             $table->boolean('aktif')->default(false);
             $table->timestamps();
         });

@@ -97,6 +97,45 @@ class IndikatorInovasiControllerTest extends TestCase
         ]);
     }
 
+    public function test_inovator_can_update_parameter_with_dynamic_options_and_score_is_calculated(): void
+    {
+        [$user, $pengajuan] = $this->setupUserAndPengajuan();
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        // Configure dynamic options on indikator
+        $indikator->update([
+            'opsi' => [
+                ['id' => 'opt_sub_1', 'label' => 'Memenuhi 1 atau 2 unsur', 'bobot' => 1.5],
+                ['id' => 'opt_sub_2', 'label' => 'Memenuhi 3 atau 4 unsur', 'bobot' => 2.5],
+            ],
+        ]);
+
+        // Choose opt_sub_2
+        $response = $this->actingAs($user)->post(
+            route('pengajuan-lomba.indikator.parameter.update', [$pengajuan, $indikator]),
+            [
+                'parameter' => 'opt_sub_2',
+                'catatan' => 'Telah memenuhi unsur substansi lengkap.',
+            ]
+        );
+
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('kelengkapan_indikator', [
+            'pengajuan_lomba_id' => $pengajuan->id,
+            'indikator_sid_id' => $indikator->id,
+            'parameter' => 'opt_sub_2',
+        ]);
+
+        // Verify index calculation: 2.5 * bobot
+        $indexResponse = $this->actingAs($user)->get(route('pengajuan-lomba.indikator.index', $pengajuan));
+        $indexResponse->assertOk();
+        $expectedSkor = round(2.5 * (float) $indikator->bobot, 2);
+        $indexResponse->assertInertia(fn ($page) => $page
+            ->where('skorEstimasi', $expectedSkor)
+        );
+    }
+
     public function test_pendamping_can_update_inline_komentar(): void
     {
         [, $pengajuan, $pendamping] = $this->setupUserAndPengajuan();

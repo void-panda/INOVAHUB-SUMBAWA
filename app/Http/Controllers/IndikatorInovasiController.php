@@ -73,16 +73,23 @@ class IndikatorInovasiController extends Controller
         }
 
         // Hitung progres & skor estimasi
-        $filled = $kelengkapan->filter(fn ($k) => $k->parameter !== null)->count();
+        // Hitung progres & skor estimasi
+        $filled = $kelengkapan->filter(fn ($k) => $k->parameter !== null && $k->parameter !== '')->count();
         $totalIndikator = $indikatorList->count();
 
         $skorEstimasi = 0;
         foreach ($indikatorList as $ind) {
             $kel = $kelengkapan->get($ind->id);
             if ($kel && $kel->parameter) {
-                $tierMap = ['p1' => 1, 'p2' => 2, 'p3' => 3];
-                $tier = $tierMap[$kel->parameter] ?? 0;
-                $skorEstimasi += $tier * (float) $ind->bobot;
+                $opsiList = $ind->opsi_list;
+                $matchingOpsi = collect($opsiList)->firstWhere('id', $kel->parameter);
+                if ($matchingOpsi) {
+                    $skorEstimasi += (float) ($matchingOpsi['bobot'] ?? 0) * (float) $ind->bobot;
+                } else {
+                    $tierMap = ['p1' => 1, 'p2' => 2, 'p3' => 3];
+                    $tier = $tierMap[strtolower($kel->parameter)] ?? 0;
+                    $skorEstimasi += $tier * (float) $ind->bobot;
+                }
             }
         }
 
@@ -125,7 +132,7 @@ class IndikatorInovasiController extends Controller
         $this->abortIfLocked($pengajuan);
 
         $validated = $request->validate([
-            'parameter' => ['nullable', 'string', 'in:p1,p2,p3'],
+            'parameter' => ['nullable', 'string', 'max:50'],
             'catatan' => ['nullable', 'string', 'max:1000'],
         ]);
 

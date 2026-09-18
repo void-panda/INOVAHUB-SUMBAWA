@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,9 +11,14 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 /**
  * @property int $id
  * @property int $tahun
+ * @property string|null $nama
+ * @property Carbon|null $tanggal_mulai
+ * @property Carbon|null $tanggal_selesai
  * @property bool $aktif
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
-#[Fillable(['tahun', 'aktif'])]
+#[Fillable(['tahun', 'nama', 'tanggal_mulai', 'tanggal_selesai', 'aktif'])]
 class PeriodeLomba extends Model
 {
     protected $table = 'periode_lomba';
@@ -37,6 +43,10 @@ class PeriodeLomba extends Model
 
     protected function casts(): array
     {
-        return ['aktif' => 'boolean'];
+        return [
+            'aktif' => 'boolean',
+            'tanggal_mulai' => 'date',
+            'tanggal_selesai' => 'date',
+        ];
     }
 }

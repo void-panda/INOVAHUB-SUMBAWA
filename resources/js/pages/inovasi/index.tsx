@@ -38,6 +38,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { CountdownTimer, type CountdownData } from '@/components/countdown-timer';
 import type { BreadcrumbItem } from '@/types';
 import type { Auth } from '@/types/auth';
 import type { Inovasi } from '@/types/models';
@@ -64,7 +65,13 @@ const tahapanBadgeMap: Record<
     },
 };
 
-export default function InovasiIndex({ inovasi }: { inovasi: Inovasi[] }) {
+export default function InovasiIndex({
+    inovasi,
+    countdown,
+}: {
+    inovasi: Inovasi[];
+    countdown?: CountdownData | null;
+}) {
     const { auth } = usePage<{ auth: Auth }>().props;
 
     const [activeTahapanFilter, setActiveTahapanFilter] = useState<'semua' | 'penerapan' | 'ujicoba' | 'inisiatif'>('semua');
@@ -89,6 +96,14 @@ export default function InovasiIndex({ inovasi }: { inovasi: Inovasi[] }) {
     });
 
     const handleAjukanLomba = (item: Inovasi) => {
+        if (countdown && !countdown.is_open) {
+            alert(
+                countdown.status === 'closed'
+                    ? `Masa pendaftaran lomba inovasi periode ${countdown.periode_tahun} telah ditutup pada ${countdown.selesai}.`
+                    : `Masa pendaftaran lomba inovasi periode ${countdown.periode_tahun} baru akan dibuka pada ${countdown.mulai}.`
+            );
+            return;
+        }
         setSelectedInovasiForLomba(item);
         setIsLombaModalOpen(true);
     };
@@ -233,16 +248,29 @@ export default function InovasiIndex({ inovasi }: { inovasi: Inovasi[] }) {
                     <div className="flex items-center justify-end gap-1.5">
                         {/* Tombol Ajukan Lomba jika belum terdaftar */}
                         {!activePengajuan && (
-                            <Button
-                                variant="default"
-                                size="sm"
-                                className="h-8 px-2.5 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
-                                onClick={() => handleAjukanLomba(row)}
-                                title="Ajukan inovasi ini untuk dinilai oleh Tim Penilai / Juri"
-                            >
-                                <Send className="h-3.5 w-3.5" />
-                                <span>Submit Lomba</span>
-                            </Button>
+                            countdown && !countdown.is_open ? (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled
+                                    className="h-8 px-2.5 text-xs gap-1.5 opacity-60 cursor-not-allowed bg-muted text-muted-foreground"
+                                    title={countdown.status === 'closed' ? `Pendaftaran ditutup pada ${countdown.selesai}` : `Pendaftaran dibuka pada ${countdown.mulai}`}
+                                >
+                                    <Send className="h-3.5 w-3.5" />
+                                    <span>{countdown.status === 'closed' ? 'Lomba Ditutup' : 'Belum Dibuka'}</span>
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="h-8 px-2.5 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs cursor-pointer"
+                                    onClick={() => handleAjukanLomba(row)}
+                                    title="Ajukan inovasi ini untuk dinilai oleh Tim Penilai / Juri"
+                                >
+                                    <Send className="h-3.5 w-3.5" />
+                                    <span>Submit Lomba</span>
+                                </Button>
+                            )
                         )}
 
                         {/* Tombol Aksi: Lihat Detail jika telah disubmit, Edit jika masih draft */}
@@ -319,6 +347,10 @@ export default function InovasiIndex({ inovasi }: { inovasi: Inovasi[] }) {
                     variant="teal"
                 >
                     <div className="flex items-center gap-2.5 flex-wrap">
+                        {countdown && (
+                            <CountdownTimer countdown={countdown} variant="banner" />
+                        )}
+
                         <Button
                             asChild
                             variant="outline"

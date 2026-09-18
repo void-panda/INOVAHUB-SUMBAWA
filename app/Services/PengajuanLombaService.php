@@ -31,25 +31,33 @@ class PengajuanLombaService
             return null;
         }
 
-        $linimasaRaw = DB::table('linimasa')
-            ->where('periode_lomba_id', $targetPeriode->id)
-            ->orderBy('mulai')
-            ->get();
-
-        $pengumpulanTahap = $linimasaRaw->first(function ($item) {
-            $namaLower = strtolower($item->nama);
-            return str_contains($namaLower, 'pengumpulan')
-                || str_contains($namaLower, 'pendaftaran')
-                || str_contains($namaLower, 'input profil');
-        }) ?? $linimasaRaw->first();
-
-        if (! $pengumpulanTahap) {
-            return null;
-        }
-
         $now = now();
-        $mulaiDate = \Carbon\Carbon::parse($pengumpulanTahap->mulai)->startOfDay();
-        $selesaiDate = \Carbon\Carbon::parse($pengumpulanTahap->selesai)->endOfDay();
+        $tahapanNama = 'Pengumpulan & Pendaftaran Inovasi';
+
+        if ($targetPeriode->tanggal_mulai && $targetPeriode->tanggal_selesai) {
+            $mulaiDate = \Carbon\Carbon::parse($targetPeriode->tanggal_mulai)->startOfDay();
+            $selesaiDate = \Carbon\Carbon::parse($targetPeriode->tanggal_selesai)->endOfDay();
+        } else {
+            $linimasaRaw = DB::table('linimasa')
+                ->where('periode_lomba_id', $targetPeriode->id)
+                ->orderBy('mulai')
+                ->get();
+
+            $pengumpulanTahap = $linimasaRaw->first(function ($item) {
+                $namaLower = strtolower($item->nama);
+                return str_contains($namaLower, 'pengumpulan')
+                    || str_contains($namaLower, 'pendaftaran')
+                    || str_contains($namaLower, 'input profil');
+            }) ?? $linimasaRaw->first();
+
+            if (! $pengumpulanTahap) {
+                return null;
+            }
+
+            $tahapanNama = $pengumpulanTahap->nama;
+            $mulaiDate = \Carbon\Carbon::parse($pengumpulanTahap->mulai)->startOfDay();
+            $selesaiDate = \Carbon\Carbon::parse($pengumpulanTahap->selesai)->endOfDay();
+        }
 
         if ($now->lt($mulaiDate)) {
             $status = 'upcoming';
@@ -63,7 +71,7 @@ class PengajuanLombaService
         }
 
         return [
-            'tahapan_nama' => $pengumpulanTahap->nama,
+            'tahapan_nama' => $tahapanNama,
             'status' => $status,
             'target_date' => $targetDate,
             'mulai' => $mulaiDate->translatedFormat('d M Y'),
@@ -83,6 +91,20 @@ class PengajuanLombaService
             throw ValidationException::withMessages([
                 'periode' => 'Tidak ada periode lomba yang sedang aktif saat ini.',
             ]);
+        }
+
+        $countdown = $this->getPengumpulanCountdown($periode);
+        if ($countdown) {
+            if ($countdown['status'] === 'closed') {
+                throw ValidationException::withMessages([
+                    'periode' => "Masa pengumpulan/pendaftaran inovasi untuk periode {$periode->nama} telah ditutup pada {$countdown['selesai']}.",
+                ]);
+            }
+            if ($countdown['status'] === 'upcoming') {
+                throw ValidationException::withMessages([
+                    'periode' => "Masa pengumpulan inovasi untuk periode {$periode->nama} baru akan dibuka pada {$countdown['mulai']}.",
+                ]);
+            }
         }
 
         $exists = PengajuanLomba::where('inovasi_id', $inovasi->id)

@@ -33,8 +33,12 @@ class InovasiController extends Controller
     public function index(Request $request): Response
     {
         $inovasi = $this->inovasiRepository->getByUser($request->user(), false);
+        $countdown = app(\App\Services\PengajuanLombaService::class)->getPengumpulanCountdown();
 
-        return Inertia::render('inovasi/index', ['inovasi' => $inovasi]);
+        return Inertia::render('inovasi/index', [
+            'inovasi' => $inovasi,
+            'countdown' => $countdown,
+        ]);
     }
 
     /**

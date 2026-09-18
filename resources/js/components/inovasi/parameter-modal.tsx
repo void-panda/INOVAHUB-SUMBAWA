@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { router } from '@inertiajs/react';
-import { Check, Info, Settings, Sparkles, X } from 'lucide-react';
+import { Pencil, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -15,6 +14,12 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 
+export type ParameterOption = {
+    id: string;
+    label: string;
+    bobot: number;
+};
+
 export type IndikatorSidItem = {
     id: number;
     kode: string;
@@ -22,9 +27,11 @@ export type IndikatorSidItem = {
     variabel: string | null;
     informasi?: string | null;
     bobot: string | number;
-    p1: string | null;
-    p2: string | null;
-    p3: string | null;
+    p1?: string | null;
+    p2?: string | null;
+    p3?: string | null;
+    opsi?: ParameterOption[] | null;
+    opsi_list?: ParameterOption[];
 };
 
 interface ParameterModalProps {
@@ -50,55 +57,69 @@ export function ParameterModal({
     currentCatatan,
     disabled = false,
 }: ParameterModalProps) {
-    const [selectedParam, setSelectedParam] = useState<string | null>(currentParameter);
-    const [catatan, setCatatan] = useState<string>(currentCatatan || '');
+    const [selectedParam, setSelectedParam] = useState<string>('');
+    const [catatan, setCatatan] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (open) {
-            setSelectedParam(currentParameter);
+            setSelectedParam(currentParameter || '');
             setCatatan(currentCatatan || '');
         }
     }, [open, currentParameter, currentCatatan]);
 
+    const bobotIndikator = indikator ? Number(indikator.bobot) : 0;
+
+    const options: ParameterOption[] = useMemo(() => {
+        if (!indikator) return [];
+
+        if (Array.isArray(indikator.opsi_list) && indikator.opsi_list.length > 0) {
+            return indikator.opsi_list;
+        }
+
+        if (Array.isArray(indikator.opsi) && indikator.opsi.length > 0) {
+            return indikator.opsi;
+        }
+
+        const fallback: ParameterOption[] = [];
+        if (indikator.p1) fallback.push({ id: 'p1', label: indikator.p1, bobot: 1 });
+        if (indikator.p2) fallback.push({ id: 'p2', label: indikator.p2, bobot: 2 });
+        if (indikator.p3) fallback.push({ id: 'p3', label: indikator.p3, bobot: 3 });
+        return fallback;
+    }, [indikator]);
+
+    const activeScoreInfo = useMemo(() => {
+        if (!selectedParam || selectedParam === 'tidak_dapat_diukur') {
+            return {
+                poin: 0,
+                skor: 0,
+                text: `0.00 Poin (0 × ${bobotIndikator.toFixed(2)})`,
+            };
+        }
+
+        const matching = options.find((opt) => opt.id === selectedParam);
+        if (matching) {
+            const poin = Number(matching.bobot);
+            const total = poin * bobotIndikator;
+            return {
+                poin,
+                skor: total,
+                text: `${total.toFixed(2)} Poin (${poin} × ${bobotIndikator.toFixed(2)})`,
+            };
+        }
+
+        // Fallback p1, p2, p3
+        const tierMap: Record<string, number> = { p1: 1, p2: 2, p3: 3 };
+        const tier = tierMap[selectedParam.toLowerCase()] ?? 0;
+        const total = tier * bobotIndikator;
+        return {
+            poin: tier,
+            skor: total,
+            text: `${total.toFixed(2)} Poin (${tier} × ${bobotIndikator.toFixed(2)})`,
+        };
+    }, [selectedParam, options, bobotIndikator]);
+
     if (!indikator) return null;
-
-    const bobot = Number(indikator.bobot);
-
-    const parameterOptions = [
-        {
-            value: 'p1',
-            tier: 1,
-            label: 'Parameter P1 (Tier 1)',
-            desc: indikator.p1 || 'Tingkat capaian dasar / bukti dukung minimal',
-            skor: (bobot * 1).toFixed(2),
-            badgeClass: 'bg-primary/10 text-primary border-primary/20',
-        },
-        {
-            value: 'p2',
-            tier: 2,
-            label: 'Parameter P2 (Tier 2)',
-            desc: indikator.p2 || 'Tingkat capaian menengah / bukti dukung berkembang',
-            skor: (bobot * 2).toFixed(2),
-            badgeClass: 'bg-primary/15 text-primary border-primary/30',
-        },
-        {
-            value: 'p3',
-            tier: 3,
-            label: 'Parameter P3 (Tier 3)',
-            desc: indikator.p3 || 'Tingkat capaian maksimal / bukti dukung paripurna',
-            skor: (bobot * 3).toFixed(2),
-            badgeClass: 'bg-primary text-primary-foreground font-bold border-primary',
-        },
-        {
-            value: null,
-            tier: 0,
-            label: 'Tidak Dapat Diukur / Belum Terpenuhi',
-            desc: 'Inovasi belum memiliki bukti dukung memadai untuk indikator ini',
-            skor: '0.00',
-            badgeClass: 'bg-muted text-muted-foreground border-border',
-        },
-    ];
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -114,7 +135,7 @@ export function ParameterModal({
         router.post(
             targetUrl,
             {
-                parameter: selectedParam,
+                parameter: selectedParam === '' ? null : selectedParam,
                 catatan: catatan.trim() || null,
             },
             {
@@ -126,97 +147,82 @@ export function ParameterModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-md md:max-w-lg overflow-hidden p-6">
                 <form onSubmit={handleSubmit}>
-                    <DialogHeader>
-                        <div className="flex items-center gap-2">
-                            <Badge className="bg-primary text-primary-foreground font-bold text-xs">
-                                {indikator.kode}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                                Bobot: {bobot.toFixed(2)}
-                            </Badge>
+                    <DialogHeader className="pb-1">
+                        <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                            <Pencil className="h-4 w-4 text-primary stroke-[2.5]" />
+                            <DialogTitle className="text-sm md:text-base font-extrabold uppercase tracking-wider">
+                                Ubah Data Indikator
+                            </DialogTitle>
                         </div>
-                        <DialogTitle className="text-base font-bold text-foreground mt-1">
-                            {indikator.nama}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-muted-foreground">
-                            {indikator.variabel || 'Pilih opsi capaian parameter mutu yang paling sesuai dengan bukti dukung inovasi.'}
-                        </DialogDescription>
-                        {indikator.informasi && (
-                            <div className="mt-2.5 p-3 rounded-md bg-muted/50 border border-border text-xs text-foreground">
-                                <div className="font-semibold flex items-center gap-1.5 mb-1 text-primary">
-                                    <Info className="h-3.5 w-3.5 shrink-0" />
-                                    <span>Petunjuk Bukti Dukung Resmi IGA:</span>
-                                </div>
-                                <p className="leading-relaxed text-[11px] text-muted-foreground">
-                                    {indikator.informasi}
-                                </p>
-                            </div>
-                        )}
                     </DialogHeader>
 
-                    <div className="space-y-4 py-4">
-                        <Label className="text-xs font-semibold text-foreground uppercase tracking-wider block">
-                            Pilih Opsi Parameter Capaian:
-                        </Label>
+                    {/* Subheader detail indikator (sesuai Gambar 2) */}
+                    <div className="mt-3 space-y-1">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
+                            {indikator.nama}
+                        </h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            {indikator.variabel ||
+                                indikator.informasi ||
+                                'Pilih opsi capaian parameter mutu yang paling sesuai dengan bukti dukung inovasi.'}
+                        </p>
+                    </div>
 
-                        <div
-                            role="radiogroup"
-                            aria-label="Pilihan Opsi Parameter Capaian Mutu"
-                            className="grid gap-2.5"
-                        >
-                            {parameterOptions.map((opt) => {
-                                const isSelected = selectedParam === opt.value;
-                                return (
-                                    <button
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={isSelected}
-                                        disabled={disabled}
-                                        key={opt.value ?? 'none'}
-                                        onClick={() => !disabled && setSelectedParam(opt.value)}
-                                        onKeyDown={(e) => {
-                                            if ((e.key === ' ' || e.key === 'Enter') && !disabled) {
-                                                e.preventDefault();
-                                                setSelectedParam(opt.value);
-                                            }
-                                        }}
-                                        className={`w-full text-left relative flex flex-col p-3 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                                            isSelected
-                                                ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary'
-                                                : 'border-border hover:border-primary/50 hover:bg-muted/40'
-                                        } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-                                    >
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2.5">
-                                                <div
-                                                    className={`h-4 w-4 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
-                                                        isSelected
-                                                            ? 'border-primary bg-primary text-primary-foreground'
-                                                            : 'border-muted-foreground/40 bg-background'
-                                                    }`}
-                                                >
-                                                    {isSelected && <Check className="h-2.5 w-2.5 stroke-[3]" />}
-                                                </div>
-                                                <span className="font-semibold text-xs text-foreground">
-                                                    {opt.label}
-                                                </span>
-                                            </div>
-                                            <Badge variant="outline" className={`text-[11px] font-bold ${opt.badgeClass}`}>
-                                                Skor: {opt.skor}
-                                            </Badge>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-1.5 pl-6.5 leading-relaxed">
-                                            {opt.desc}
-                                        </p>
-                                    </button>
-                                );
-                            })}
+                    {indikator.informasi && indikator.variabel && (
+                        <div className="mt-2.5 p-2.5 rounded-md bg-muted/50 border border-border text-xs text-foreground">
+                            <div className="font-semibold flex items-center gap-1.5 mb-1 text-primary">
+                                <Info className="h-3.5 w-3.5 shrink-0" />
+                                <span>Petunjuk Bukti Dukung:</span>
+                            </div>
+                            <p className="leading-relaxed text-[11px] text-muted-foreground">
+                                {indikator.informasi}
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="space-y-4 pt-4">
+                        {/* Select Opsi Parameter (sesuai Gambar 2) */}
+                        <div className="space-y-1.5">
+                            <Label
+                                htmlFor="opsi-parameter"
+                                className="text-xs font-bold uppercase tracking-wider text-foreground block"
+                            >
+                                Opsi Parameter
+                            </Label>
+                            <div className="relative">
+                                <select
+                                    id="opsi-parameter"
+                                    value={selectedParam}
+                                    onChange={(e) => setSelectedParam(e.target.value)}
+                                    disabled={disabled}
+                                    className="w-full h-10 px-3 text-xs md:text-sm rounded-md border border-input bg-background text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <option value="">-- Pilih Parameter --</option>
+                                    <option value="tidak_dapat_diukur">Tidak Dapat Diukur</option>
+                                    {options.map((opt) => (
+                                        <option key={opt.id} value={opt.id}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
-                        <div className="space-y-1.5 pt-2">
-                            <Label htmlFor="catatan_param" className="text-xs font-semibold">
+                        {/* Real-time score indicator */}
+                        {selectedParam !== '' && (
+                            <div className="flex items-center justify-between p-2.5 rounded-lg border border-primary/20 bg-primary/5 text-xs">
+                                <span className="text-muted-foreground font-medium">Estimasi Skor:</span>
+                                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-bold">
+                                    {activeScoreInfo.text}
+                                </Badge>
+                            </div>
+                        )}
+
+                        {/* Catatan / Keterangan Penjelasan */}
+                        <div className="space-y-1.5 pt-1">
+                            <Label htmlFor="catatan_param" className="text-xs font-semibold text-foreground">
                                 Catatan / Keterangan Penjelasan (Opsional)
                             </Label>
                             <Textarea
@@ -224,30 +230,31 @@ export function ParameterModal({
                                 rows={3}
                                 value={catatan}
                                 onChange={(e) => setCatatan(e.target.value)}
-                                placeholder="Jelaskan nomor SK, nama dokumen, atau rincian pemenuhan parameter di atas..."
+                                placeholder="Jelaskan nomor surat/SK, tautan berkas, atau keterangan relevan..."
                                 disabled={disabled}
-                                className="text-xs"
+                                className="text-xs resize-none"
                             />
                         </div>
                     </div>
 
-                    <DialogFooter className="gap-2">
+                    <DialogFooter className="mt-6 flex sm:justify-end gap-2">
                         <Button
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                             onClick={() => onOpenChange(false)}
                             disabled={isSaving}
+                            className="text-xs"
                         >
-                            Tutup
+                            Batal
                         </Button>
                         {!disabled && (
                             <Button
                                 type="submit"
                                 disabled={isSaving}
-                                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 text-xs font-semibold"
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4"
                             >
-                                {isSaving ? <Spinner /> : <Settings className="h-3.5 w-3.5" />}
-                                Simpan Pilihan Parameter
+                                {isSaving ? <Spinner className="mr-1.5 h-3.5 w-3.5" /> : null}
+                                Simpan Parameter
                             </Button>
                         )}
                     </DialogFooter>

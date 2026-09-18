@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\StatusInovasi;
+use App\Enums\StatusPengajuan;
 use App\Models\Inovasi;
 use App\Models\InovasiVersi;
 use App\Models\PeriodeLomba;
@@ -10,6 +11,7 @@ use App\Models\User;
 use Database\Seeders\PeriodeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class PeriodeDanVersiTest extends TestCase
@@ -39,23 +41,91 @@ class PeriodeDanVersiTest extends TestCase
             ->get(route('penilai.periode.index'))
             ->assertOk();
 
-        // Create new period
+        // Create new period with date intervals
         $this->actingAs($penilai)
             ->post(route('penilai.periode.store'), [
                 'tahun' => 2027,
                 'nama' => 'IGA 2027 Sumbawa',
+                'tanggal_mulai' => '2027-06-01',
+                'tanggal_selesai' => '2027-10-31',
                 'set_aktif' => true,
             ])
             ->assertRedirect();
 
-        $this->assertDatabaseHas('periode_lomba', [
-            'tahun' => 2027,
-            'aktif' => true,
-        ]);
+        $newPeriod = PeriodeLomba::where('tahun', 2027)->first();
+        $this->assertNotNull($newPeriod);
+        $this->assertTrue((bool) $newPeriod->aktif);
+        $this->assertSame('2027-06-01', $newPeriod->tanggal_mulai->format('Y-m-d'));
+        $this->assertSame('2027-10-31', $newPeriod->tanggal_selesai->format('Y-m-d'));
 
         // Verify previous period is deactivated
         $oldPeriod = PeriodeLomba::where('tahun', 2026)->first();
         $this->assertFalse((bool) $oldPeriod->aktif);
+    }
+
+    public function test_penilai_can_update_periode_lomba_dates(): void
+    {
+        [$penilai, $inovator] = $this->setupRolesAndUsers();
+
+        $periode = PeriodeLomba::where('tahun', 2026)->first();
+
+        // Update period dates (perpanjang waktu lomba)
+        $this->actingAs($penilai)
+            ->put(route('penilai.periode.update', $periode), [
+                'nama' => 'IGA 2026 Sumbawa (Diperpanjang)',
+                'tanggal_mulai' => '2026-06-01',
+                'tanggal_selesai' => '2026-11-30',
+            ])
+            ->assertRedirect();
+
+        $periode->refresh();
+        $this->assertSame('IGA 2026 Sumbawa (Diperpanjang)', $periode->nama);
+        $this->assertSame('2026-11-30', $periode->tanggal_selesai->format('Y-m-d'));
+    }
+
+    public function test_store_periode_lomba_validates_date_interval(): void
+    {
+        [$penilai, $inovator] = $this->setupRolesAndUsers();
+
+        // Tanggal selesai lebih awal dari tanggal mulai
+        $response = $this->actingAs($penilai)
+            ->post(route('penilai.periode.store'), [
+                'tahun' => 2028,
+                'nama' => 'IGA 2028',
+                'tanggal_mulai' => '2028-10-01',
+                'tanggal_selesai' => '2028-09-01', // Salah: sebelum tanggal mulai
+                'set_aktif' => false,
+            ]);
+
+        $response->assertSessionHasErrors('tanggal_selesai');
+    }
+
+    public function test_ajukan_lomba_rejected_when_period_registration_closed(): void
+    {
+        [$penilai, $inovator] = $this->setupRolesAndUsers();
+
+        // Set periode aktif dengan batas waktu yang sudah lewat
+        $periode = PeriodeLomba::where('aktif', true)->first();
+        $periode->update([
+            'tanggal_mulai' => '2025-01-01',
+            'tanggal_selesai' => '2025-02-01', // Closed
+        ]);
+
+        $inovasi = Inovasi::create([
+            'user_id' => $inovator->id,
+            'nama_inovasi' => 'Inovasi Coba',
+            'tahapan' => 'penerapan',
+            'nama_inisiator' => 'Inisiator Test',
+            'koordinat' => '-8.49,117.41',
+            'waktu_penerapan' => '2025-01-01',
+        ]);
+
+        $service = app(\App\Services\PengajuanLombaService::class);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('telah ditutup');
+
+        $service->ajukanKeLomba($inovasi, $inovator);
     }
 
     public function test_inovator_can_ajukan_kembali_archived_inovasi(): void

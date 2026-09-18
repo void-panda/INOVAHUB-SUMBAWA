@@ -107,6 +107,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('/', [PeriodeLombaController::class, 'index'])->name('index');
             Route::post('/', [PeriodeLombaController::class, 'store'])->name('store');
+            Route::put('/{periode}', [PeriodeLombaController::class, 'update'])->name('update');
             Route::patch('/{periode}/set-aktif', [PeriodeLombaController::class, 'setAktif'])->name('set-aktif');
         });
 

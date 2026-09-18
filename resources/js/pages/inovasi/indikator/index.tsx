@@ -395,9 +395,41 @@ export default function IndikatorIndex({
                                 displayedIndikator.map((ind) => {
                                     const kel = kelengkapan[ind.id];
                                     const dok = dokumenInfo[ind.id] ?? { count: 0, types: [] };
-                                    const paramInfo = kel?.parameter ? parameterTierMap[kel.parameter] : null;
                                     const isExpanded = Boolean(expandedInfo[ind.id]);
                                     const skor = skorList[ind.id];
+
+                                    const matchingOpsi = ind.opsi_list?.find((o: any) => o.id === kel?.parameter);
+                                    let paramInfo: { label: string; fullLabel?: string; badgeClass: string; skor: string } | null = null;
+
+                                    if (kel?.parameter) {
+                                        if (kel.parameter === 'tidak_dapat_diukur') {
+                                            paramInfo = {
+                                                label: 'Tidak Dapat Diukur',
+                                                badgeClass: 'bg-muted text-muted-foreground border-border',
+                                                skor: '0.00',
+                                            };
+                                        } else if (matchingOpsi) {
+                                            paramInfo = {
+                                                label: matchingOpsi.label.length > 25 ? matchingOpsi.label.substring(0, 25) + '...' : matchingOpsi.label,
+                                                fullLabel: matchingOpsi.label,
+                                                badgeClass: 'bg-primary/10 text-primary border-primary/30',
+                                                skor: (Number(matchingOpsi.bobot) * Number(ind.bobot)).toFixed(2),
+                                            };
+                                        } else if (parameterTierMap[kel.parameter.toLowerCase()]) {
+                                            const t = parameterTierMap[kel.parameter.toLowerCase()];
+                                            paramInfo = {
+                                                label: t.label,
+                                                badgeClass: t.badgeClass,
+                                                skor: (t.tier * Number(ind.bobot)).toFixed(2),
+                                            };
+                                        } else {
+                                            paramInfo = {
+                                                label: kel.parameter,
+                                                badgeClass: 'bg-primary/10 text-primary border-primary/30',
+                                                skor: '0.00',
+                                            };
+                                        }
+                                    }
 
                                     return (
                                         <TableRow key={ind.id} className="align-top hover:bg-muted/30">
@@ -453,11 +485,15 @@ export default function IndikatorIndex({
                                             <TableCell className="text-center pt-3">
                                                 {paramInfo ? (
                                                     <div className="space-y-1">
-                                                        <Badge variant="outline" className={`text-xs ${paramInfo.badgeClass}`}>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`text-xs ${paramInfo.badgeClass}`}
+                                                            title={paramInfo.fullLabel}
+                                                        >
                                                             {paramInfo.label}
                                                         </Badge>
                                                         <div className="text-[10px] text-muted-foreground">
-                                                            Skor: {(paramInfo.tier * Number(ind.bobot)).toFixed(2)}
+                                                            Skor: {paramInfo.skor}
                                                         </div>
                                                         {!isLocked && (
                                                             <button

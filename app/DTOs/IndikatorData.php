@@ -12,6 +12,8 @@ readonly class IndikatorData
         public ?string $p1 = null,
         public ?string $p2 = null,
         public ?string $p3 = null,
+        public ?array $opsi = null,
+        public ?string $informasi = null,
     ) {}
 
     /**
@@ -27,6 +29,8 @@ readonly class IndikatorData
             'p1' => $this->p1,
             'p2' => $this->p2,
             'p3' => $this->p3,
+            'opsi' => $this->opsi,
+            'informasi' => $this->informasi,
         ];
     }
 }
