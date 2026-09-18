@@ -455,7 +455,7 @@ export const InovatorDashboard: React.FC<InovatorDashboardProps> = ({ roleData, 
                             <Info className="h-4 w-4 text-primary shrink-0" />
                             <span>
                                 Setelah inovasi berstatus <strong>Disetujui</strong>, Verifikator OPD akan melakukan
-                                pengesahan sebelum dinilai oleh Tim Penilai Bappeda.
+                                pengesahan sebelum dinilai oleh Tim Penilai / BAPPERIDA.
                             </span>
                         </div>
                     </CardContent>

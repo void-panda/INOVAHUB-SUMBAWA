@@ -19,14 +19,14 @@ class MasterIndikatorTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $this->seed(IndikatorSeeder::class);
 
-        $timPenilai = User::factory()->create();
-        $timPenilai->assignRole('tim_penilai');
+        $bapperida = User::factory()->create();
+        $bapperida->assignRole('bapperida');
 
         // Access index page
-        $this->actingAs($timPenilai)->get(route('penilai.indikator.index'))->assertOk();
+        $this->actingAs($bapperida)->get(route('penilai.indikator.index'))->assertOk();
 
         // Create new SPD Indikator with dynamic options
-        $this->actingAs($timPenilai)->post(route('penilai.indikator.spd.store'), [
+        $this->actingAs($bapperida)->post(route('penilai.indikator.spd.store'), [
             'kode' => 'SPD-99',
             'nama' => 'Indikator SPD Baru',
             'variabel' => 'Dua Parameter Test',
@@ -50,7 +50,7 @@ class MasterIndikatorTest extends TestCase
         $this->assertCount(3, $spd->opsi_list);
 
         // Update SPD Indikator
-        $this->actingAs($timPenilai)->put(route('penilai.indikator.spd.update', $spd->id), [
+        $this->actingAs($bapperida)->put(route('penilai.indikator.spd.update', $spd->id), [
             'kode' => 'SPD-99',
             'nama' => 'Indikator SPD Updated',
             'variabel' => 'Dua Parameter Test',
@@ -65,7 +65,7 @@ class MasterIndikatorTest extends TestCase
         $this->assertCount(2, $spd->fresh()->opsi_list);
 
         // Create new SID Indikator with dynamic options (e.g. Video indicator)
-        $this->actingAs($timPenilai)->post(route('penilai.indikator.sid.store'), [
+        $this->actingAs($bapperida)->post(route('penilai.indikator.sid.store'), [
             'kode' => 'SID-99',
             'nama' => 'Video Penerapan Inovasi',
             'bobot' => 3.00,

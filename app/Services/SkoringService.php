@@ -77,7 +77,7 @@ class SkoringService
                 'status_sebelum' => $statusSebelum,
                 'status_sesudah' => $targetStatus->value,
                 'catatan' => $data->isFinal
-                    ? 'Tim Penilai telah memfinalisasi skor penilaian SPD/SID.'
+                    ? 'Tim Penilai telah memfinalisasi skor penilaian inovasi (20 Indikator SID).'
                     : 'Tim Penilai menyimpan draft skor penilaian.',
             ]);
 

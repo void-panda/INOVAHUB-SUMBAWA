@@ -470,7 +470,7 @@ export default function InovasiIndex({
                 <div className="p-4 rounded-xl border border-teal-500/20 bg-teal-50/30 dark:bg-teal-950/20 text-xs text-muted-foreground flex items-start gap-3">
                     <Info className="h-4 w-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
                     <div className="leading-relaxed">
-                        <strong className="text-foreground">Catatan Alur Penetapan Inovasi Daerah:</strong> Inovasi pada daftar ini berstatus <em>Inovasi Saya</em> (belum ditetapkan sebagai Inovasi Daerah). Untuk mengikutsertakan inovasi ke kompetisi IGA dan membuka lembar kerja 20 Indikator SID, klik tombol <strong>"Ajukan Seleksi"</strong>. Tim Penilai Bappeda akan memverifikasi dan menetapkannya sebagai <strong>Inovasi Daerah</strong>, dan inovasi akan berpindah ke menu <Link href="/inovasi-daerah" className="text-teal-700 dark:text-teal-400 font-semibold underline">Inovasi Daerah</Link>.
+                        <strong className="text-foreground">Catatan Alur Penetapan Inovasi Daerah:</strong> Inovasi pada daftar ini berstatus <em>Inovasi Saya</em> (belum ditetapkan sebagai Inovasi Daerah). Untuk mengikutsertakan inovasi ke kompetisi IGA dan membuka lembar kerja 20 Indikator SID, klik tombol <strong>"Ajukan Seleksi"</strong>. Tim Penilai / BAPPERIDA akan memverifikasi dan menetapkannya sebagai <strong>Inovasi Daerah</strong>, dan inovasi akan berpindah ke menu <Link href="/inovasi-daerah" className="text-teal-700 dark:text-teal-400 font-semibold underline">Inovasi Daerah</Link>.
                     </div>
                 </div>
 
@@ -529,7 +529,7 @@ export default function InovasiIndex({
                             Ajukan ke Seleksi Inovasi Daerah
                         </DialogTitle>
                         <DialogDescription className="text-xs pt-1">
-                            Ajukan inovasi ini ke periode lomba berjalan agar diverifikasi dan ditetapkan sebagai <strong>Inovasi Daerah Kabupaten Sumbawa</strong> oleh Tim Penilai Bappeda.
+                            Ajukan inovasi ini ke periode lomba berjalan agar diverifikasi dan ditetapkan sebagai <strong>Inovasi Daerah Kabupaten Sumbawa</strong> oleh Tim Penilai / BAPPERIDA.
                         </DialogDescription>
                     </DialogHeader>
 

@@ -26,7 +26,7 @@ class DashboardService
             ? PeriodeLomba::find($periodeId)
             : PeriodeLomba::where('aktif', true)->first();
 
-        $userRole = $user ? ($user->getRoleNames()->first() ?? 'inovator') : 'tim_penilai';
+        $userRole = $user ? ($user->getRoleNames()->first() ?? 'inovator') : 'bapperida';
 
         // 1. Inovasi Master
         $masterInovasiQuery = Inovasi::with(['user', 'opd']);

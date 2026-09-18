@@ -46,6 +46,7 @@ class AdminUserController extends Controller
             'opdList' => $opdList,
             'metrics' => [
                 'total' => $users->count(),
+                'bapperida' => $users->filter(fn ($u) => in_array('bapperida', $u['roles']))->count(),
                 'pendamping' => $users->filter(fn ($u) => in_array('pendamping', $u['roles']))->count(),
                 'penilai' => $users->filter(fn ($u) => in_array('tim_penilai', $u['roles']))->count(),
                 'inovator' => $users->filter(fn ($u) => in_array('inovator', $u['roles']))->count(),

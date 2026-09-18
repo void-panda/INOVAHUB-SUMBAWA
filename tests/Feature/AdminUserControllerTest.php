@@ -18,12 +18,12 @@ class AdminUserControllerTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    public function test_tim_penilai_can_view_user_management_page(): void
+    public function test_bapperida_can_view_user_management_page(): void
     {
-        $penilai = User::factory()->create();
-        $penilai->assignRole('tim_penilai');
+        $bapperida = User::factory()->create();
+        $bapperida->assignRole('bapperida');
 
-        $this->actingAs($penilai)
+        $this->actingAs($bapperida)
             ->get(route('penilai.users.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
@@ -33,8 +33,15 @@ class AdminUserControllerTest extends TestCase
             );
     }
 
-    public function test_inovator_cannot_view_user_management_page(): void
+    public function test_tim_penilai_and_inovator_cannot_view_user_management_page(): void
     {
+        $penilai = User::factory()->create();
+        $penilai->assignRole('tim_penilai');
+
+        $this->actingAs($penilai)
+            ->get(route('penilai.users.index'))
+            ->assertForbidden();
+
         $inovator = User::factory()->create();
         $inovator->assignRole('inovator');
 
@@ -43,15 +50,15 @@ class AdminUserControllerTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_tim_penilai_can_create_new_pendamping(): void
+    public function test_bapperida_can_create_new_pendamping(): void
     {
-        $penilai = User::factory()->create();
-        $penilai->assignRole('tim_penilai');
+        $bapperida = User::factory()->create();
+        $bapperida->assignRole('bapperida');
 
-        $opd = Opd::create(['nama' => 'Bappeda Sumbawa', 'kode' => 'BAP']);
+        $opd = Opd::create(['nama' => 'BAPPERIDA Sumbawa', 'kode' => 'BAP']);
 
-        $response = $this->actingAs($penilai)->post(route('penilai.users.store'), [
-            'name' => 'Pendamping Baru Bappeda',
+        $response = $this->actingAs($bapperida)->post(route('penilai.users.store'), [
+            'name' => 'Pendamping Baru BAPPERIDA',
             'email' => 'pendampingbaru@sumbawakab.go.id',
             'password' => 'Password123!',
             'role' => 'pendamping',
@@ -62,22 +69,22 @@ class AdminUserControllerTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseHas('users', [
             'email' => 'pendampingbaru@sumbawakab.go.id',
-            'name' => 'Pendamping Baru Bappeda',
+            'name' => 'Pendamping Baru BAPPERIDA',
         ]);
 
         $newUser = User::where('email', 'pendampingbaru@sumbawakab.go.id')->first();
         $this->assertTrue($newUser->hasRole('pendamping'));
     }
 
-    public function test_tim_penilai_can_update_user_role(): void
+    public function test_bapperida_can_update_user_role(): void
     {
-        $penilai = User::factory()->create();
-        $penilai->assignRole('tim_penilai');
+        $bapperida = User::factory()->create();
+        $bapperida->assignRole('bapperida');
 
         $targetUser = User::factory()->create();
         $targetUser->assignRole('inovator');
 
-        $response = $this->actingAs($penilai)->put(route('penilai.users.update', $targetUser), [
+        $response = $this->actingAs($bapperida)->put(route('penilai.users.update', $targetUser), [
             'name' => 'Updated User Name',
             'email' => $targetUser->email,
             'role' => 'pendamping',
@@ -90,15 +97,15 @@ class AdminUserControllerTest extends TestCase
         $this->assertTrue($targetUser->hasRole('pendamping'));
     }
 
-    public function test_tim_penilai_can_delete_user(): void
+    public function test_bapperida_can_delete_user(): void
     {
-        $penilai = User::factory()->create();
-        $penilai->assignRole('tim_penilai');
+        $bapperida = User::factory()->create();
+        $bapperida->assignRole('bapperida');
 
         $targetUser = User::factory()->create();
         $targetUser->assignRole('inovator');
 
-        $response = $this->actingAs($penilai)->delete(route('penilai.users.destroy', $targetUser));
+        $response = $this->actingAs($bapperida)->delete(route('penilai.users.destroy', $targetUser));
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('users', ['id' => $targetUser->id]);
@@ -106,12 +113,12 @@ class AdminUserControllerTest extends TestCase
 
     public function test_user_cannot_delete_themselves(): void
     {
-        $penilai = User::factory()->create();
-        $penilai->assignRole('tim_penilai');
+        $bapperida = User::factory()->create();
+        $bapperida->assignRole('bapperida');
 
-        $response = $this->actingAs($penilai)->delete(route('penilai.users.destroy', $penilai));
+        $response = $this->actingAs($bapperida)->delete(route('penilai.users.destroy', $bapperida));
 
         $response->assertStatus(400);
-        $this->assertDatabaseHas('users', ['id' => $penilai->id]);
+        $this->assertDatabaseHas('users', ['id' => $bapperida->id]);
     }
 }

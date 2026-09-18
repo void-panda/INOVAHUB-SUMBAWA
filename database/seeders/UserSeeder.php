@@ -10,7 +10,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $Bappeda = Opd::where('kode', 'BAP')->first();
+        $bapperida = Opd::where('kode', 'BAP')->first();
         $kominfo = Opd::where('kode', 'DISKOMINFO')->first();
         $dinkes = Opd::where('kode', 'DINKES')->first();
         $disdikbud = Opd::where('kode', 'DISDIKBUD')->first();
@@ -27,24 +27,31 @@ class UserSeeder extends Seeder
                 'role' => 'pimpinan',
             ],
             [
+                'name' => 'Administrator BAPPERIDA (Superadmin)',
+                'nama_pemda' => 'BAPPERIDA Kab. Sumbawa',
+                'email' => 'bapperida@sumbawakab.go.id',
+                'opd_id' => $bapperida?->id,
+                'role' => 'bapperida',
+            ],
+            [
                 'name' => 'Dr. H. Iskandar, M.Si (Tim Penilai)',
-                'nama_pemda' => 'Bappeda Litbang Kab. Sumbawa',
-                'email' => 'tim_penilai@sumbawakab.go.id',
-                'opd_id' => $Bappeda?->id,
+                'nama_pemda' => 'Tim Penilai Lomba Inovasi',
+                'email' => 'penilai@sumbawakab.go.id',
+                'opd_id' => $bapperida?->id,
                 'role' => 'tim_penilai',
             ],
             [
                 'name' => 'Drs. Andi Wijaya, M.AP (Pendamping Utama)',
-                'nama_pemda' => 'Bappeda Litbang Kab. Sumbawa',
+                'nama_pemda' => 'BAPPERIDA Kab. Sumbawa',
                 'email' => 'pendamping@sumbawakab.go.id',
-                'opd_id' => $Bappeda?->id,
+                'opd_id' => $bapperida?->id,
                 'role' => 'pendamping',
             ],
             [
                 'name' => 'Rina Rahmawati, S.STP (Pendamping Layanan)',
-                'nama_pemda' => 'Bappeda Litbang Kab. Sumbawa',
+                'nama_pemda' => 'BAPPERIDA Kab. Sumbawa',
                 'email' => 'pendamping2@sumbawakab.go.id',
-                'opd_id' => $Bappeda?->id,
+                'opd_id' => $bapperida?->id,
                 'role' => 'pendamping',
             ],
             [

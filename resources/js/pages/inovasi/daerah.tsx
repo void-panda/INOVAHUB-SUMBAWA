@@ -400,7 +400,7 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                     badgeIcon={Award}
                     badgeText="Penjaminan Mutu & Kompetisi IGA"
                     title="Inovasi Daerah Kabupaten Sumbawa"
-                    description="Portofolio resmi inovasi yang telah ditetapkan oleh Tim Penilai Bappeda untuk melengkapi 20 Indikator SID dan berpartisipasi pada Innovative Government Award."
+                    description="Portofolio resmi inovasi yang telah ditetapkan oleh Tim Penilai / BAPPERIDA untuk melengkapi 20 Indikator SID dan berpartisipasi pada Innovative Government Award."
                     variant="teal"
                 >
                     <div className="flex items-center gap-2.5 flex-wrap">

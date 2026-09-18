@@ -136,9 +136,9 @@ export default function Welcome() {
             no: '06',
             title: 'Review Internal',
             status: 'review_internal',
-            phase: 'Fase 3: Evaluasi Penilai Bappeda',
+            phase: 'Fase 3: Evaluasi Tim Penilai',
             actor: 'Tim Penilai Internal',
-            desc: 'Tim Penilai Bappeda mengaudit skor kematangan SPD & SID, simulasi skor daerah, serta kepatuhan 6 Urusan Wajib Pelayanan Dasar.',
+            desc: 'Tim Penilai mengaudit skor kematangan SPD & SID, simulasi skor daerah, serta kepatuhan 6 Urusan Wajib Pelayanan Dasar.',
             output: 'Skoring SPD/SID & verifikasi 6 Urusan Yandas',
         },
         {
@@ -146,8 +146,8 @@ export default function Welcome() {
             no: '07',
             title: 'Siap Kirim',
             status: 'siap_kirim',
-            phase: 'Fase 3: Evaluasi Penilai Bappeda',
-            actor: 'Admin Bappeda',
+            phase: 'Fase 3: Evaluasi Tim Penilai & BAPPERIDA',
+            actor: 'Superadmin BAPPERIDA',
             desc: 'Inovasi dinyatakan matang secara substantif dan administratif, lolos quality-assurance gate daerah, dan data dikunci untuk pelaporan.',
             output: 'Data terkunci & paket ekspor siap transfer',
         },
@@ -157,7 +157,7 @@ export default function Welcome() {
             title: 'Terkirim Pusat',
             status: 'terkirim',
             phase: 'Fase 4: Integrasi Nasional',
-            actor: 'Admin Bappeda & Kemendagri',
+            actor: 'BAPPERIDA & Kemendagri',
             desc: 'Data inovasi Kabupaten Sumbawa disinkronkan ke sistem resmi Indeks Inovasi Daerah BSKDN Kemendagri untuk penilaian IGA 2026.',
             output: 'Tersinkronisasi di sistem pusat Kemendagri',
         },
@@ -216,7 +216,7 @@ export default function Welcome() {
                                         : 'text-teal-100/85'
                                 }`}
                             >
-                                Bappeda Kab. Sumbawa
+                                BAPPERIDA Kab. Sumbawa
                             </span>
                         </div>
                     </Link>
@@ -391,7 +391,7 @@ export default function Welcome() {
                             <AppLogoIcon className="size-4 text-primary-foreground" aria-hidden="true" />
                         </div>
                         <span>
-                            <strong>INOVA-HUB</strong> • Bidang Riset dan Inovasi Daerah (Bappeda) Kab. Sumbawa
+                            <strong>INOVA-HUB</strong> • Bidang Riset dan Inovasi Daerah (BAPPERIDA) Kab. Sumbawa
                         </span>
                     </div>
                     <div className="text-center sm:text-right">

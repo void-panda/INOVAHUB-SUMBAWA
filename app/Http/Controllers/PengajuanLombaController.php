@@ -130,8 +130,8 @@ class PengajuanLombaController extends Controller
 
         return Inertia::render('pengajuan-lomba/show', [
             'pengajuan' => $pengajuan,
-            'canManageInovasiDaerah' => $request->user()->hasRole('tim_penilai'),
-            'canRekomendasikan' => $request->user()->hasRole('pendamping') || $request->user()->hasRole('tim_penilai'),
+            'canManageInovasiDaerah' => $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
+            'canRekomendasikan' => $request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
         ]);
     }
 
@@ -140,7 +140,7 @@ class PengajuanLombaController extends Controller
      */
     public function tetapkanInovasiDaerah(Request $request, PengajuanLomba $pengajuan): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('tim_penilai'), 403, 'Hanya Tim Penilai / Bappeda yang berwenang menetapkan Inovasi Daerah.');
+        abort_unless($request->user()->hasAnyRole(['bapperida', 'tim_penilai']), 403, 'Hanya BAPPERIDA / Tim Penilai yang berwenang menetapkan Inovasi Daerah.');
 
         $status = $request->boolean('status', true);
         $this->pengajuanService->tetapkanInovasiDaerah($pengajuan, $request->user(), $status);
@@ -199,7 +199,7 @@ class PengajuanLombaController extends Controller
      */
     public function rekomendasikan(Request $request, PengajuanLomba $pengajuan): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('pendamping') || $request->user()->hasRole('tim_penilai'), 403);
+        abort_unless($request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']), 403);
 
         $this->pengajuanService->rekomendasikanKeOpd(
             $pengajuan,

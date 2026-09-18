@@ -138,7 +138,7 @@ export default function PenugasanIndex({
         password: '',
         role: 'pendamping',
         opd_id: '',
-        nama_pemda: 'Bappeda Litbang Kab. Sumbawa',
+        nama_pemda: 'BAPPERIDA Kab. Sumbawa',
         status_aktif: true,
     });
 
@@ -844,7 +844,7 @@ export default function PenugasanIndex({
                             Tambah Akun Pendamping Baru
                         </DialogTitle>
                         <DialogDescription className="text-xs">
-                            Daftarkan staf Bappeda baru sebagai Pendamping Inovasi. Akun yang dibuat akan
+                            Daftarkan staf BAPPERIDA baru sebagai Pendamping Inovasi. Akun yang dibuat akan
                             langsung tersedia di dropdown penugasan.
                         </DialogDescription>
                     </DialogHeader>
@@ -918,7 +918,7 @@ export default function PenugasanIndex({
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">
-                                        Bappeda Litbang Kab. Sumbawa (Default)
+                                        BAPPERIDA Kab. Sumbawa (Default)
                                     </SelectItem>
                                     {opdList.map((opd) => (
                                         <SelectItem key={opd.id} value={String(opd.id)}>

@@ -10,7 +10,7 @@ class OpdSeeder extends Seeder
     public function run(): void
     {
         $opds = [
-            ['nama' => 'Bappeda Litbang', 'kode' => 'BAP'],
+            ['nama' => 'BAPPERIDA (Badan Perencanaan Pembangunan, Riset dan Inovasi Daerah)', 'kode' => 'BAP'],
             ['nama' => 'Dinas Komunikasi dan Informatika', 'kode' => 'DISKOMINFO'],
             ['nama' => 'Dinas Kesehatan', 'kode' => 'DINKES'],
             ['nama' => 'Dinas Pendidikan dan Kebudayaan', 'kode' => 'DISDIKBUD'],

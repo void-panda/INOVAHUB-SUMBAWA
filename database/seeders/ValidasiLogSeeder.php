@@ -33,7 +33,7 @@ class ValidasiLogSeeder extends Seeder
 
         $pendamping = User::where('email', 'pendamping@sumbawakab.go.id')->first();
         $inovatorKominfo = User::where('email', 'inovator@sumbawakab.go.id')->first();
-        $timPenilai = User::where('email', 'tim_penilai@sumbawakab.go.id')->first();
+        $timPenilai = User::where('email', 'penilai@sumbawakab.go.id')->first() ?? User::where('email', 'bapperida@sumbawakab.go.id')->first();
 
         if (! $pendamping) {
             return;

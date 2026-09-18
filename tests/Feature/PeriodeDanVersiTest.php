@@ -24,7 +24,7 @@ class PeriodeDanVersiTest extends TestCase
         $this->seed(PeriodeSeeder::class);
 
         $penilai = User::factory()->create();
-        $penilai->assignRole('tim_penilai');
+        $penilai->assignRole('bapperida');
 
         $inovator = User::factory()->create();
         $inovator->assignRole('inovator');

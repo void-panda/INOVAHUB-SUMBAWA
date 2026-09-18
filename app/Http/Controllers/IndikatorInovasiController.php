@@ -116,7 +116,7 @@ class IndikatorInovasiController extends Controller
             ],
             'skorEstimasi' => round($skorEstimasi, 2),
             'skorMaks' => 111.00, // 37 bobot dasar × 3 (SID-01 s.d. SID-20)
-            'canComment' => $request->user()->hasRole('pendamping') || $request->user()->hasRole('tim_penilai'),
+            'canComment' => $request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
         ]);
     }
 
@@ -164,9 +164,9 @@ class IndikatorInovasiController extends Controller
         IndikatorSid $indikator
     ): RedirectResponse {
         abort_unless(
-            $request->user()->hasRole('pendamping') || $request->user()->hasRole('tim_penilai'),
+            $request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
             403,
-            'Hanya pendamping atau tim penilai yang dapat memberikan catatan review indikator.'
+            'Hanya pendamping atau tim penilai/BAPPERIDA yang dapat memberikan catatan review indikator.'
         );
 
         $validated = $request->validate([
@@ -311,6 +311,7 @@ class IndikatorInovasiController extends Controller
             $pengajuan->user_id === $user->id
                 || $pengajuan->inovasi->user_id === $user->id
                 || $user->can('validate-inovasi')
+                || $user->hasRole('bapperida')
                 || $user->hasRole('tim_penilai')
                 || $user->hasRole('pendamping'),
             403

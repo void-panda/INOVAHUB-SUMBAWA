@@ -131,10 +131,10 @@ export default function InovasiPrint({ inovasi, rantaiVersi, tanggalCetak }: Pri
                         DATABASE INOVASI DAERAH KABUPATEN SUMBAWA (INOVA-HUB)
                     </div>
                     <div className="text-xs font-medium text-slate-600 mt-1">
-                        Badan Perencanaan Pembangunan, Riset dan Inovasi Daerah (Bappeda)
+                        Badan Perencanaan Pembangunan, Riset dan Inovasi Daerah (BAPPERIDA)
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5">
-                        Jl. Garuda No. 1, Sumbawa Besar, Nusa Tenggara Barat • Email: Bappeda@sumbawakab.go.id
+                        Jl. Garuda No. 1, Sumbawa Besar, Nusa Tenggara Barat • Email: bapperida@sumbawakab.go.id
                     </div>
                 </div>
 
@@ -330,7 +330,7 @@ export default function InovasiPrint({ inovasi, rantaiVersi, tanggalCetak }: Pri
                     </div>
                     <div>
                         <div className="font-semibold text-slate-600">Sumbawa Besar, {tanggalCetak}</div>
-                        <div className="font-semibold text-slate-600">Tim Penilai Internal / Admin Bappeda,</div>
+                        <div className="font-semibold text-slate-600">Tim Penilai / BAPPERIDA Kab. Sumbawa,</div>
                         <div className="h-16 flex items-end justify-center">
                             <span className="border-b border-dashed border-slate-400 w-44"></span>
                         </div>

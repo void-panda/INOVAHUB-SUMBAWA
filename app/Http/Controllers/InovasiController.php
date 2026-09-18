@@ -47,7 +47,7 @@ class InovasiController extends Controller
     public function daerah(Request $request): Response
     {
         $user = $request->user();
-        $inovasi = $user->hasRole('inovator') && ! $user->hasAnyRole(['tim_penilai', 'pimpinan', 'pendamping'])
+        $inovasi = $user->hasRole('inovator') && ! $user->hasAnyRole(['bapperida', 'tim_penilai', 'pimpinan', 'pendamping'])
             ? $this->inovasiRepository->getByUser($user, true)
             : $this->inovasiRepository->getAllInovasiDaerah();
 
@@ -353,7 +353,7 @@ class InovasiController extends Controller
             && ! $user->can('scoring-sid')
             && ! $user->can('view-scoring')
             && ! $user->can('view-report')
-            && ! $user->hasRole(['inovator', 'pendamping', 'tim_penilai', 'pimpinan'])) {
+            && ! $user->hasRole(['inovator', 'pendamping', 'bapperida', 'tim_penilai', 'pimpinan'])) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengunduh dokumen ini.');
         }
 
@@ -382,7 +382,7 @@ class InovasiController extends Controller
             && ! $user->can('scoring-sid')
             && ! $user->can('view-scoring')
             && ! $user->can('view-report')
-            && ! $user->hasRole(['inovator', 'pendamping', 'tim_penilai', 'pimpinan'])) {
+            && ! $user->hasRole(['inovator', 'pendamping', 'bapperida', 'tim_penilai', 'pimpinan'])) {
             abort(403, 'Anda tidak memiliki hak akses untuk melihat pratinjau dokumen ini.');
         }
 

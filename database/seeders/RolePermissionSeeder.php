@@ -24,9 +24,16 @@ class RolePermissionSeeder extends Seeder
         }
 
         $roles = [
-            'inovator' => ['input-inovasi', 'submit-inovasi', 'revisi-inovasi', 'view-dashboard'],
+            'bapperida' => [
+                'input-inovasi', 'submit-inovasi', 'revisi-inovasi',
+                'validate-inovasi', 'approve-opd',
+                'assign-pendamping', 'manage-master-data',
+                'scoring-spd', 'scoring-sid', 'view-scoring',
+                'view-dashboard', 'view-report',
+            ],
+            'tim_penilai' => ['scoring-spd', 'scoring-sid', 'view-scoring', 'view-dashboard', 'view-report'],
             'pendamping' => ['validate-inovasi', 'approve-opd', 'view-dashboard', 'view-report'],
-            'tim_penilai' => ['assign-pendamping', 'manage-master-data', 'scoring-spd', 'scoring-sid', 'view-scoring', 'view-dashboard', 'view-report'],
+            'inovator' => ['input-inovasi', 'submit-inovasi', 'revisi-inovasi', 'view-dashboard'],
             'pimpinan' => ['view-dashboard', 'view-report', 'view-scoring'],
         ];
 

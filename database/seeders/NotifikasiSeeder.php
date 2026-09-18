@@ -20,7 +20,7 @@ class NotifikasiSeeder extends Seeder
         $inovatorKominfo = User::where('email', 'inovator@sumbawakab.go.id')->first();
         $inovatorDinkes = User::where('email', 'inovator2@sumbawakab.go.id')->first();
         $pendamping = User::where('email', 'pendamping@sumbawakab.go.id')->first();
-        $timPenilai = User::where('email', 'tim_penilai@sumbawakab.go.id')->first();
+        $timPenilai = User::where('email', 'penilai@sumbawakab.go.id')->first() ?? User::where('email', 'bapperida@sumbawakab.go.id')->first();
         $pimpinan = User::where('email', 'pimpinan@sumbawakab.go.id')->first();
 
         $kampungIklim = Inovasi::where('nama_inovasi', 'like', '%KAMPUNG IKLIM%')->first();

@@ -24,7 +24,7 @@ class PenugasanPendampingTest extends TestCase
         $this->seed(PeriodeSeeder::class);
 
         $admin = User::factory()->create();
-        $admin->assignRole('tim_penilai');
+        $admin->assignRole('bapperida');
 
         $pendampingA = User::factory()->create();
         $pendampingA->assignRole('pendamping');

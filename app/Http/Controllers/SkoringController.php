@@ -74,13 +74,54 @@ class SkoringController extends Controller
             'periodeLomba',
         ]);
 
-        $spdList = $this->indikatorRepository->getAllSpd();
-        $sidList = $this->indikatorRepository->getAllSid();
+        $inovasi = $pengajuan->inovasi;
+
+        $sidList = \App\Models\IndikatorSid::where('kode', '!=', 'SID-21')
+            ->orderBy('kode')
+            ->get();
 
         $existingSkorSid = $this->skorRepository->getSkorSidForPengajuan($pengajuan->id);
-        $existingSkorSpd = $pengajuan->periode_lomba_id
-            ? $this->skorRepository->getSkorSpdForPeriode($pengajuan->periode_lomba_id)
-            : collect();
+
+        // Dokumen umum inovasi (Proposal, SK/Piagam, Link Video)
+        $dokumenUmum = \App\Models\InovasiDokumen::where('inovasi_id', $inovasi->id)
+            ->whereNull('indikator_sid_id')
+            ->get()
+            ->map(fn ($d) => [
+                'id' => $d->id,
+                'nama_asal' => $d->nama_asal ?? basename($d->path),
+                'jenis' => $d->jenis,
+                'mime' => $d->mime,
+                'path' => $d->path,
+                'ukuran' => $d->ukuran ?? 0,
+            ]);
+
+        // Dokumen pendukung per indikator SID
+        $dokumenIndikator = \App\Models\InovasiDokumen::where(function ($q) use ($inovasi, $pengajuan) {
+            $q->where('pengajuan_lomba_id', $pengajuan->id)
+                ->orWhere('inovasi_id', $inovasi->id);
+        })
+            ->whereNotNull('indikator_sid_id')
+            ->get()
+            ->groupBy('indikator_sid_id')
+            ->map(fn ($docs) => $docs->map(fn ($d) => [
+                'id' => $d->id,
+                'indikator_sid_id' => $d->indikator_sid_id,
+                'nama_asal' => $d->nama_asal ?? basename($d->path),
+                'nomor_surat' => $d->nomor_surat,
+                'tanggal_surat' => $d->tanggal_surat,
+                'tentang' => $d->tentang,
+                'jenis' => $d->jenis,
+                'mime' => $d->mime,
+                'ukuran' => $d->ukuran ?? 0,
+            ]));
+
+        // Kelengkapan indikator (klaim parameter & catatan inovator)
+        $kelengkapan = $pengajuan->kelengkapanIndikator
+            ->keyBy('indikator_sid_id')
+            ->map(fn ($k) => [
+                'parameter' => $k->parameter,
+                'catatan' => $k->catatan,
+            ]);
 
         $inovasiDetail = [
             'id' => $pengajuan->id,
@@ -89,6 +130,15 @@ class SkoringController extends Controller
             'tahapan' => $pengajuan->inovasi?->tahapan ?? 'penerapan',
             'status' => $pengajuan->status?->value ?? (string) $pengajuan->status,
             'nama_inisiator' => $pengajuan->inovasi?->nama_inisiator ?? '-',
+            'inisiator' => $pengajuan->inovasi?->inisiator ?? '-',
+            'bentuk_inovasi' => $pengajuan->inovasi?->bentuk_inovasi ?? '-',
+            'jenis_inovasi' => $pengajuan->inovasi?->jenis_inovasi ?? '-',
+            'tematik' => $pengajuan->inovasi?->tematik ?? '-',
+            'urusan_utama' => $pengajuan->inovasi?->urusan_utama ?? '-',
+            'rancang_bangun' => $pengajuan->inovasi?->rancang_bangun ?? '',
+            'tujuan' => $pengajuan->inovasi?->tujuan ?? '',
+            'manfaat' => $pengajuan->inovasi?->manfaat ?? '',
+            'hasil_inovasi' => $pengajuan->inovasi?->hasil_inovasi ?? '',
             'periode_lomba_id' => $pengajuan->periode_lomba_id,
             'estimasi_skor_kematangan' => $pengajuan->estimasi_skor_kematangan,
             'user' => $pengajuan->inovasi?->user ? [
@@ -98,20 +148,20 @@ class SkoringController extends Controller
             'opd' => $pengajuan->inovasi?->opd ? [
                 'nama' => $pengajuan->inovasi->opd->nama,
             ] : null,
-            'dokumen' => $pengajuan->inovasi?->dokumen->map(fn ($d) => [
-                'id' => $d->id,
-                'nama_asal' => $d->nama_asal ?? basename($d->path),
-                'ukuran' => $d->ukuran ?? 0,
-            ])->values()->all() ?? [],
+            'periode_lomba' => $pengajuan->periodeLomba ? [
+                'tahun' => $pengajuan->periodeLomba->tahun,
+                'nama' => $pengajuan->periodeLomba->nama ?? (string) $pengajuan->periodeLomba->tahun,
+            ] : null,
+            'dokumen_umum' => $dokumenUmum,
         ];
 
         return Inertia::render('penilai/skoring/show', [
             'pengajuan' => $pengajuan,
             'inovasi' => $inovasiDetail,
-            'spdList' => $spdList,
             'sidList' => $sidList,
+            'kelengkapan' => $kelengkapan,
+            'dokumenIndikator' => $dokumenIndikator,
             'existingSkorSid' => $existingSkorSid,
-            'existingSkorSpd' => $existingSkorSpd,
         ]);
     }
 
@@ -120,12 +170,12 @@ class SkoringController extends Controller
         $validated = $request->validate([
             'items_sid' => ['present', 'array'],
             'items_sid.*.indikator_id' => ['required', 'integer', 'exists:indikator_sid,id'],
-            'items_sid.*.tier' => ['required', 'integer', 'min:1', 'max:3'],
+            'items_sid.*.tier' => ['required', 'integer', 'min:0', 'max:3'],
             'items_sid.*.catatan' => ['nullable', 'string'],
 
-            'items_spd' => ['present', 'array'],
+            'items_spd' => ['nullable', 'array'],
             'items_spd.*.indikator_id' => ['required', 'integer', 'exists:indikator_spd,id'],
-            'items_spd.*.tier' => ['required', 'integer', 'min:1', 'max:3'],
+            'items_spd.*.tier' => ['required', 'integer', 'min:0', 'max:3'],
             'items_spd.*.catatan' => ['nullable', 'string'],
 
             'is_final' => ['nullable', 'boolean'],
@@ -141,8 +191,8 @@ class SkoringController extends Controller
         $this->skoringService->processSkoring($request->user(), $pengajuan, $dto);
 
         $pesan = $dto->isFinal
-            ? 'Penilaian SPD/SID berhasil difinalisasi.'
-            : 'Draft penilaian SPD/SID berhasil disimpan.';
+            ? 'Penilaian inovasi (20 Indikator SID) berhasil difinalisasi.'
+            : 'Draft penilaian inovasi berhasil disimpan.';
 
         return redirect()->route('penilai.skoring.index')->with('success', $pesan);
     }

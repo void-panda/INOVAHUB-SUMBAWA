@@ -136,7 +136,7 @@ export default function InovasiPrintRekap({
                         SISTEM REPOSITORI & PEMBINAAN INOVASI DAERAH (INOVA-HUB)
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5">
-                        Jl. Garuda No. 1, Sumbawa Besar, Nusa Tenggara Barat • Email: bappeda@sumbawakab.go.id
+                        Jl. Garuda No. 1, Sumbawa Besar, Nusa Tenggara Barat • Email: bapperida@sumbawakab.go.id
                     </div>
                 </div>
 
@@ -247,7 +247,7 @@ export default function InovasiPrintRekap({
                 <div className="pt-4 border-t border-slate-300 grid grid-cols-2 gap-8 text-center text-xs print:break-inside-avoid">
                     <div>
                         <div className="font-semibold text-slate-600">Mengetahui,</div>
-                        <div className="font-bold text-slate-800">Kepala Bappeda Litbang Kab. Sumbawa</div>
+                        <div className="font-bold text-slate-800">Kepala BAPPERIDA Kab. Sumbawa</div>
                         <div className="h-20 flex items-end justify-center">
                             <span className="border-b border-dashed border-slate-400 w-52"></span>
                         </div>
@@ -255,7 +255,7 @@ export default function InovasiPrintRekap({
                     </div>
                     <div>
                         <div className="font-semibold text-slate-600">Sumbawa Besar, {tanggalCetak}</div>
-                        <div className="font-bold text-slate-800">Tim Penilai Internal / Admin Bappeda</div>
+                        <div className="font-bold text-slate-800">Tim Penilai / BAPPERIDA Kab. Sumbawa</div>
                         <div className="h-20 flex items-end justify-center">
                             <span className="border-b border-dashed border-slate-400 w-52"></span>
                         </div>

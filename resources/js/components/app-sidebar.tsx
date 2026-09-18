@@ -94,7 +94,7 @@ export function AppSidebar() {
     }
     if (permissions.includes('scoring-spd') || permissions.includes('scoring-sid')) {
         verifikasiItems.push({
-            title: 'Penilaian SPD & SID',
+            title: 'Penilaian Inovasi (SID)',
             href: '/penilai/skoring',
             icon: Calculator,
         });

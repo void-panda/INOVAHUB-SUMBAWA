@@ -74,7 +74,7 @@ export default function PanduanIndex({ userRoles, faqList, kontakHelpdesk }: Pro
                     badgeIcon={BookOpen}
                     badgeText="Knowledge Base & Helpdesk"
                     title="Panduan Pengguna & Bantuan INOVA-HUB"
-                    description="Petunjuk penggunaan aplikasi, alur pembinaan & pendampingan 8 langkah, FAQ IGA 2026, dan kontak bantuan Bidang Riset & Inovasi Daerah Bappeda Kab. Sumbawa."
+                    description="Petunjuk penggunaan aplikasi, alur pembinaan & pendampingan 8 langkah, FAQ IGA 2026, dan kontak bantuan Bidang Riset & Inovasi Daerah BAPPERIDA Kab. Sumbawa."
                 >
                     <div className="flex flex-wrap gap-1.5">
                         {userRoles.map((role) => (
@@ -128,7 +128,7 @@ export default function PanduanIndex({ userRoles, faqList, kontakHelpdesk }: Pro
                             </div>
                             <div className="p-2 bg-background rounded-lg border flex flex-col items-center">
                                 <span className="font-bold text-purple-600">7-8. Siap Kirim</span>
-                                <span className="text-[10px] text-muted-foreground mt-1">Admin Bappeda</span>
+                                <span className="text-[10px] text-muted-foreground mt-1">BAPPERIDA</span>
                             </div>
                         </div>
                     </CardContent>
@@ -264,7 +264,7 @@ export default function PanduanIndex({ userRoles, faqList, kontakHelpdesk }: Pro
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-lg text-foreground">
-                                    Panduan Penggunaan untuk Tim Penilai Internal & Admin Bappeda
+                                    Panduan Penggunaan untuk Tim Penilai & Superadmin BAPPERIDA
                                 </CardTitle>
                                 <CardDescription>
                                     Instruksi skoring SPD/SID, simulasi IID, kelola master indikator/periode, dan ekspor Kemendagri.
@@ -368,7 +368,7 @@ export default function PanduanIndex({ userRoles, faqList, kontakHelpdesk }: Pro
                                             Pusat Bantuan Helpdesk
                                         </CardTitle>
                                         <CardDescription className="text-xs">
-                                            Bappeda Kabupaten Sumbawa
+                                            BAPPERIDA Kabupaten Sumbawa
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-4 space-y-4 text-xs">

@@ -80,6 +80,7 @@ type Props = {
     opdList: OpdItem[];
     metrics: {
         total: number;
+        bapperida?: number;
         pendamping: number;
         penilai: number;
         inovator: number;
@@ -88,15 +89,20 @@ type Props = {
 };
 
 const roleLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; className: string }> = {
+    bapperida: {
+        label: 'Superadmin (BAPPERIDA)',
+        variant: 'default',
+        className: 'bg-emerald-700 hover:bg-emerald-800 text-white font-bold',
+    },
+    tim_penilai: {
+        label: 'Tim Penilai',
+        variant: 'default',
+        className: 'bg-teal-600 hover:bg-teal-700 text-white font-semibold',
+    },
     pendamping: {
         label: 'Pendamping Inovasi',
         variant: 'outline',
         className: 'border-teal-500 text-teal-700 dark:text-teal-400 bg-teal-50/60 dark:bg-teal-950/30 font-semibold',
-    },
-    tim_penilai: {
-        label: 'Tim Penilai / Bappeda',
-        variant: 'default',
-        className: 'bg-emerald-600 hover:bg-emerald-700 text-white font-semibold',
     },
     inovator: {
         label: 'Inovator (OPD/Masyarakat)',
@@ -282,8 +288,9 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
 
     const filterOptions = [
         { label: 'Semua Peran', value: 'all' },
+        { label: 'Superadmin (BAPPERIDA)', value: 'bapperida' },
+        { label: 'Tim Penilai', value: 'tim_penilai' },
         { label: 'Pendamping Inovasi', value: 'pendamping' },
-        { label: 'Tim Penilai / Bappeda', value: 'tim_penilai' },
         { label: 'Inovator OPD/Masyarakat', value: 'inovator' },
         { label: 'Pimpinan Daerah', value: 'pimpinan' },
     ];
@@ -300,7 +307,7 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
                             Manajemen Akun & Hak Akses Pengguna
                         </h1>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            Kelola akun staf Bappeda (Pendamping & Tim Penilai), Inovator OPD, dan Pimpinan Daerah.
+                            Kelola akun staf BAPPERIDA (Superadmin), Tim Penilai, Pendamping Inovasi, Inovator OPD, dan Pimpinan Daerah.
                         </p>
                     </div>
 
@@ -324,34 +331,49 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
                 />
 
                 {/* Metrics Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
                     <Card className="border-border bg-card shadow-2xs">
                         <CardHeader className="p-4 pb-2">
                             <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                                <ShieldCheck className="h-3.5 w-3.5 text-teal-600" />
-                                Pendamping Inovasi
+                                <Shield className="h-3.5 w-3.5 text-emerald-700" />
+                                BAPPERIDA (Admin)
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold text-teal-700 dark:text-teal-400">
-                                {metrics.pendamping}
+                            <div className="text-2xl font-bold text-emerald-800 dark:text-emerald-400">
+                                {metrics.bapperida ?? 0}
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-1">Staf pembina verifikasi</p>
+                            <p className="text-[11px] text-muted-foreground mt-1">Superadmin sistem</p>
                         </CardContent>
                     </Card>
 
                     <Card className="border-border bg-card shadow-2xs">
                         <CardHeader className="p-4 pb-2">
                             <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                                <Award className="h-3.5 w-3.5 text-emerald-600" />
-                                Tim Penilai / Bappeda
+                                <Award className="h-3.5 w-3.5 text-teal-600" />
+                                Tim Penilai
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+                            <div className="text-2xl font-bold text-teal-700 dark:text-teal-400">
                                 {metrics.penilai}
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-1">Evaluator & admin master</p>
+                            <p className="text-[11px] text-muted-foreground mt-1">Juri penilai lomba</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-border bg-card shadow-2xs">
+                        <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                                <ShieldCheck className="h-3.5 w-3.5 text-teal-600" />
+                                Pendamping
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold text-teal-700 dark:text-teal-400">
+                                {metrics.pendamping}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-1">Staf pembina & verifikasi</p>
                         </CardContent>
                     </Card>
 
@@ -359,18 +381,18 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
                         <CardHeader className="p-4 pb-2">
                             <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                                 <Users className="h-3.5 w-3.5 text-blue-600" />
-                                Inovator (OPD/Umum)
+                                Inovator
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">
                             <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">
                                 {metrics.inovator}
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-1">Pengusul ide & profil</p>
+                            <p className="text-[11px] text-muted-foreground mt-1">OPD & Masyarakat</p>
                         </CardContent>
                     </Card>
 
-                    <Card className="border-border bg-card shadow-2xs">
+                    <Card className="border-border bg-card shadow-2xs col-span-2 sm:col-span-1">
                         <CardHeader className="p-4 pb-2">
                             <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                                 <UserCheck className="h-3.5 w-3.5 text-purple-600" />
@@ -381,7 +403,7 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
                             <div className="text-2xl font-bold text-foreground">
                                 {metrics.total}
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-1">Akun terdaftar di sistem</p>
+                            <p className="text-[11px] text-muted-foreground mt-1">Akun terdaftar</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -411,7 +433,7 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
                             Tambah Pengguna Baru
                         </DialogTitle>
                         <DialogDescription className="text-xs">
-                            Isi formulir berikut untuk mendaftarkan akun staf Bappeda, Pendamping, atau Inovator baru.
+                            Isi formulir berikut untuk mendaftarkan akun staf BAPPERIDA, Tim Penilai, Pendamping, atau Inovator baru.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -482,8 +504,9 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
                                         <SelectValue placeholder="Pilih Role" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="bapperida">Superadmin (BAPPERIDA)</SelectItem>
+                                        <SelectItem value="tim_penilai">Tim Penilai</SelectItem>
                                         <SelectItem value="pendamping">Pendamping Inovasi</SelectItem>
-                                        <SelectItem value="tim_penilai">Tim Penilai / Bappeda</SelectItem>
                                         <SelectItem value="inovator">Inovator (OPD/Masyarakat)</SelectItem>
                                         <SelectItem value="pimpinan">Pimpinan Daerah</SelectItem>
                                     </SelectContent>
@@ -616,8 +639,9 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
                                         <SelectValue placeholder="Pilih Role" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="bapperida">Superadmin (BAPPERIDA)</SelectItem>
+                                        <SelectItem value="tim_penilai">Tim Penilai</SelectItem>
                                         <SelectItem value="pendamping">Pendamping Inovasi</SelectItem>
-                                        <SelectItem value="tim_penilai">Tim Penilai / Bappeda</SelectItem>
                                         <SelectItem value="inovator">Inovator (OPD/Masyarakat)</SelectItem>
                                         <SelectItem value="pimpinan">Pimpinan Daerah</SelectItem>
                                     </SelectContent>
