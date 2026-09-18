@@ -5,8 +5,10 @@ import {
     AlertTriangle,
     ArrowLeft,
     ArrowRight,
+    Calendar,
     Download,
     ExternalLink,
+    FileEdit,
     FileText,
     FolderOpen,
     Lock,
@@ -14,6 +16,7 @@ import {
     Save,
     Send,
     Share2,
+    Sparkles,
     Trash2,
     UploadCloud,
     Video,
@@ -161,7 +164,8 @@ type Props = {
 
 const statusLabel: Record<string, string> = {
     draft: 'Draft',
-    diajukan: 'Diajukan',
+    diajukan: 'Telah Disubmit',
+    dalam_pendampingan: 'Telah Disubmit',
     divalidasi: 'Divalidasi',
     revisi: 'Revisi',
     disetujui: 'Disetujui',
@@ -173,7 +177,8 @@ const statusLabel: Record<string, string> = {
 
 const statusBadgeColor: Record<string, string> = {
     draft: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-300',
-    diajukan: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300',
+    diajukan: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-400/40',
+    dalam_pendampingan: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-400/40',
     divalidasi: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-300',
     revisi: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300',
     disetujui: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-300',
@@ -219,7 +224,7 @@ export default function EditInovasi({
     const isMasyarakat = tipeInovator === 'masyarakat';
     const minWordCount = isMasyarakat ? 100 : 300;
     const currentStatus = inovasi.status || 'draft';
-    const isReadOnly = ['siap_kirim', 'terkirim'].includes(currentStatus);
+    const isReadOnly = !['draft', 'revisi'].includes(currentStatus);
     const canSubmit = ['draft', 'revisi'].includes(currentStatus);
 
     const initialUrusanWajib = inovasi.urusan_wajib
@@ -286,6 +291,7 @@ export default function EditInovasi({
 
     const [activeTab, setActiveTab] = useState<TabKey>('identitas');
     const [isSubmittingValidation, setIsSubmittingValidation] = useState(false);
+    const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [, startTransition] = useTransition();
 
     // Synchronize form defaults and data when inovasi props change (e.g. after server update)
@@ -407,15 +413,40 @@ export default function EditInovasi({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [data, isReadOnly, processing]);
 
-    const submitForValidation = () => {
+    const executeSubmitLomba = () => {
         setIsSubmittingValidation(true);
-        router.post(
-            `/inovasi/${inovasi.id}/submit`,
-            {},
-            {
-                onFinish: () => setIsSubmittingValidation(false),
-            }
-        );
+        setShowSubmitModal(false);
+
+        const doSubmit = () => {
+            router.post(
+                `/inovasi/${inovasi.id}/submit`,
+                {},
+                {
+                    preserveScroll: true,
+                    onFinish: () => setIsSubmittingValidation(false),
+                }
+            );
+        };
+
+        if (isDirty) {
+            transform((currentData) => ({
+                ...currentData,
+                _method: 'put',
+            }));
+
+            post(`/inovasi/${inovasi.id}`, {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    doSubmit();
+                },
+                onError: () => {
+                    setIsSubmittingValidation(false);
+                },
+            });
+        } else {
+            doSubmit();
+        }
     };
 
     const deleteDokumen = (dokId: number) => {
@@ -487,26 +518,40 @@ export default function EditInovasi({
             <Head title={`Profil Inovasi - ${inovasi.nama_inovasi}`} />
 
             <div className="flex flex-col space-y-6 p-4 md:p-6 max-w-7xl mx-auto w-full">
+                {/* Back navigation link above banner */}
+                <div className="flex items-center justify-between gap-2">
+                    <Link
+                        href="/inovasi"
+                        className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors font-medium"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Kembali ke Daftar Inovasi Saya
+                    </Link>
+                </div>
+
                 {/* Hero Banner INOVA-HUB */}
                 <HeroBanner
+                    badgeIcon={FileEdit}
+                    badgeText="Profil Inovasi Daerah"
                     title={inovasi.nama_inovasi}
                     description={`Pengelolaan profil usulan inovasi daerah ${inovasi.opd?.nama || 'Kabupaten Sumbawa'} terintegrasi standar IGA Kemendagri 2026.`}
                 >
-                    <div className="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-white/20">
-                        <Link
-                            href="/inovasi"
-                            className="text-xs text-teal-100 hover:text-white underline inline-flex items-center gap-1"
-                        >
-                            ← Kembali ke Daftar Inovasi Saya
-                        </Link>
-                        <span className="text-white/40" aria-hidden="true">•</span>
-                        <span className="text-xs text-teal-100">
-                            Periode Lomba: {inovasi.periode_lomba?.nama || `Tahun ${new Date().getFullYear()}`}
-                        </span>
-                        <span className="text-white/40" aria-hidden="true">•</span>
-                        <span className="text-xs text-teal-100">
-                            Estimasi Skor: <strong>{inovasi.estimasi_skor_kematangan ?? 0} Poin</strong>
-                        </span>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-black/20 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/15 text-xs text-white shadow-2xs">
+                        <div className="flex items-center gap-2.5">
+                            <Calendar className="h-4 w-4 text-teal-200 shrink-0" />
+                            <div>
+                                <span className="block text-[10px] text-teal-200/90 uppercase font-bold tracking-wider">Periode Lomba</span>
+                                <span className="font-semibold text-white">{inovasi.periode_lomba?.nama || `Tahun ${new Date().getFullYear()}`}</span>
+                            </div>
+                        </div>
+                        <div className="hidden sm:block w-px h-8 bg-white/20" />
+                        <div className="flex items-center gap-2.5">
+                            <Sparkles className="h-4 w-4 text-amber-300 shrink-0" />
+                            <div>
+                                <span className="block text-[10px] text-teal-200/90 uppercase font-bold tracking-wider">Estimasi Skor</span>
+                                <span className="font-bold text-amber-300 text-sm">{inovasi.estimasi_skor_kematangan ?? 0} Poin</span>
+                            </div>
+                        </div>
                     </div>
                 </HeroBanner>
 
@@ -545,50 +590,58 @@ export default function EditInovasi({
 
                             {/* Fast Action Buttons */}
                             <div className="flex items-center gap-2 flex-wrap self-end md:self-center">
+                                {/* 1. Cetak Profil: Utilitas/Tersier (Outline Netral) */}
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     asChild
-                                    className="gap-1.5 text-xs hover:bg-accent"
+                                    className="gap-1.5 text-xs hover:bg-accent border-border text-foreground"
                                     title="Cetak format profil standar PDF"
                                 >
                                     <Link href={`/inovasi/${inovasi.id}/print`} target="_blank">
-                                        <Printer className="h-3.5 w-3.5" /> Cetak Profil
+                                        <Printer className="h-3.5 w-3.5 text-muted-foreground" />
+                                        <span>Cetak Profil</span>
                                     </Link>
                                 </Button>
 
+                                {/* 2. 20 Indikator SID: Navigasi/Sekunder (Outline Aksen Teal Halus) */}
                                 <Button
-                                    variant="default"
+                                    variant="outline"
                                     size="sm"
                                     asChild
-                                    className="gap-1.5 text-xs bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-xs"
+                                    className="gap-1.5 text-xs border-teal-500/40 text-teal-700 bg-teal-50/70 hover:bg-teal-100 hover:text-teal-800 dark:border-teal-700/60 dark:text-teal-300 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 font-semibold shadow-2xs"
                                     title="Buka 20 Indikator SID & Bukti Dukung"
                                 >
                                     <Link href={`/inovasi/${inovasi.id}/indikator`}>
-                                        <FolderOpen className="h-3.5 w-3.5" />
+                                        <FolderOpen className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
                                         <span>20 Indikator SID</span>
                                     </Link>
                                 </Button>
 
+                                {/* 3. Simpan Perubahan: Aksi Form Primer (Solid Primary) */}
                                 {!isReadOnly && (
                                     <Button
                                         onClick={() => handleSave()}
                                         disabled={processing}
                                         className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xs"
+                                        title="Simpan perubahan data profil ke draft"
                                     >
                                         {processing ? <Spinner /> : <Save className="h-3.5 w-3.5" />}
                                         <span>Simpan Perubahan</span>
                                     </Button>
                                 )}
 
+                                {/* 4. Submit Lomba: Call to Action Utama Lomba (Solid Emerald) */}
                                 {canSubmit && (
                                     <Button
-                                        onClick={submitForValidation}
-                                        disabled={isSubmittingValidation}
+                                        type="button"
+                                        onClick={() => setShowSubmitModal(true)}
+                                        disabled={isSubmittingValidation || processing}
                                         className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                                        title="Kirim inovasi ke lomba secara permanen"
                                     >
                                         {isSubmittingValidation ? <Spinner /> : <Send className="h-3.5 w-3.5" />}
-                                        Ajukan Validasi
+                                        <span>Submit Lomba</span>
                                     </Button>
                                 )}
                             </div>
@@ -607,7 +660,7 @@ export default function EditInovasi({
                                     "{latestRevisionLog.catatan}"
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Silakan perbaiki data profil atau berkas dokumen pendukung sesuai catatan di atas, kemudian klik tombol <strong>"Ajukan Validasi"</strong> kembali.
+                                    Silakan perbaiki data profil atau berkas dokumen pendukung sesuai catatan di atas, kemudian klik tombol <strong>"Submit Lomba"</strong> kembali.
                                 </p>
                             </div>
                         </div>
@@ -615,14 +668,14 @@ export default function EditInovasi({
 
                     {/* Notice for Read-only Mode */}
                     {isReadOnly && (
-                        <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-900 dark:text-blue-200 flex items-start gap-3 shadow-xs">
-                            <Lock className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 flex items-start gap-3 shadow-xs">
+                            <Lock className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                             <div className="space-y-1 text-xs">
-                                <div className="font-bold text-sm text-blue-800 dark:text-blue-300">
-                                    Inovasi Sedang Dalam Tahap {statusLabel[currentStatus] ?? currentStatus}
+                                <div className="font-bold text-sm text-emerald-800 dark:text-emerald-300">
+                                    Inovasi Telah Disubmit ({inovasi.periode_lomba?.nama || `Periode ${new Date().getFullYear()}`})
                                 </div>
                                 <p className="text-muted-foreground leading-relaxed">
-                                    Data profil inovasi dan dokumen pendukung dikunci (mode baca saja) karena sedang dalam alur verifikasi atau pengesahan. Perubahan data hanya dapat dilakukan apabila status dikembalikan ke <strong>Revisi</strong> oleh Pendamping Inovasi.
+                                    Seluruh data profil inovasi dan dokumen pendukung telah dikunci (mode baca saja) untuk proses pemeriksaan dan penilaian langsung oleh Tim Penilai / Juri. Inovasi yang telah disubmit ke periode lomba tidak dapat diubah kembali.
                                 </p>
                             </div>
                         </div>
@@ -2200,6 +2253,35 @@ export default function EditInovasi({
                         </TabsContent>
                     </Tabs>
                 </form>
+
+                {/* Modal Konfirmasi Submit Lomba */}
+                <AlertDialog open={showSubmitModal} onOpenChange={setShowSubmitModal}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2">
+                                <Send className="h-5 w-5 text-teal-600" />
+                                Konfirmasi Submit Lomba
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm leading-relaxed pt-2">
+                                Apakah anda yakin? Inovasi yang di kirim tidak dapat diubah Kembali.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="mt-4">
+                            <AlertDialogCancel disabled={isSubmittingValidation}>Batal</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    executeSubmitLomba();
+                                }}
+                                disabled={isSubmittingValidation}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5"
+                            >
+                                {isSubmittingValidation ? <Spinner /> : <Send className="h-4 w-4" />}
+                                Ya, Submit Lomba
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </>
     );

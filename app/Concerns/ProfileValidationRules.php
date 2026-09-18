@@ -18,6 +18,8 @@ trait ProfileValidationRules
         return [
             'name' => $this->nameRules(),
             'email' => $this->emailRules($userId),
+            'no_whatsapp' => ['nullable', 'string', 'max:25'],
+            'pekerjaan' => ['nullable', 'string', 'max:50', Rule::in(['Pelajar', 'Mahasiswa', 'Pegawai Swasta', 'ASN', 'Lainnya'])],
         ];
     }
 

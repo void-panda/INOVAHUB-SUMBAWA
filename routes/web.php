@@ -71,6 +71,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/{inovasi}', [InovasiController::class, 'destroy'])->name('destroy');
             Route::post('/{inovasi}/dokumen', [InovasiController::class, 'upload'])->name('dokumen.store');
             Route::delete('/dokumen/{dokumen}', [InovasiController::class, 'destroyDokumen'])->name('dokumen.destroy');
+            Route::post('/{inovasi}/submit', [InovasiController::class, 'submit'])->name('submit');
         });
 
     // Pengajuan Lomba Inovasi Daerah

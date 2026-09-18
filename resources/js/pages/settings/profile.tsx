@@ -34,7 +34,7 @@ export default function Profile({
                 <Heading
                     variant="small"
                     title="Profile"
-                    description="Update your name and email address"
+                    description="Perbarui nama, alamat email, kontak WhatsApp, dan pekerjaan inovator Anda"
                 />
 
                 <Form
@@ -82,6 +82,50 @@ export default function Profile({
                                 <InputError
                                     className="mt-2"
                                     message={errors.email}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="no_whatsapp">Nomor WhatsApp</Label>
+
+                                <Input
+                                    id="no_whatsapp"
+                                    type="tel"
+                                    className="mt-1 block w-full"
+                                    defaultValue={auth.user.no_whatsapp ?? ''}
+                                    name="no_whatsapp"
+                                    autoComplete="tel"
+                                    placeholder="Contoh: 081234567890"
+                                />
+
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.no_whatsapp}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="pekerjaan">Pekerjaan Inovator</Label>
+
+                                <select
+                                    id="pekerjaan"
+                                    name="pekerjaan"
+                                    defaultValue={auth.user.pekerjaan ?? ''}
+                                    className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 text-foreground cursor-pointer"
+                                >
+                                    <option value="" className="bg-background text-muted-foreground">
+                                        -- Pilih Pekerjaan Inovator --
+                                    </option>
+                                    <option value="Pelajar" className="bg-background text-foreground">Pelajar</option>
+                                    <option value="Mahasiswa" className="bg-background text-foreground">Mahasiswa</option>
+                                    <option value="Pegawai Swasta" className="bg-background text-foreground">Pegawai Swasta</option>
+                                    <option value="ASN" className="bg-background text-foreground">ASN</option>
+                                    <option value="Lainnya" className="bg-background text-foreground">Lainnya</option>
+                                </select>
+
+                                <InputError
+                                    className="mt-2"
+                                    message={errors.pekerjaan}
                                 />
                             </div>
 

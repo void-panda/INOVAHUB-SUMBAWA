@@ -3,6 +3,7 @@ import {
     Award,
     CheckCircle2,
     Clock,
+    Eye,
     FileEdit,
     FileText,
     Info,
@@ -196,8 +197,8 @@ export default function InovasiIndex({ inovasi }: { inovasi: Inovasi[] }) {
                 }
                 return (
                     <div className="space-y-1">
-                        <Badge variant="outline" className="text-[11px] border-amber-400 text-amber-700 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
-                            Diajukan Seleksi
+                        <Badge variant="outline" className="text-[11px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/20 font-semibold">
+                            Telah Disubmit
                         </Badge>
                         <div className="text-[10px] text-muted-foreground">
                             Periode {activePengajuan.periode_lomba?.tahun}
@@ -235,38 +236,43 @@ export default function InovasiIndex({ inovasi }: { inovasi: Inovasi[] }) {
                             <Button
                                 variant="default"
                                 size="sm"
-                                className="h-8 px-2.5 text-xs gap-1.5 bg-teal-600 hover:bg-teal-700 text-white shadow-xs"
+                                className="h-8 px-2.5 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
                                 onClick={() => handleAjukanLomba(row)}
-                                title="Ajukan inovasi ini untuk dinilai/ditetapkan menjadi Inovasi Daerah"
+                                title="Ajukan inovasi ini untuk dinilai oleh Tim Penilai / Juri"
                             >
                                 <Send className="h-3.5 w-3.5" />
-                                <span>Ajukan Seleksi</span>
+                                <span>Submit Lomba</span>
                             </Button>
                         )}
 
-                        {activePengajuan && (
-                            <span
-                                className="inline-flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded border border-amber-200 dark:border-amber-800/40"
-                                title="Pengajuan telah dikirim. Menunggu verifikasi & penetapan Inovasi Daerah oleh Tim Penilai."
+                        {/* Tombol Aksi: Lihat Detail jika telah disubmit, Edit jika masih draft */}
+                        {activePengajuan ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="h-8 px-2.5 text-xs gap-1 text-muted-foreground hover:text-foreground hover:bg-accent border-border"
+                                title="Lihat detail profil inovasi (mode baca saja)"
                             >
-                                <Clock className="h-3 w-3" />
-                                Menunggu Review
-                            </span>
+                                <Link href={`/inovasi/${row.id}/edit`}>
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span>Lihat Detail</span>
+                                </Link>
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="h-8 px-2.5 text-xs gap-1"
+                                title="Ubah profil inovasi"
+                            >
+                                <Link href={`/inovasi/${row.id}/edit`}>
+                                    <FileEdit className="h-3.5 w-3.5" />
+                                    <span>Edit</span>
+                                </Link>
+                            </Button>
                         )}
-
-                        {/* Tombol Edit Profil */}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="h-8 px-2.5 text-xs gap-1"
-                            title="Ubah profil inovasi"
-                        >
-                            <Link href={`/inovasi/${row.id}/edit`}>
-                                <FileEdit className="h-3.5 w-3.5" />
-                                <span>Edit</span>
-                            </Link>
-                        </Button>
 
                         {/* Tombol Cetak Profil */}
                         <Button

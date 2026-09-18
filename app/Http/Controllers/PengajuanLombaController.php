@@ -53,22 +53,37 @@ class PengajuanLombaController extends Controller
             }
         }
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && $request->input('status') !== 'all') {
             $query->where('status', $request->input('status'));
         }
 
-        if ($request->filled('is_inovasi_daerah')) {
+        if ($request->filled('is_inovasi_daerah') && $request->input('is_inovasi_daerah') !== 'all') {
             $query->where('is_inovasi_daerah', filter_var($request->input('is_inovasi_daerah'), FILTER_VALIDATE_BOOLEAN));
         }
 
-        $pengajuan = $query->latest()->paginate(15)->withQueryString();
+        if ($request->filled('kategori_inovasi') && $request->input('kategori_inovasi') !== 'all') {
+            $query->whereHas('inovasi', function ($q) use ($request) {
+                $q->where('kategori_inovasi', $request->input('kategori_inovasi'));
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->whereHas('inovasi', function ($q) use ($search) {
+                $q->where('nama_inovasi', 'ilike', "%{$search}%")
+                    ->orWhere('nama_inisiator', 'ilike', "%{$search}%");
+            });
+        }
+
+        $pengajuan = $query->latest()->get();
         $allPeriodes = PeriodeLomba::orderByDesc('tahun')->get();
 
         return Inertia::render('pengajuan-lomba/index', [
             'pengajuan' => $pengajuan,
             'periodes' => $allPeriodes,
             'activePeriode' => $periodeAktif,
-            'filters' => $request->only(['periode_id', 'status', 'is_inovasi_daerah', 'search']),
+            'countdown' => $this->pengajuanService->getPengumpulanCountdown($periodeAktif),
+            'filters' => $request->only(['periode_id', 'status', 'is_inovasi_daerah', 'kategori_inovasi', 'search']),
         ]);
     }
 

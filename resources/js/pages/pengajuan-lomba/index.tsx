@@ -1,107 +1,186 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     Award,
+    CheckCircle2,
     Eye,
-    FileText,
-    Filter,
-    FolderOpen,
-    Search,
+    Layers,
+    Plus,
     Send,
+    Trophy,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { HeroBanner } from '@/components/hero-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { Column, DataTable } from '@/components/ui/data-table';
+import { CountdownTimer, type CountdownData } from '@/components/countdown-timer';
 import type { PengajuanLomba, PeriodeLomba } from '@/types/models';
 
-type PaginatedData<T> = {
-    data: T[];
-    current_page: number;
-    last_page: number;
-    total: number;
-    per_page: number;
-    links: { url: string | null; label: string; active: boolean }[];
-};
-
 type Props = {
-    pengajuan: PaginatedData<PengajuanLomba>;
+    pengajuan: PengajuanLomba[] | { data: PengajuanLomba[] };
     periodes: PeriodeLomba[];
     activePeriode?: PeriodeLomba | null;
+    countdown?: CountdownData | null;
     filters: {
         periode_id?: string;
-        status?: string;
         is_inovasi_daerah?: string;
+        kategori_inovasi?: string;
         search?: string;
     };
 };
 
-const statusBadgeMap: Record<
-    string,
-    { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }
-> = {
-    dalam_pendampingan: {
-        label: 'Dalam Pendampingan',
-        variant: 'outline',
-        className: 'border-amber-500 text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20',
-    },
-    disahkan_opd: {
-        label: 'Disahkan OPD',
-        variant: 'outline',
-        className: 'border-blue-500 text-blue-700 dark:text-blue-400 font-semibold bg-blue-50/50 dark:bg-blue-950/20',
-    },
-    review_internal: {
-        label: 'Review Internal',
-        variant: 'secondary',
-        className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300',
-    },
-    siap_kirim: {
-        label: 'Siap Kirim',
-        variant: 'default',
-        className: 'bg-emerald-600 hover:bg-emerald-700 text-white font-semibold',
-    },
-    terkirim: {
-        label: 'Terkirim',
-        variant: 'default',
-        className: 'bg-blue-600 hover:bg-blue-700 text-white',
-    },
+const KATEGORI_LABELS: Record<string, string> = {
+    opd: 'OPD',
+    masyarakat: 'Masyarakat',
+    mahasiswa: 'Mahasiswa',
+    pelajar: 'Pelajar',
 };
 
 export default function PengajuanLombaIndex({
     pengajuan,
     periodes,
     activePeriode,
+    countdown,
     filters,
 }: Props) {
-    const [search, setSearch] = useState(filters.search || '');
-    const [selectedPeriode, setSelectedPeriode] = useState(filters.periode_id || (activePeriode?.id?.toString() ?? ''));
-    const [selectedStatus, setSelectedStatus] = useState(filters.status || 'all');
-    const [selectedDaerah, setSelectedDaerah] = useState(filters.is_inovasi_daerah || 'all');
+    const rawData = useMemo<PengajuanLomba[]>(() => {
+        if (Array.isArray(pengajuan)) {
+            return pengajuan;
+        }
+        return pengajuan?.data ?? [];
+    }, [pengajuan]);
 
-    const handleFilterChange = (newParams: Record<string, string>) => {
-        const currentParams = {
-            periode_id: selectedPeriode,
-            status: selectedStatus === 'all' ? '' : selectedStatus,
-            is_inovasi_daerah: selectedDaerah === 'all' ? '' : selectedDaerah,
-            search,
-            ...newParams,
-        };
+    const [selectedPeriode, setSelectedPeriode] = useState(
+        filters.periode_id || (activePeriode?.id?.toString() ?? '')
+    );
+    const [statusTab, setStatusTab] = useState<'semua' | 'submitted' | 'lolos'>('semua');
+    const [selectedKategori, setSelectedKategori] = useState(filters.kategori_inovasi || 'all');
 
-        const cleanedParams = Object.fromEntries(
-            Object.entries(currentParams).filter(([_, v]) => v !== '' && v !== 'all')
+    // Filter berdasarkan status tab dan kategori inovasi
+    const displayedData = useMemo(() => {
+        return rawData.filter((item) => {
+            if (statusTab === 'submitted' && item.is_inovasi_daerah) {
+                return false;
+            }
+            if (statusTab === 'lolos' && !item.is_inovasi_daerah) {
+                return false;
+            }
+            if (selectedKategori !== 'all') {
+                const itemKat = (item.inovasi?.kategori_inovasi || 'opd').toLowerCase();
+                if (itemKat !== selectedKategori) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }, [rawData, statusTab, selectedKategori]);
+
+    // Metrik ringkasan
+    const totalCount = rawData.length;
+    const submittedCount = rawData.filter((item) => !item.is_inovasi_daerah).length;
+    const lolosCount = rawData.filter((item) => item.is_inovasi_daerah).length;
+
+    const handlePeriodeChange = (periodeId: string) => {
+        setSelectedPeriode(periodeId);
+        router.get(
+            '/pengajuan-lomba',
+            periodeId ? { periode_id: periodeId } : {},
+            { preserveState: true, replace: true }
         );
-
-        router.get('/pengajuan-lomba', cleanedParams, { preserveState: true, replace: true });
     };
+
+    const columns: Column<PengajuanLomba>[] = [
+        {
+            header: 'Nama Inovasi & Inisiator',
+            sortable: true,
+            cell: (row) => {
+                const inovasi = row.inovasi;
+                const kategoriKey = (inovasi?.kategori_inovasi || 'opd').toLowerCase();
+                const katLabel = KATEGORI_LABELS[kategoriKey] || inovasi?.kategori_inovasi || 'OPD';
+
+                return (
+                    <div className="space-y-1 py-1">
+                        <div className="font-semibold text-xs text-foreground flex items-center gap-2 flex-wrap">
+                            <span>{inovasi?.nama_inovasi}</span>
+                            <Badge variant="secondary" className="text-[10px] uppercase font-medium tracking-wide">
+                                {katLabel}
+                            </Badge>
+                            {row.is_inovasi_daerah && (
+                                <Badge
+                                    variant="outline"
+                                    className="bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px] gap-1"
+                                >
+                                    <Award className="h-2.5 w-2.5 text-emerald-600" />
+                                    Inovasi Daerah
+                                </Badge>
+                            )}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                            {inovasi?.opd?.nama ?? inovasi?.user?.nama_pemda ?? 'Inisiator Publik'} • Inisiator: {inovasi?.nama_inisiator}
+                        </div>
+                    </div>
+                );
+            },
+        },
+        {
+            header: 'Periode Lomba',
+            align: 'left',
+            cell: (row) => (
+                <div className="text-xs space-y-0.5">
+                    <div className="font-medium text-foreground">
+                        {row.periode_lomba?.tahun ?? '-'}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                        {row.is_arsip ? 'Arsip Lomba' : 'Periode Aktif'}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            header: 'Status Seleksi',
+            align: 'left',
+            cell: (row) => (
+                row.is_inovasi_daerah ? (
+                    <Badge
+                        variant="outline"
+                        className="border-emerald-500/50 text-emerald-700 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/30 font-bold gap-1 text-[11px]"
+                    >
+                        <Trophy className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                        <span>Lolos Seleksi</span>
+                    </Badge>
+                ) : (
+                    <Badge
+                        variant="outline"
+                        className="border-amber-500/40 text-amber-700 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/20 font-semibold gap-1 text-[11px]"
+                    >
+                        <CheckCircle2 className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                        <span>Telah Disubmit</span>
+                    </Badge>
+                )
+            ),
+        },
+        {
+            header: 'Aksi',
+            align: 'right',
+            cell: (row) => (
+                <div className="flex items-center justify-end">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="h-7 px-3 text-xs gap-1.5 font-medium shadow-2xs hover:bg-accent"
+                        title="Lihat Lembar Pengajuan Lomba"
+                    >
+                        <Link href={`/pengajuan-lomba/${row.id}`}>
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Detail</span>
+                        </Link>
+                    </Button>
+                </div>
+            ),
+        },
+    ];
 
     return (
         <>
@@ -111,214 +190,210 @@ export default function PengajuanLombaIndex({
                 {/* Hero Banner Sumbawa */}
                 <HeroBanner
                     title="Pengajuan Lomba Inovasi Daerah"
-                    subtitle="Daftar inovasi yang didaftarkan ke kompetisi tahunan Innovative Government Award (IGA). Pantau alur 5 status dari pendampingan hingga terkirim ke Kemendagri."
-                    badgeText="Lomba & Kematangan SID"
-                />
+                    description="Daftar usulan inovasi yang didaftarkan ke ajang Lomba Inovasi Daerah Kabupaten Sumbawa. Pantau proses penjurian dan penetapan hasil seleksi."
+                    badgeText={`Kompetisi Lomba ${activePeriode?.tahun ?? '2026'}`}
+                    badgeIcon={Trophy}
+                >
+                    {countdown && (
+                        <CountdownTimer countdown={countdown} variant="banner" />
+                    )}
+                </HeroBanner>
 
-                {/* Filter Toolbar */}
-                <Card className="border-border bg-card">
-                    <CardContent className="p-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            {/* Search */}
-                            <div>
-                                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                                    Pencarian
-                                </label>
-                                <div className="relative">
-                                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Nama inovasi, inisiator..."
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleFilterChange({ search })}
-                                        className="h-8 pl-8 text-xs"
-                                    />
+                {/* Metrik Ringkasan Status Seleksi */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                    <Card
+                        className={`cursor-pointer transition-all border shadow-xs ${
+                            statusTab === 'semua'
+                                ? 'border-primary/50 bg-primary/5 dark:bg-primary/10 ring-1 ring-primary/20'
+                                : 'hover:border-border/80 bg-card'
+                        }`}
+                        onClick={() => setStatusTab('semua')}
+                    >
+                        <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                            <div className="space-y-1">
+                                <span className="text-xs font-medium text-muted-foreground block">
+                                    Total Terdaftar Lomba
+                                </span>
+                                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                                    {totalCount}
                                 </div>
                             </div>
-
-                            {/* Periode */}
-                            <div>
-                                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                                    Periode Lomba
-                                </label>
-                                <select
-                                    value={selectedPeriode}
-                                    onChange={(e) => {
-                                        setSelectedPeriode(e.target.value);
-                                        handleFilterChange({ periode_id: e.target.value });
-                                    }}
-                                    className="w-full h-8 text-xs rounded-md border border-input bg-background px-2.5 text-foreground"
-                                >
-                                    <option value="">Semua Periode</option>
-                                    {periodes.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.nama} ({p.tahun}) {p.aktif ? '• Aktif' : ''}
-                                        </option>
-                                    ))}
-                                </select>
+                            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                                <Layers className="h-5 w-5" />
                             </div>
+                        </CardContent>
+                    </Card>
 
-                            {/* Status */}
-                            <div>
-                                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                                    Status Pengajuan
-                                </label>
-                                <select
-                                    value={selectedStatus}
-                                    onChange={(e) => {
-                                        setSelectedStatus(e.target.value);
-                                        handleFilterChange({ status: e.target.value });
-                                    }}
-                                    className="w-full h-8 text-xs rounded-md border border-input bg-background px-2.5 text-foreground"
-                                >
-                                    <option value="all">Semua Status</option>
-                                    <option value="dalam_pendampingan">Dalam Pendampingan</option>
-                                    <option value="disahkan_opd">Disahkan OPD</option>
-                                    <option value="review_internal">Review Internal</option>
-                                    <option value="siap_kirim">Siap Kirim</option>
-                                    <option value="terkirim">Terkirim</option>
-                                </select>
+                    <Card
+                        className={`cursor-pointer transition-all border shadow-xs ${
+                            statusTab === 'submitted'
+                                ? 'border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20 ring-1 ring-amber-500/20'
+                                : 'hover:border-border/80 bg-card'
+                        }`}
+                        onClick={() => setStatusTab('submitted')}
+                    >
+                        <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                            <div className="space-y-1">
+                                <span className="text-xs font-medium text-muted-foreground block">
+                                    Telah Disubmit (Dalam Penjurian)
+                                </span>
+                                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                                    {submittedCount}
+                                </div>
                             </div>
+                            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600">
+                                <CheckCircle2 className="h-5 w-5" />
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                            {/* Status Daerah */}
-                            <div>
-                                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                                    Kategori Inovasi
-                                </label>
-                                <select
-                                    value={selectedDaerah}
-                                    onChange={(e) => {
-                                        setSelectedDaerah(e.target.value);
-                                        handleFilterChange({ is_inovasi_daerah: e.target.value });
-                                    }}
-                                    className="w-full h-8 text-xs rounded-md border border-input bg-background px-2.5 text-foreground"
-                                >
-                                    <option value="all">Semua Kategori</option>
-                                    <option value="true">Inovasi Daerah</option>
-                                    <option value="false">Inovasi Biasa</option>
-                                </select>
+                    <Card
+                        className={`cursor-pointer transition-all border shadow-xs ${
+                            statusTab === 'lolos'
+                                ? 'border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20 ring-1 ring-emerald-500/20'
+                                : 'hover:border-border/80 bg-card'
+                        }`}
+                        onClick={() => setStatusTab('lolos')}
+                    >
+                        <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                            <div className="space-y-1">
+                                <span className="text-xs font-medium text-muted-foreground block">
+                                    Lolos Seleksi (Inovasi Daerah)
+                                </span>
+                                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                                    {lolosCount}
+                                </div>
                             </div>
+                            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600">
+                                <Trophy className="h-5 w-5" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Filter Toolbar Bersih & Terpadu Tepat di Atas DataTable */}
+                <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                        {/* Tab Status Seleksi */}
+                        <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-xl border border-border/80 text-xs w-fit">
+                            <button
+                                type="button"
+                                onClick={() => setStatusTab('semua')}
+                                className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+                                    statusTab === 'semua'
+                                        ? 'bg-background text-foreground shadow-xs'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                <span>Semua</span>
+                                <span
+                                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                                        statusTab === 'semua'
+                                            ? 'bg-primary/10 text-primary font-bold'
+                                            : 'bg-muted text-muted-foreground'
+                                    }`}
+                                >
+                                    {totalCount}
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setStatusTab('submitted')}
+                                className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+                                    statusTab === 'submitted'
+                                        ? 'bg-background text-amber-700 dark:text-amber-300 shadow-xs'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                <span>Telah Disubmit</span>
+                                <span
+                                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                                        statusTab === 'submitted'
+                                            ? 'bg-amber-500/10 text-amber-700 font-bold'
+                                            : 'bg-muted text-muted-foreground'
+                                    }`}
+                                >
+                                    {submittedCount}
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setStatusTab('lolos')}
+                                className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+                                    statusTab === 'lolos'
+                                        ? 'bg-background text-emerald-700 dark:text-emerald-300 shadow-xs'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                <span>Lolos Seleksi</span>
+                                <span
+                                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                                        statusTab === 'lolos'
+                                            ? 'bg-emerald-500/10 text-emerald-700 font-bold'
+                                            : 'bg-muted text-muted-foreground'
+                                    }`}
+                                >
+                                    {lolosCount}
+                                </span>
+                            </button>
                         </div>
-                    </CardContent>
-                </Card>
 
-                {/* Table Data */}
-                <div className="rounded-lg border border-border bg-card overflow-hidden">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                <TableHead className="min-w-[240px] font-semibold">NAMA INOVASI & OPD</TableHead>
-                                <TableHead className="w-[120px] font-semibold">PERIODE</TableHead>
-                                <TableHead className="w-[160px] font-semibold">STATUS PENGAJUAN</TableHead>
-                                <TableHead className="w-[120px] text-center font-semibold">SKOR SID</TableHead>
-                                <TableHead className="w-[160px] text-right font-semibold">AKSI</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {pengajuan.data.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground">
-                                        Tidak ada data pengajuan lomba yang sesuai filter.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                pengajuan.data.map((item) => {
-                                    const st = statusBadgeMap[item.status] ?? {
-                                        label: item.status,
-                                        variant: 'secondary',
-                                    };
-                                    const inovasi = item.inovasi;
+                        {/* Filter Dropdown: Kategori & Periode Lomba */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <select
+                                value={selectedKategori}
+                                onChange={(e) => setSelectedKategori(e.target.value)}
+                                className="h-8 text-xs rounded-lg border border-input bg-background px-2.5 text-foreground cursor-pointer"
+                            >
+                                <option value="all">Semua Kategori</option>
+                                <option value="opd">Kategori OPD</option>
+                                <option value="masyarakat">Kategori Masyarakat</option>
+                                <option value="mahasiswa">Kategori Mahasiswa</option>
+                                <option value="pelajar">Kategori Pelajar</option>
+                            </select>
 
-                                    return (
-                                        <TableRow key={item.id} className="hover:bg-muted/30">
-                                            {/* Nama Inovasi & OPD */}
-                                            <TableCell className="space-y-1">
-                                                <div className="font-semibold text-xs text-foreground flex items-center gap-2">
-                                                    <span>{inovasi?.nama_inovasi}</span>
-                                                    {item.is_inovasi_daerah ? (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px] gap-1"
-                                                        >
-                                                            <Award className="h-2.5 w-2.5 text-emerald-600" />
-                                                            Inovasi Daerah
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge variant="secondary" className="text-[10px] text-muted-foreground">
-                                                            Inovasi Biasa
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                <div className="text-[11px] text-muted-foreground">
-                                                    {inovasi?.opd?.nama ?? inovasi?.user?.nama_pemda ?? 'Inisiator Publik'} • Inisiator: {inovasi?.nama_inisiator}
-                                                </div>
-                                            </TableCell>
+                            <select
+                                value={selectedPeriode}
+                                onChange={(e) => handlePeriodeChange(e.target.value)}
+                                className="h-8 text-xs rounded-lg border border-input bg-background px-2.5 text-foreground cursor-pointer"
+                            >
+                                <option value="">Semua Periode</option>
+                                {periodes.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        Periode {p.tahun} {p.aktif ? '• Aktif' : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
 
-                                            {/* Periode */}
-                                            <TableCell className="text-xs">
-                                                <div className="font-medium text-foreground">
-                                                    {item.periode_lomba?.tahun ?? '-'}
-                                                </div>
-                                                <div className="text-[10px] text-muted-foreground">
-                                                    {item.is_arsip ? 'Arsip' : 'Aktif'}
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Status */}
-                                            <TableCell>
-                                                <Badge variant={st.variant} className={st.className}>
-                                                    {st.label}
-                                                </Badge>
-                                            </TableCell>
-
-                                            {/* Skor */}
-                                            <TableCell className="text-center">
-                                                <div className="font-mono font-bold text-xs text-teal-700 dark:text-teal-400">
-                                                    {item.estimasi_skor_kematangan ? item.estimasi_skor_kematangan.toFixed(2) : '-'}
-                                                </div>
-                                                <div className="text-[10px] text-muted-foreground">
-                                                    {item.kelengkapan_indikator?.length ?? 0}/20 Diisi
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Aksi */}
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
-                                                    {/* Detail Pengajuan */}
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        asChild
-                                                        className="h-7 px-2.5 text-xs gap-1"
-                                                        title="Detail Pengajuan"
-                                                    >
-                                                        <Link href={`/pengajuan-lomba/${item.id}`}>
-                                                            <Eye className="h-3 w-3" />
-                                                            <span>Detail</span>
-                                                        </Link>
-                                                    </Button>
-
-                                                    {/* 20 Indikator SID */}
-                                                    <Button
-                                                        variant="default"
-                                                        size="sm"
-                                                        asChild
-                                                        className="h-7 px-2.5 text-xs gap-1 bg-teal-600 hover:bg-teal-700 text-white shadow-xs"
-                                                        title="Buka 20 Indikator SID"
-                                                    >
-                                                        <Link href={`/pengajuan-lomba/${item.id}/indikator`}>
-                                                            <FolderOpen className="h-3 w-3" />
-                                                            <span>Indikator</span>
-                                                        </Link>
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
+                    <DataTable
+                        data={displayedData}
+                        columns={columns}
+                        searchPlaceholder="Cari nama inovasi, inisiator, atau OPD..."
+                        searchKey={(row) =>
+                            `${row.inovasi?.nama_inovasi ?? ''} ${row.inovasi?.nama_inisiator ?? ''} ${row.inovasi?.opd?.nama ?? ''}`
+                        }
+                        pageSize={10}
+                        emptyTitle="Belum Ada Inovasi yang Diajukan ke Lomba"
+                        emptyDescription="Anda belum mendaftarkan usulan inovasi ke Lomba Inovasi Daerah. Daftarkan usulan yang sudah ada dari Bank Inovasi Anda atau buat inovasi baru untuk dilombakan."
+                        emptyAction={
+                            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                                <Button asChild variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow-xs text-xs">
+                                    <Link href="/inovasi">
+                                        <Send className="h-3.5 w-3.5" />
+                                        <span>Pilih dari Inovasi Saya</span>
+                                    </Link>
+                                </Button>
+                                <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+                                    <Link href="/inovasi/create">
+                                        <Plus className="h-3.5 w-3.5" />
+                                        <span>Input Inovasi Baru</span>
+                                    </Link>
+                                </Button>
+                            </div>
+                        }
+                    />
                 </div>
             </div>
         </>

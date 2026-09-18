@@ -35,6 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { CountdownTimer, type CountdownData } from '@/components/countdown-timer';
 import { dashboard } from '@/routes';
 import { create } from '@/routes/inovasi';
 import type { Auth } from '@/types';
@@ -94,7 +95,8 @@ interface MetricSummary {
 interface DashboardMetrics {
     user_role: string;
     role_data: Record<string, any>;
-    periode: { id: number; tahun: string; nama: string } | null;
+    periode: { id: number; tahun: string | number; nama?: string } | null;
+    countdown?: CountdownData | null;
     summary: MetricSummary;
     status_counts: Record<string, number>;
     tahapan_counts: {
@@ -259,9 +261,12 @@ export default function Dashboard({ metrics }: Props) {
                                     {userRole === 'tim_penilai' && 'Dashboard Analytics Makro Sumbawa'}
                                 </Badge>
                                 {metrics?.periode && (
-                                    <Badge className="bg-background text-foreground font-extrabold text-xs">
-                                        Periode Lomba: {metrics.periode.nama}
+                                    <Badge className="bg-background text-foreground font-extrabold text-xs shadow-2xs border border-border/40">
+                                        Periode Lomba {metrics.periode.tahun ?? '2026'}
                                     </Badge>
+                                )}
+                                {metrics?.countdown && (
+                                    <CountdownTimer countdown={metrics.countdown} variant="banner" />
                                 )}
                             </div>
                             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-primary-foreground">

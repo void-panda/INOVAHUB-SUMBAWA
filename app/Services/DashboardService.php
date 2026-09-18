@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 class DashboardService
 {
     public function __construct(
-        private readonly SimulasiIidService $simulasiService
+        private readonly SimulasiIidService $simulasiService,
+        private readonly PengajuanLombaService $pengajuanService,
     ) {}
 
     /**
@@ -237,6 +238,7 @@ class DashboardService
             'recent_logs' => $recentLogs,
             'recent_inovasi' => $recentInovasi,
             'linimasa' => $linimasa,
+            'countdown' => $this->pengajuanService->getPengumpulanCountdown($periode),
             'simulasi_brief' => [
                 'spd_score' => $simulasi['spd_score'],
                 'sid_score' => $simulasi['sid_score'],

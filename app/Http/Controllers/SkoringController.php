@@ -25,6 +25,7 @@ class SkoringController extends Controller
     {
         $pengajuanList = PengajuanLomba::with(['inovasi.user', 'inovasi.opd', 'periodeLomba'])
             ->whereIn('status', [
+                StatusPengajuan::DalamPendampingan->value,
                 StatusPengajuan::DisahkanOpd->value,
                 StatusPengajuan::ReviewInternal->value,
                 StatusPengajuan::SiapKirim->value,

@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\DTOs\InovasiData;
 use App\Http\Requests\InovasiStoreRequest;
+use App\Enums\StatusPengajuan;
 use App\Models\Inovasi;
 use App\Models\InovasiDokumen;
+use App\Models\ValidasiLog;
 use App\Repositories\InovasiRepository;
 use App\Services\InovasiService;
+use App\Services\PengajuanLombaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -20,7 +23,8 @@ class InovasiController extends Controller
 {
     public function __construct(
         private readonly InovasiService $inovasiService,
-        private readonly InovasiRepository $inovasiRepository
+        private readonly InovasiRepository $inovasiRepository,
+        private readonly PengajuanLombaService $pengajuanLombaService
     ) {}
 
     /**
@@ -211,17 +215,39 @@ class InovasiController extends Controller
     }
 
     /**
-     * Ajukan validasi: draft/revisi → diajukan.
+     * Submit inovasi ke Lomba Inovasi Daerah (draft/revisi → dalam_pendampingan).
      */
     public function submit(Request $request, Inovasi $inovasi): RedirectResponse
     {
         $this->authorizeOwned($request, $inovasi);
 
-        $this->inovasiService->submitForValidation($inovasi);
+        $pengajuanAktif = $inovasi->pengajuanAktif;
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Inovasi diajukan ke Pendamping.')]);
+        if (! $pengajuanAktif) {
+            $this->pengajuanLombaService->ajukanKeLomba($inovasi, $request->user());
+        } else {
+            $statusSebelum = $pengajuanAktif->status instanceof StatusPengajuan
+                ? $pengajuanAktif->status->value
+                : (string) $pengajuanAktif->status;
 
-        return to_route('inovasi.edit', $inovasi);
+            $pengajuanAktif->update(['status' => StatusPengajuan::DalamPendampingan]);
+
+            ValidasiLog::create([
+                'inovasi_id' => $inovasi->id,
+                'pengajuan_lomba_id' => $pengajuanAktif->id,
+                'user_id' => $request->user()->id,
+                'status_sebelum' => $statusSebelum,
+                'status_sesudah' => StatusPengajuan::DalamPendampingan->value,
+                'catatan' => 'Inovasi telah diperbaiki dan disubmit kembali ke Lomba oleh Inovator.',
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __("Inovasi ':nama' berhasil dikirim ke Lomba Inovasi Daerah.", ['nama' => $inovasi->nama_inovasi]),
+        ]);
+
+        return to_route('pengajuan-lomba.index');
     }
 
     /**

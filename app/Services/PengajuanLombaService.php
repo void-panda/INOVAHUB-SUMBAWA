@@ -20,6 +20,60 @@ use Illuminate\Validation\ValidationException;
 class PengajuanLombaService
 {
     /**
+     * Dapatkan informasi countdown tahapan pengumpulan lomba inovasi daerah.
+     *
+     * @return array{tahapan_nama: string, status: string, target_date: string, mulai: string, selesai: string, is_open: bool, periode_tahun: int}|null
+     */
+    public function getPengumpulanCountdown(?PeriodeLomba $periode = null): ?array
+    {
+        $targetPeriode = $periode ?? PeriodeLomba::where('aktif', true)->first();
+        if (! $targetPeriode) {
+            return null;
+        }
+
+        $linimasaRaw = DB::table('linimasa')
+            ->where('periode_lomba_id', $targetPeriode->id)
+            ->orderBy('mulai')
+            ->get();
+
+        $pengumpulanTahap = $linimasaRaw->first(function ($item) {
+            $namaLower = strtolower($item->nama);
+            return str_contains($namaLower, 'pengumpulan')
+                || str_contains($namaLower, 'pendaftaran')
+                || str_contains($namaLower, 'input profil');
+        }) ?? $linimasaRaw->first();
+
+        if (! $pengumpulanTahap) {
+            return null;
+        }
+
+        $now = now();
+        $mulaiDate = \Carbon\Carbon::parse($pengumpulanTahap->mulai)->startOfDay();
+        $selesaiDate = \Carbon\Carbon::parse($pengumpulanTahap->selesai)->endOfDay();
+
+        if ($now->lt($mulaiDate)) {
+            $status = 'upcoming';
+            $targetDate = $mulaiDate->toIso8601String();
+        } elseif ($now->gt($selesaiDate)) {
+            $status = 'closed';
+            $targetDate = $selesaiDate->toIso8601String();
+        } else {
+            $status = 'active';
+            $targetDate = $selesaiDate->toIso8601String();
+        }
+
+        return [
+            'tahapan_nama' => $pengumpulanTahap->nama,
+            'status' => $status,
+            'target_date' => $targetDate,
+            'mulai' => $mulaiDate->translatedFormat('d M Y'),
+            'selesai' => $selesaiDate->translatedFormat('d M Y, 23:59') . ' WITA',
+            'is_open' => $status === 'active',
+            'periode_tahun' => (int) $targetPeriode->tahun,
+        ];
+    }
+
+    /**
      * Daftarkan inovasi master ke periode lomba yang sedang aktif.
      */
     public function ajukanKeLomba(Inovasi $inovasi, User $user): PengajuanLomba

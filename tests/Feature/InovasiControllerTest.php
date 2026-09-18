@@ -309,4 +309,30 @@ class InovasiControllerTest extends TestCase
                 ->where('inovasi.0.nama_inovasi', 'Inovasi Daerah Resmi')
             );
     }
+
+    public function test_inovator_can_submit_inovasi_to_lomba(): void
+    {
+        $user = $this->inovator();
+
+        $inovasi = Inovasi::create([
+            'user_id' => $user->id,
+            'nama_inovasi' => 'Inovasi Siap Lomba',
+            'tahapan' => 'penerapan',
+            'bentuk_inovasi' => 'pelayanan_publik',
+            'jenis_inovasi' => 'non_digital',
+            'klasifikasi' => 'non_tematik',
+            'nama_inisiator' => 'Pemberdayaan Masyarakat',
+            'koordinat' => '-8.4931,117.4193',
+            'waktu_penerapan' => '2026-01-01',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('inovasi.submit', $inovasi))
+            ->assertRedirect(route('pengajuan-lomba.index'));
+
+        $this->assertDatabaseHas('pengajuan_lomba', [
+            'inovasi_id' => $inovasi->id,
+            'status' => 'dalam_pendampingan',
+        ]);
+    }
 }
