@@ -421,6 +421,17 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                             size="sm"
                             className="bg-white/10 hover:bg-white/20 text-white border-white/20 rounded-xl h-9 text-xs font-semibold"
                         >
+                            <a href="/inovasi-daerah/print-rekap" target="_blank" rel="noopener noreferrer">
+                                <Printer className="h-3.5 w-3.5 mr-1" /> Export PDF Rekap
+                            </a>
+                        </Button>
+
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="bg-white/10 hover:bg-white/20 text-white border-white/20 rounded-xl h-9 text-xs font-semibold"
+                        >
                             <Link href="/inovasi/create">
                                 <Plus className="h-3.5 w-3.5 mr-1" /> Input Inovasi Baru
                             </Link>
@@ -510,7 +521,7 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                                     key={tab.key}
                                     type="button"
                                     onClick={() => setActiveTab(tab.key)}
-                                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${activeTab === tab.key
+                                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeTab === tab.key
                                             ? 'bg-background text-foreground shadow-xs'
                                             : 'text-muted-foreground hover:text-foreground'
                                         }`}
@@ -527,6 +538,18 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                                 </button>
                             ))}
                         </div>
+
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs gap-1.5 font-medium border-border hover:bg-muted"
+                        >
+                            <a href="/inovasi-daerah/print-rekap" target="_blank" rel="noopener noreferrer">
+                                <Printer className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+                                <span>Cetak Rekapitulasi PDF</span>
+                            </a>
+                        </Button>
                     </div>
 
                     <DataTable

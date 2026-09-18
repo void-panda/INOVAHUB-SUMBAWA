@@ -10,6 +10,7 @@ use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\PengajuanLombaController;
 use App\Http\Controllers\PenugasanPendampingController;
 use App\Http\Controllers\PeriodeLombaController;
+use App\Http\Controllers\PesertaLombaController;
 use App\Http\Controllers\SimulasiIidController;
 use App\Http\Controllers\SkoringController;
 use App\Http\Controllers\ValidasiController;
@@ -57,6 +58,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['auth', 'verified'])
         ->get('/inovasi-daerah', [InovasiController::class, 'daerah'])
         ->name('inovasi.daerah');
+
+    Route::middleware(['auth', 'verified'])
+        ->get('/inovasi-daerah/print-rekap', [InovasiController::class, 'printRekap'])
+        ->name('inovasi.daerah.print-rekap');
+
+    // Data Peserta Lomba Inovasi Daerah (Tim Penilai / Admin Bappeda)
+    Route::middleware(['auth', 'verified', 'permission:scoring-spd|scoring-sid|manage-master-data'])
+        ->get('/penilai/peserta-lomba', [PesertaLombaController::class, 'index'])
+        ->name('penilai.peserta-lomba.index');
 
     // Inovasi Master (Repositori Bank Data Inovasi Biasa)
     Route::middleware(['auth', 'verified', 'permission:input-inovasi'])

@@ -348,4 +348,4 @@ export default function InovasiPrint({ inovasi, rantaiVersi, tanggalCetak }: Pri
     );
 }
 
-InovasiPrint.layout = null;
+InovasiPrint.layout = (page: React.ReactNode) => page;

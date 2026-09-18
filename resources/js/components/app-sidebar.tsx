@@ -99,6 +99,13 @@ export function AppSidebar() {
             icon: Calculator,
         });
     }
+    if (permissions.includes('manage-master-data') || permissions.includes('scoring-spd') || permissions.includes('scoring-sid')) {
+        verifikasiItems.push({
+            title: 'Peserta Lomba',
+            href: '/penilai/peserta-lomba',
+            icon: Users,
+        });
+    }
 
     if (verifikasiItems.length > 0) {
         navGroups.push({

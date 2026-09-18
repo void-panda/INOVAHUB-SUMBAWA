@@ -60,6 +60,65 @@ class InovasiController extends Controller
     }
 
     /**
+     * Lembar rekapitulasi data Inovasi Daerah siap cetak / PDF (A4 Landscape).
+     */
+    public function printRekap(Request $request): Response
+    {
+        $periode = $this->inovasiRepository->getAktifPeriode();
+        $inovasiRaw = $this->inovasiRepository->getAllInovasiDaerah();
+
+        $scores = [];
+        $siapIgaCount = 0;
+
+        $inovasiList = $inovasiRaw->map(function ($item) use (&$scores, &$siapIgaCount) {
+            $pengajuanCollection = $item->pengajuanLomba ?? $item->pengajuan_lomba;
+            $activePengajuan = $pengajuanCollection?->firstWhere('periodeLomba.aktif', true)
+                ?? $pengajuanCollection?->firstWhere('periode_lomba.aktif', true)
+                ?? $pengajuanCollection?->first();
+
+            $score = $activePengajuan?->estimasi_skor_kematangan ?? null;
+            if ($score !== null && ! is_nan((float) $score)) {
+                $scores[] = (float) $score;
+            }
+
+            $status = $activePengajuan?->status?->value ?? (is_string($activePengajuan?->status) ? $activePengajuan->status : 'draft');
+            if (in_array($status, ['siap_kirim', 'terkirim', 'disetujui', 'disahkan_opd'], true)) {
+                $siapIgaCount++;
+            }
+
+            $kelengkapan = $activePengajuan?->kelengkapanIndikator ?? $activePengajuan?->kelengkapan_indikator;
+            $filledCount = $kelengkapan?->whereNotNull('parameter')->count() ?? 0;
+
+            return [
+                'id' => $item->id,
+                'nama_inovasi' => $item->nama_inovasi,
+                'nama_inisiator' => $item->nama_inisiator ?: '-',
+                'opd_nama' => $item->opd?->nama ?? $item->user?->nama_pemda ?? 'Masyarakat Umum',
+                'urusan_utama' => $item->urusan_utama ?: '-',
+                'tahapan' => $item->tahapan,
+                'status' => $status,
+                'estimasi_skor_kematangan' => (float) ($score ?? 0),
+                'filled_indikator' => $filledCount,
+                'dokumen_count' => $item->dokumen?->count() ?? 0,
+                'waktu_penerapan' => $item->waktu_penerapan?->format('d/m/Y') ?? '-',
+            ];
+        });
+
+        $avgScore = count($scores) > 0 ? array_sum($scores) / count($scores) : 0;
+
+        return Inertia::render('inovasi/print-rekap', [
+            'inovasiList' => $inovasiList->values()->all(),
+            'periode' => $periode,
+            'summary' => [
+                'total_inovasi' => $inovasiList->count(),
+                'total_siap_iga' => $siapIgaCount,
+                'avg_skor' => round($avgScore, 2),
+            ],
+            'tanggalCetak' => date('d F Y H:i'),
+        ]);
+    }
+
+    /**
      * Form input inovasi baru.
      */
     public function create(Request $request): Response

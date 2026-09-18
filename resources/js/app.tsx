@@ -17,10 +17,11 @@ void createInertiaApp({
             import.meta.glob('./pages/**/*.tsx')
         ).then((module: any) => {
             const page = module.default;
-            const layoutProps = typeof page.layout === 'object' && !Array.isArray(page.layout) ? page.layout : {};
+            const isNoLayout = page.layout === null || page.layout === false || name === 'welcome' || name.includes('print');
+            const layoutProps = typeof page.layout === 'object' && page.layout !== null && !Array.isArray(page.layout) ? page.layout : {};
 
-            if (name === 'welcome' || name === 'inovasi/print') {
-                page.layout = null;
+            if (isNoLayout) {
+                page.layout = (pageEl: React.ReactNode) => pageEl;
             } else if (name.startsWith('auth/')) {
                 page.layout = (pageEl: React.ReactNode) => <AuthLayout {...layoutProps}>{pageEl}</AuthLayout>;
             } else if (name.startsWith('settings/')) {
