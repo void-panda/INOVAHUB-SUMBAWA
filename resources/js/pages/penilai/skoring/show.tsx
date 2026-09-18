@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
+    AlertTriangle,
     ArrowLeft,
     Award,
     CheckCircle2,
@@ -10,6 +11,7 @@ import {
     FileText,
     FolderGit2,
     Info,
+    Lock,
     Play,
     Printer,
     Save,
@@ -17,6 +19,16 @@ import {
     ShieldAlert,
     Video,
 } from 'lucide-react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -93,7 +105,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Antrean Penilaian', href: '/penilai/skoring' },
+    { title: 'Penilaian Lomba Inovasi', href: '/penilai/skoring' },
     { title: 'Lembar Evaluasi Inovasi', href: '#' },
 ];
 
@@ -104,8 +116,10 @@ export default function SkoringShow({
     dokumenIndikator = {},
     existingSkorSid = [],
 }: Props) {
+    const isLocked = inovasi.status === 'siap_kirim' || inovasi.status === 'terkirim';
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'unscored' | 'scored'>('all');
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     // Inisialisasi skor awal
     const initialSidState = useMemo(() => {
@@ -119,7 +133,6 @@ export default function SkoringShow({
                     catatan: existing.catatan || '',
                 };
             } else {
-                // Default tier mengambil klaim inovator jika ada, atau 0
                 const inovatorClaim = kelengkapan[ind.id]?.parameter;
                 let defaultTier = 0;
                 if (inovatorClaim) {
@@ -146,6 +159,7 @@ export default function SkoringShow({
     });
 
     const handleTierChange = (indikatorId: number, tier: number) => {
+        if (isLocked) return;
         setScoresSid((prev) => ({
             ...prev,
             [indikatorId]: {
@@ -156,6 +170,7 @@ export default function SkoringShow({
     };
 
     const handleCatatanChange = (indikatorId: number, catatan: string) => {
+        if (isLocked) return;
         setScoresSid((prev) => ({
             ...prev,
             [indikatorId]: {
@@ -197,6 +212,8 @@ export default function SkoringShow({
     }, [sidList, searchQuery, filterStatus, scoresSid]);
 
     const handleSubmitScore = (isFinalSubmit: boolean) => {
+        if (isLocked) return;
+
         const itemsSid = sidList.map((ind) => {
             const selected = scoresSid[ind.id];
             return {
@@ -211,7 +228,9 @@ export default function SkoringShow({
             is_final: isFinalSubmit,
         }));
 
-        form.post(`/penilai/skoring/${inovasi.id}`);
+        form.post(`/penilai/skoring/${inovasi.id}`, {
+            onFinish: () => setShowConfirmModal(false),
+        });
     };
 
     // Dokumen umum
@@ -238,16 +257,35 @@ export default function SkoringShow({
                         </Button>
                     </Link>
                     <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs px-3 py-1 font-semibold uppercase tracking-wider bg-muted/60">
-                            Status: {inovasi.status.replace('_', ' ')}
-                        </Badge>
+                        {isLocked ? (
+                            <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1 font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                                <Lock className="h-3.5 w-3.5" /> Terkunci Permanen ({inovasi.status.replace('_', ' ')})
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className="text-xs px-3 py-1 font-semibold uppercase tracking-wider bg-muted/60">
+                                Status: {inovasi.status.replace('_', ' ')}
+                            </Badge>
+                        )}
                         <Button asChild variant="outline" size="sm" className="gap-1.5 cursor-pointer">
                             <a href={`/inovasi/${inovasi.id}/print`} target="_blank" rel="noopener noreferrer">
-                                <Printer className="h-3.5 w-3.5 text-muted-foreground" /> Cetak / PDF Lembar Inovasi
+                                <Printer className="h-3.5 w-3.5 text-muted-foreground" /> Cetak / PDF Lembar Nilai
                             </a>
                         </Button>
                     </div>
                 </div>
+
+                {/* Banner Status Terkunci jika Siap Kirim / Terkirim */}
+                {isLocked && (
+                    <div className="flex items-start sm:items-center gap-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 shadow-xs">
+                        <Lock className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+                        <div className="text-xs space-y-0.5">
+                            <strong className="font-bold block text-sm">Penilaian Telah Difinalisasi & Terkunci Permanen</strong>
+                            <p className="text-muted-foreground dark:text-emerald-300">
+                                Lembar penilaian inovasi ini berstatus resmi dan terkunci dari perubahan. Anda dapat meninjau rincian indikator, memeriksa bukti dukung, atau mengunduh cetakan PDF lembar penilaian.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Hero Header & Live Score Card */}
                 <Card className="border-teal-500/20 bg-gradient-to-r from-teal-500/5 via-primary/5 to-emerald-500/5 shadow-xs overflow-hidden">
@@ -448,7 +486,7 @@ export default function SkoringShow({
                         }
 
                         return (
-                            <Card key={ind.id} className="border shadow-xs hover:border-teal-500/40 transition-colors">
+                            <Card key={ind.id} className={`border shadow-xs transition-colors ${isLocked ? 'border-border/80' : 'hover:border-teal-500/40'}`}>
                                 {/* Card Header */}
                                 <CardHeader className="py-3 px-4 bg-muted/30 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                     <div className="flex items-center gap-2.5">
@@ -552,26 +590,44 @@ export default function SkoringShow({
 
                                     {/* PANEL 3: Keputusan Penilaian Juri */}
                                     <div className="pt-2 border-t space-y-3">
-                                        <span className="text-xs font-bold text-foreground block">
-                                            Keputusan Penilaian Juri (Pilih Tier):
-                                        </span>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-foreground block">
+                                                Keputusan Penilaian Juri:
+                                            </span>
+                                            {isLocked && (
+                                                <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                                                    <Lock className="h-3 w-3" /> Terkunci (Read-Only)
+                                                </span>
+                                            )}
+                                        </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
                                             {/* Tier 0 */}
                                             <label
                                                 onClick={() => handleTierChange(ind.id, 0)}
-                                                className={`p-3 rounded-lg border text-xs cursor-pointer transition-all flex flex-col justify-between ${selectedTier === 0
-                                                    ? 'border-rose-500 bg-rose-500/10 ring-1 ring-rose-500 text-rose-950 dark:text-rose-200'
-                                                    : 'border-border hover:bg-muted/40'
-                                                    }`}
+                                                className={`p-3 rounded-lg border text-xs transition-all flex flex-col justify-between ${
+                                                    isLocked ? 'cursor-default' : 'cursor-pointer'
+                                                } ${
+                                                    selectedTier === 0
+                                                        ? 'border-rose-500 bg-rose-500/10 ring-2 ring-rose-500 text-rose-950 dark:text-rose-200'
+                                                        : isLocked
+                                                        ? 'opacity-40 border-border/60'
+                                                        : 'border-border hover:bg-muted/40'
+                                                }`}
                                             >
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <span className="font-bold">0 / Tidak Sah</span>
+                                                    <span className="font-bold flex items-center gap-1">
+                                                        0 / Tidak Sah
+                                                        {isLocked && selectedTier === 0 && (
+                                                            <Badge className="bg-rose-600 text-white text-[9px] py-0 px-1.5 h-4">Pilihan Juri</Badge>
+                                                        )}
+                                                    </span>
                                                     <input
                                                         type="radio"
                                                         name={`sid_${ind.id}`}
                                                         checked={selectedTier === 0}
                                                         onChange={() => handleTierChange(ind.id, 0)}
+                                                        disabled={isLocked}
                                                     />
                                                 </div>
                                                 <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
@@ -582,18 +638,29 @@ export default function SkoringShow({
                                             {/* Tier 1 */}
                                             <label
                                                 onClick={() => handleTierChange(ind.id, 1)}
-                                                className={`p-3 rounded-lg border text-xs cursor-pointer transition-all flex flex-col justify-between ${selectedTier === 1
-                                                    ? 'border-teal-600 bg-teal-500/10 ring-1 ring-teal-600'
-                                                    : 'border-border hover:bg-muted/40'
-                                                    }`}
+                                                className={`p-3 rounded-lg border text-xs transition-all flex flex-col justify-between ${
+                                                    isLocked ? 'cursor-default' : 'cursor-pointer'
+                                                } ${
+                                                    selectedTier === 1
+                                                        ? 'border-teal-600 bg-teal-500/15 ring-2 ring-teal-600'
+                                                        : isLocked
+                                                        ? 'opacity-40 border-border/60'
+                                                        : 'border-border hover:bg-muted/40'
+                                                }`}
                                             >
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <span className="font-bold text-foreground">Parameter P1</span>
+                                                    <span className="font-bold text-foreground flex items-center gap-1">
+                                                        Parameter P1
+                                                        {isLocked && selectedTier === 1 && (
+                                                            <Badge className="bg-teal-600 text-white text-[9px] py-0 px-1.5 h-4">Pilihan Juri</Badge>
+                                                        )}
+                                                    </span>
                                                     <input
                                                         type="radio"
                                                         name={`sid_${ind.id}`}
                                                         checked={selectedTier === 1}
                                                         onChange={() => handleTierChange(ind.id, 1)}
+                                                        disabled={isLocked}
                                                     />
                                                 </div>
                                                 <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
@@ -604,18 +671,29 @@ export default function SkoringShow({
                                             {/* Tier 2 */}
                                             <label
                                                 onClick={() => handleTierChange(ind.id, 2)}
-                                                className={`p-3 rounded-lg border text-xs cursor-pointer transition-all flex flex-col justify-between ${selectedTier === 2
-                                                    ? 'border-teal-600 bg-teal-500/10 ring-1 ring-teal-600'
-                                                    : 'border-border hover:bg-muted/40'
-                                                    }`}
+                                                className={`p-3 rounded-lg border text-xs transition-all flex flex-col justify-between ${
+                                                    isLocked ? 'cursor-default' : 'cursor-pointer'
+                                                } ${
+                                                    selectedTier === 2
+                                                        ? 'border-teal-600 bg-teal-500/15 ring-2 ring-teal-600'
+                                                        : isLocked
+                                                        ? 'opacity-40 border-border/60'
+                                                        : 'border-border hover:bg-muted/40'
+                                                }`}
                                             >
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <span className="font-bold text-foreground">Parameter P2</span>
+                                                    <span className="font-bold text-foreground flex items-center gap-1">
+                                                        Parameter P2
+                                                        {isLocked && selectedTier === 2 && (
+                                                            <Badge className="bg-teal-600 text-white text-[9px] py-0 px-1.5 h-4">Pilihan Juri</Badge>
+                                                        )}
+                                                    </span>
                                                     <input
                                                         type="radio"
                                                         name={`sid_${ind.id}`}
                                                         checked={selectedTier === 2}
                                                         onChange={() => handleTierChange(ind.id, 2)}
+                                                        disabled={isLocked}
                                                     />
                                                 </div>
                                                 <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
@@ -626,18 +704,29 @@ export default function SkoringShow({
                                             {/* Tier 3 */}
                                             <label
                                                 onClick={() => handleTierChange(ind.id, 3)}
-                                                className={`p-3 rounded-lg border text-xs cursor-pointer transition-all flex flex-col justify-between ${selectedTier === 3
-                                                    ? 'border-teal-600 bg-teal-500/10 ring-1 ring-teal-600'
-                                                    : 'border-border hover:bg-muted/40'
-                                                    }`}
+                                                className={`p-3 rounded-lg border text-xs transition-all flex flex-col justify-between ${
+                                                    isLocked ? 'cursor-default' : 'cursor-pointer'
+                                                } ${
+                                                    selectedTier === 3
+                                                        ? 'border-teal-600 bg-teal-500/15 ring-2 ring-teal-600'
+                                                        : isLocked
+                                                        ? 'opacity-40 border-border/60'
+                                                        : 'border-border hover:bg-muted/40'
+                                                }`}
                                             >
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <span className="font-bold text-foreground">Parameter P3</span>
+                                                    <span className="font-bold text-foreground flex items-center gap-1">
+                                                        Parameter P3
+                                                        {isLocked && selectedTier === 3 && (
+                                                            <Badge className="bg-teal-600 text-white text-[9px] py-0 px-1.5 h-4">Pilihan Juri</Badge>
+                                                        )}
+                                                    </span>
                                                     <input
                                                         type="radio"
                                                         name={`sid_${ind.id}`}
                                                         checked={selectedTier === 3}
                                                         onChange={() => handleTierChange(ind.id, 3)}
+                                                        disabled={isLocked}
                                                     />
                                                 </div>
                                                 <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
@@ -647,12 +736,25 @@ export default function SkoringShow({
                                         </div>
 
                                         {/* Catatan Penilai */}
-                                        <Input
-                                            className="text-xs h-9"
-                                            placeholder="Catatan justifikasi / evaluasi juri untuk indikator ini (Opsional)..."
-                                            value={scoresSid[ind.id]?.catatan || ''}
-                                            onChange={(e) => handleCatatanChange(ind.id, e.target.value)}
-                                        />
+                                        {isLocked ? (
+                                            scoresSid[ind.id]?.catatan ? (
+                                                <div className="p-3 rounded-md bg-muted/40 border text-xs text-foreground">
+                                                    <span className="font-semibold block text-[11px] text-muted-foreground mb-0.5">Catatan Evaluasi Juri:</span>
+                                                    <p className="italic leading-relaxed">&ldquo;{scoresSid[ind.id]?.catatan}&rdquo;</p>
+                                                </div>
+                                            ) : (
+                                                <p className="text-[11px] text-muted-foreground italic pl-1">
+                                                    Tidak ada catatan evaluasi khusus untuk indikator ini.
+                                                </p>
+                                            )
+                                        ) : (
+                                            <Input
+                                                className="text-xs h-9"
+                                                placeholder="Catatan justifikasi / evaluasi juri untuk indikator ini (Opsional)..."
+                                                value={scoresSid[ind.id]?.catatan || ''}
+                                                onChange={(e) => handleCatatanChange(ind.id, e.target.value)}
+                                            />
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -676,27 +778,89 @@ export default function SkoringShow({
                             <span>•</span>
                             <span>Total Skor Kematangan: <strong className="text-teal-600 font-black text-base">{totalSkorKematangan.toFixed(2)}</strong></span>
                         </div>
+
                         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-                            <Button
-                                variant="outline"
-                                onClick={() => handleSubmitScore(false)}
-                                disabled={form.processing}
-                                className="gap-1.5 text-xs font-semibold"
-                            >
-                                <Save className="h-4 w-4" />
-                                Simpan Draft
-                            </Button>
-                            <Button
-                                onClick={() => handleSubmitScore(true)}
-                                disabled={form.processing}
-                                className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold"
-                            >
-                                <CheckCircle2 className="h-4 w-4" />
-                                Finalisasi Penilaian (Siap Kirim)
-                            </Button>
+                            {isLocked ? (
+                                <div className="flex items-center gap-2">
+                                    <Badge className="bg-emerald-600 text-white text-xs gap-1.5 py-1.5 px-3 font-semibold">
+                                        <Lock className="h-3.5 w-3.5" /> Skor Final Terkunci ({totalSkorKematangan.toFixed(2)})
+                                    </Badge>
+                                    <Button asChild variant="outline" size="sm" className="gap-1.5 cursor-pointer text-xs">
+                                        <a href={`/inovasi/${inovasi.id}/print`} target="_blank" rel="noopener noreferrer">
+                                            <Printer className="h-3.5 w-3.5" /> Cetak Lembar Nilai (PDF)
+                                        </a>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => handleSubmitScore(false)}
+                                        disabled={form.processing}
+                                        className="gap-1.5 text-xs font-semibold"
+                                    >
+                                        <Save className="h-4 w-4" />
+                                        Simpan Draft
+                                    </Button>
+                                    <Button
+                                        onClick={() => setShowConfirmModal(true)}
+                                        disabled={form.processing}
+                                        className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold"
+                                    >
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        Finalisasi Penilaian (Siap Kirim)
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
+
+                {/* Dialog Konfirmasi Finalisasi Penilaian */}
+                <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+                    <AlertDialogContent className="sm:max-w-[480px]">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+                                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                Konfirmasi Finalisasi Penilaian
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="space-y-3 pt-2 text-xs text-muted-foreground leading-relaxed">
+                                <p>
+                                    Anda akan memfinalisasi penilaian untuk inovasi: <strong className="text-foreground">{inovasi.nama_inovasi}</strong>.
+                                </p>
+                                <div className="bg-muted/40 p-3 rounded-lg border space-y-1.5 text-foreground">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Total Skor Kematangan:</span>
+                                        <span className="font-bold text-teal-600 text-sm">{totalSkorKematangan.toFixed(2)} Poin</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Indikator Terisi:</span>
+                                        <span className="font-semibold">{scoredCount} dari {sidList.length} Indikator</span>
+                                    </div>
+                                </div>
+                                <p className="text-amber-800 dark:text-amber-300 bg-amber-500/10 p-2.5 rounded-md border border-amber-500/30">
+                                    <strong>Penting:</strong> Setelah difinalisasi, status inovasi akan berubah menjadi <em>&ldquo;Siap Kirim&rdquo;</em> dan lembar penilaian ini akan <strong>terkunci secara permanen (Read-Only)</strong>. Nilai tidak dapat diubah kembali.
+                                </p>
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="gap-2 sm:gap-0 pt-2">
+                            <AlertDialogCancel className="text-xs" disabled={form.processing}>
+                                Periksa Kembali
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleSubmitScore(true);
+                                }}
+                                disabled={form.processing}
+                                className="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold gap-1.5"
+                            >
+                                <CheckCircle2 className="h-4 w-4" />
+                                Ya, Finalisasi Penilaian Sekarang
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </>
     );

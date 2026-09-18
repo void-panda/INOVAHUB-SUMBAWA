@@ -63,8 +63,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->get('/inovasi-daerah/print-rekap', [InovasiController::class, 'printRekap'])
         ->name('inovasi.daerah.print-rekap');
 
-    // Data Peserta Lomba Inovasi Daerah (Tim Penilai / Admin Bappeda)
-    Route::middleware(['auth', 'verified', 'permission:scoring-spd|scoring-sid|manage-master-data'])
+    // Data Peserta Lomba Inovasi Daerah (Admin BAPPERIDA)
+    Route::middleware(['auth', 'verified', 'permission:manage-master-data'])
         ->get('/penilai/peserta-lomba', [PesertaLombaController::class, 'index'])
         ->name('penilai.peserta-lomba.index');
 

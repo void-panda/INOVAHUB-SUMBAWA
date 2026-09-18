@@ -3,6 +3,7 @@ import {
     AlertCircle,
     ArrowLeft,
     Award,
+    Calculator,
     CheckCircle2,
     Clock,
     FileCheck,
@@ -10,6 +11,7 @@ import {
     FolderOpen,
     History,
     Layers,
+    Lock,
     Send,
     ShieldAlert,
     Sparkles,
@@ -78,8 +80,6 @@ export default function PengajuanLombaShow({
         const endpoints: Record<string, string> = {
             rekomendasikan: `/pengajuan-lomba/${pengajuan.id}/rekomendasikan`,
             sahkan_opd: `/pengajuan-lomba/${pengajuan.id}/sahkan-opd`,
-            review_internal: `/pengajuan-lomba/${pengajuan.id}/review-internal`,
-            siap_kirim: `/pengajuan-lomba/${pengajuan.id}/siap-kirim`,
             kirim: `/pengajuan-lomba/${pengajuan.id}/kirim`,
         };
 
@@ -220,43 +220,62 @@ export default function PengajuanLombaShow({
                                 <Button
                                     size="sm"
                                     onClick={() => openActionDialog('rekomendasikan')}
-                                    className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white"
+                                    className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white shadow-xs"
                                 >
                                     Rekomendasikan ke OPD
                                 </Button>
                             )}
 
-                            {/* Sahkan OPD (Kepala OPD) */}
-                            {pengajuan.status === 'disahkan_opd' && (
+                            {/* Buka Lembar Penilaian Juri (Saat Disahkan OPD / Review Internal) */}
+                            {(pengajuan.status === 'disahkan_opd' || pengajuan.status === 'review_internal') && (
                                 <Button
                                     size="sm"
-                                    onClick={() => openActionDialog('review_internal')}
-                                    className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                    asChild
+                                    className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white gap-1.5 shadow-xs"
                                 >
-                                    Lanjutkan ke Review Internal
+                                    <Link href={`/penilai/skoring/${pengajuan.id}`}>
+                                        <Calculator className="h-3.5 w-3.5" />
+                                        <span>Buka Lembar Penilaian Juri</span>
+                                    </Link>
                                 </Button>
                             )}
 
-                            {/* Finalisasi Siap Kirim (Tim Penilai) */}
-                            {canManageInovasiDaerah && pengajuan.status === 'review_internal' && (
+                            {/* Lihat Lembar Nilai Juri Terkunci (Saat Siap Kirim / Terkirim) */}
+                            {(pengajuan.status === 'siap_kirim' || pengajuan.status === 'terkirim') && (
                                 <Button
+                                    variant="outline"
                                     size="sm"
-                                    onClick={() => openActionDialog('siap_kirim')}
-                                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    asChild
+                                    className="h-8 text-xs border-teal-600 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 gap-1.5"
                                 >
-                                    Tetapkan Siap Kirim
+                                    <Link href={`/penilai/skoring/${pengajuan.id}`}>
+                                        <Lock className="h-3.5 w-3.5" />
+                                        <span>Lihat Lembar Nilai Juri (Terkunci)</span>
+                                    </Link>
                                 </Button>
                             )}
 
-                            {/* Kirim ke Kemendagri */}
+                            {/* Kirim ke Kemendagri (Hanya BAPPERIDA saat Siap Kirim) */}
                             {canManageInovasiDaerah && pengajuan.status === 'siap_kirim' && (
                                 <Button
                                     size="sm"
                                     onClick={() => openActionDialog('kirim')}
-                                    className="h-8 text-xs bg-blue-700 hover:bg-blue-800 text-white"
+                                    className="h-8 text-xs bg-blue-700 hover:bg-blue-800 text-white gap-1.5 shadow-xs"
                                 >
-                                    Finalisasi Terkirim Kemendagri
+                                    <Send className="h-3.5 w-3.5" />
+                                    <span>Finalisasi Terkirim Kemendagri</span>
                                 </Button>
+                            )}
+
+                            {/* Status Terkirim Badge */}
+                            {pengajuan.status === 'terkirim' && (
+                                <Badge
+                                    variant="outline"
+                                    className="h-8 px-3 text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 gap-1.5 font-medium"
+                                >
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                    <span>Telah Terkirim ke Portal Kemendagri</span>
+                                </Badge>
                             )}
                         </div>
                     </CardContent>
@@ -339,7 +358,7 @@ export default function PengajuanLombaShow({
                                 <div className="text-xs text-muted-foreground font-medium">Estimasi Skor Kematangan</div>
                                 <div className="text-3xl font-bold tracking-tight text-teal-700 dark:text-teal-400">
                                     {pengajuan.estimasi_skor_kematangan
-                                        ? pengajuan.estimasi_skor_kematangan.toFixed(2)
+                                        ? Number(pengajuan.estimasi_skor_kematangan).toFixed(2)
                                         : '0.00'}
                                 </div>
                                 <div className="text-[10px] text-muted-foreground">Maksimal 111.00 Poin</div>
@@ -423,16 +442,26 @@ export default function PengajuanLombaShow({
                     <form onSubmit={handleExecuteAction}>
                         <DialogHeader>
                             <DialogTitle className="text-foreground text-base">
-                                Konfirmasi Transisi Status
+                                {actionType === 'kirim'
+                                    ? 'Finalisasi Terkirim ke Portal Kemendagri'
+                                    : actionType === 'rekomendasikan'
+                                    ? 'Rekomendasikan ke Kepala OPD'
+                                    : 'Konfirmasi Transisi Status'}
                             </DialogTitle>
                             <DialogDescription className="text-xs text-muted-foreground">
-                                Masukkan catatan verifikasi atau penjelasan untuk dicatat pada log audit sistem.
+                                {actionType === 'kirim'
+                                    ? 'Pastikan data inovasi dan nilai indikator telah disinkronkan ke sistem pusat IGA Kemendagri. Tindakan ini mencatat status inovasi menjadi Terkirim.'
+                                    : 'Masukkan catatan verifikasi atau penjelasan untuk dicatat pada log audit sistem.'}
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="py-3">
                             <Textarea
-                                placeholder="Catatan verifikasi atau alasan rekomendasi..."
+                                placeholder={
+                                    actionType === 'kirim'
+                                        ? 'Catatan pengiriman (opsional, misal: ID registrasi Kemendagri)...'
+                                        : 'Catatan verifikasi atau alasan rekomendasi...'
+                                }
                                 value={actionCatatan}
                                 onChange={(e) => setActionCatatan(e.target.value)}
                                 className="min-h-[90px] text-xs"
@@ -452,10 +481,18 @@ export default function PengajuanLombaShow({
                             <Button
                                 type="submit"
                                 size="sm"
-                                className="bg-teal-600 hover:bg-teal-700 text-white"
+                                className={
+                                    actionType === 'kirim'
+                                        ? 'bg-blue-700 hover:bg-blue-800 text-white'
+                                        : 'bg-teal-600 hover:bg-teal-700 text-white'
+                                }
                                 disabled={isProcessing}
                             >
-                                {isProcessing ? 'Memproses...' : 'Konfirmasi Transisi'}
+                                {isProcessing
+                                    ? 'Memproses...'
+                                    : actionType === 'kirim'
+                                    ? 'Konfirmasi Terkirim'
+                                    : 'Konfirmasi Transisi'}
                             </Button>
                         </DialogFooter>
                     </form>

@@ -34,12 +34,13 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Penilaian SPD & SID', href: '/penilai/skoring' },
+    { title: 'Penilaian Lomba Inovasi', href: '/penilai/skoring' },
 ];
 
 const statusBadge: Record<string, { label: string; variant: 'default' | 'outline' | 'secondary' }> = {
+    dalam_pendampingan: { label: 'Diajukan / Pendampingan', variant: 'outline' },
     disahkan_opd: { label: 'Disahkan OPD (Siap Dinilai)', variant: 'outline' },
-    review_internal: { label: 'Review Internal (Draft Skor)', variant: 'secondary' },
+    review_internal: { label: 'Review Juri (Draft Skor)', variant: 'secondary' },
     siap_kirim: { label: 'Siap Kirim (Final Skor)', variant: 'default' },
 };
 
@@ -109,23 +110,24 @@ export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
     ];
 
     const filterOptions = [
-        { label: 'Semua Antrean', value: 'all' },
+        { label: 'Semua Peserta Lomba', value: 'all' },
+        { label: 'Diajukan / Pendampingan', value: 'dalam_pendampingan' },
         { label: 'Disahkan OPD', value: 'disahkan_opd' },
-        { label: 'Review Internal', value: 'review_internal' },
-        { label: 'Siap Kirim', value: 'siap_kirim' },
+        { label: 'Review Juri (Draft)', value: 'review_internal' },
+        { label: 'Siap Kirim (Final)', value: 'siap_kirim' },
     ];
 
     return (
         <>
-            <Head title="Antrean Penilaian SPD & SID" />
+            <Head title="Penilaian Lomba Inovasi Daerah" />
 
             <div className="flex flex-col space-y-6 p-4 md:p-6 max-w-7xl mx-auto w-full">
                 {/* Header Hero Banner */}
                 <HeroBanner
                     badgeIcon={Calculator}
-                    badgeText="Self-Scoring Engine"
-                    title="Penilaian Indikator SPD & SID"
-                    description="Input tingkat pencapaian parameter P1/P2/P3 indikator Satuan Pemerintahan Daerah dan Satuan Inovasi Daerah."
+                    badgeText="Penjurian Lomba Inovasi"
+                    title="Penilaian Lomba Inovasi Daerah"
+                    description="Evaluasi 20 Indikator SID, validasi berkas bukti dukung, dan penetapan skor kematangan inovasi peserta lomba periode aktif."
                     variant="teal"
                 />
 
@@ -135,8 +137,8 @@ export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
                     searchPlaceholder="Cari nama inovasi atau pengusul..."
                     filterOptions={filterOptions}
                     filterKey={(row) => row.status}
-                    emptyTitle="Belum Ada Inovasi Siap Evaluasi"
-                    emptyDescription="Belum ada usulan inovasi yang disahkan OPD untuk dinilai pada kategori ini."
+                    emptyTitle="Belum Ada Inovasi Peserta Lomba"
+                    emptyDescription="Belum ada usulan inovasi yang terdaftar pada periode lomba aktif ini."
                 />
             </div>
         </>

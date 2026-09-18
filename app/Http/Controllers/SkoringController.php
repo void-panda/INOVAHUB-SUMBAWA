@@ -23,15 +23,22 @@ class SkoringController extends Controller
 
     public function index(): Response
     {
-        $pengajuanList = PengajuanLomba::with(['inovasi.user', 'inovasi.opd', 'periodeLomba'])
+        $periodeAktif = \App\Models\PeriodeLomba::where('aktif', true)->first();
+
+        $query = PengajuanLomba::with(['inovasi.user', 'inovasi.opd', 'periodeLomba'])
+            ->where('is_arsip', false)
             ->whereIn('status', [
                 StatusPengajuan::DalamPendampingan->value,
                 StatusPengajuan::DisahkanOpd->value,
                 StatusPengajuan::ReviewInternal->value,
                 StatusPengajuan::SiapKirim->value,
-            ])
-            ->latest()
-            ->paginate(15);
+            ]);
+
+        if ($periodeAktif) {
+            $query->where('periode_lomba_id', $periodeAktif->id);
+        }
+
+        $pengajuanList = $query->latest()->paginate(15);
 
         $formattedInovasi = $pengajuanList->through(function ($item) {
             return [
@@ -60,6 +67,11 @@ class SkoringController extends Controller
         return Inertia::render('penilai/skoring/index', [
             'inovasi' => $formattedInovasi,
             'pengajuanList' => $pengajuanList,
+            'periodeAktif' => $periodeAktif ? [
+                'id' => $periodeAktif->id,
+                'tahun' => $periodeAktif->tahun,
+                'nama' => $periodeAktif->nama ?? (string) $periodeAktif->tahun,
+            ] : null,
         ]);
     }
 
@@ -167,6 +179,14 @@ class SkoringController extends Controller
 
     public function store(Request $request, PengajuanLomba $pengajuan): RedirectResponse
     {
+        $statusVal = $pengajuan->status instanceof StatusPengajuan
+            ? $pengajuan->status->value
+            : (string) $pengajuan->status;
+
+        if (in_array($statusVal, [StatusPengajuan::SiapKirim->value, StatusPengajuan::Terkirim->value], true)) {
+            return back()->with('error', 'Penilaian untuk inovasi ini telah difinalisasi dan tidak dapat diubah lagi.');
+        }
+
         $validated = $request->validate([
             'items_sid' => ['present', 'array'],
             'items_sid.*.indikator_id' => ['required', 'integer', 'exists:indikator_sid,id'],

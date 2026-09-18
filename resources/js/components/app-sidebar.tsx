@@ -38,6 +38,8 @@ const footerNavItems: NavItem[] = [
 export function AppSidebar() {
     const { auth } = usePage<{ auth: Auth }>().props;
     const permissions = auth?.permissions || [];
+    const roles = auth?.roles || [];
+    const isTimPenilai = roles.includes('tim_penilai');
 
     const navGroups: NavGroup[] = [
         {
@@ -48,11 +50,15 @@ export function AppSidebar() {
                     href: dashboard(),
                     icon: LayoutGrid,
                 },
-                {
-                    title: 'Inovasi Daerah',
-                    href: '/inovasi-daerah',
-                    icon: Award,
-                },
+                ...(!isTimPenilai
+                    ? [
+                          {
+                              title: 'Inovasi Daerah',
+                              href: '/inovasi-daerah',
+                              icon: Award,
+                          },
+                      ]
+                    : []),
             ],
         },
     ];
@@ -94,12 +100,12 @@ export function AppSidebar() {
     }
     if (permissions.includes('scoring-spd') || permissions.includes('scoring-sid')) {
         verifikasiItems.push({
-            title: 'Penilaian Inovasi (SID)',
+            title: isTimPenilai ? 'Penilaian Lomba Inovasi' : 'Penilaian Inovasi (SID)',
             href: '/penilai/skoring',
-            icon: Calculator,
+            icon: Trophy,
         });
     }
-    if (permissions.includes('manage-master-data') || permissions.includes('scoring-spd') || permissions.includes('scoring-sid')) {
+    if (permissions.includes('manage-master-data')) {
         verifikasiItems.push({
             title: 'Peserta Lomba',
             href: '/penilai/peserta-lomba',
@@ -109,7 +115,7 @@ export function AppSidebar() {
 
     if (verifikasiItems.length > 0) {
         navGroups.push({
-            title: 'Verifikasi & Penilaian',
+            title: isTimPenilai ? 'Penjurian Lomba' : 'Verifikasi & Penilaian',
             items: verifikasiItems,
         });
     }

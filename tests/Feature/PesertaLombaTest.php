@@ -31,8 +31,11 @@ class PesertaLombaTest extends TestCase
         $scoringSid = Permission::firstOrCreate(['name' => 'scoring-sid']);
         $inputInovasi = Permission::firstOrCreate(['name' => 'input-inovasi']);
 
+        $roleBapperida = Role::firstOrCreate(['name' => 'bapperida']);
+        $roleBapperida->givePermissionTo([$manageMasterData, $scoringSpd, $scoringSid]);
+
         $rolePenilai = Role::firstOrCreate(['name' => 'tim_penilai']);
-        $rolePenilai->givePermissionTo([$manageMasterData, $scoringSpd, $scoringSid]);
+        $rolePenilai->givePermissionTo([$scoringSpd, $scoringSid]);
 
         $roleInovator = Role::firstOrCreate(['name' => 'inovator']);
         $roleInovator->givePermissionTo($inputInovasi);
@@ -40,9 +43,13 @@ class PesertaLombaTest extends TestCase
         $this->periode = PeriodeLomba::create(['tahun' => 2026, 'nama' => 'IGA 2026', 'aktif' => true]);
         $opd = Opd::create(['kode' => 'OPD-01', 'nama' => 'Dinas Pendidikan Sumbawa']);
 
-        // Admin / Tim Penilai
-        $this->admin = User::factory()->create(['name' => 'Admin Bappeda']);
-        $this->admin->assignRole($rolePenilai);
+        // Admin BAPPERIDA
+        $this->admin = User::factory()->create(['name' => 'Admin BAPPERIDA']);
+        $this->admin->assignRole($roleBapperida);
+
+        // Tim Penilai
+        $this->penilai = User::factory()->create(['name' => 'Tim Penilai Juri']);
+        $this->penilai->assignRole($rolePenilai);
 
         // Inovator
         $this->inovator = User::factory()->create([
@@ -81,7 +88,7 @@ class PesertaLombaTest extends TestCase
         ]);
     }
 
-    public function test_tim_penilai_can_access_peserta_lomba_page(): void
+    public function test_bapperida_can_access_peserta_lomba_page(): void
     {
         $response = $this->actingAs($this->admin)->get('/penilai/peserta-lomba');
 
@@ -93,6 +100,13 @@ class PesertaLombaTest extends TestCase
             ->where('summary.total_peserta', 1)
             ->where('summary.total_opd', 1)
         );
+    }
+
+    public function test_tim_penilai_cannot_access_peserta_lomba_page(): void
+    {
+        $response = $this->actingAs($this->penilai)->get('/penilai/peserta-lomba');
+
+        $response->assertStatus(403);
     }
 
     public function test_inovator_cannot_access_peserta_lomba_page(): void

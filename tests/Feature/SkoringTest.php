@@ -96,5 +96,21 @@ class SkoringTest extends TestCase
             'user_id' => $inovator->id,
             'tipe' => 'skoring_selesai',
         ]);
+
+        // 4. Setelah status SiapKirim, penilaian terkunci dan ditolak jika dicoba diubah lagi
+        $response = $this->actingAs($timPenilai)->post(route('penilai.skoring.store', $pengajuan), [
+            'items_sid' => [
+                ['indikator_id' => $sid1->id, 'tier' => 1, 'catatan' => 'Coba ubah'],
+            ],
+            'is_final' => false,
+        ]);
+
+        $response->assertSessionHas('error');
+        // Pastikan tier di database tetap 3 (tidak berubah jadi 1)
+        $this->assertDatabaseHas('skor_pengajuan', [
+            'pengajuan_lomba_id' => $pengajuan->id,
+            'indikator_id' => $sid1->id,
+            'tier' => 3,
+        ]);
     }
 }
