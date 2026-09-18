@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property float $skor
  * @property string|null $catatan
  * @property string|null $komentar_pendamping
+ * @property string $status_validasi
  * @property int|null $pendamping_id
  * @property Carbon|null $komentar_at
  * @property Carbon|null $created_at
@@ -27,6 +28,7 @@ use Illuminate\Support\Carbon;
     'skor',
     'catatan',
     'komentar_pendamping',
+    'status_validasi',
     'pendamping_id',
     'komentar_at',
 ])]

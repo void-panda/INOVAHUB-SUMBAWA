@@ -1,6 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
+    AlertCircle,
     ArrowLeft,
+    CheckCircle2,
+    Clock,
     Download,
     Eye,
     FileText,
@@ -88,7 +91,13 @@ type Props = {
     indikator: IndikatorInfo;
     dokumenList: DokumenItem[];
     kelengkapan: { parameter: string | null; catatan: string | null } | null;
-    skor?: { komentar_pendamping?: string | null; pendamping?: { name: string } | null } | null;
+    skor?: {
+        komentar_pendamping?: string | null;
+        status_validasi?: 'belum_divalidasi' | 'valid' | 'perlu_revisi' | string | null;
+        komentar_at?: string | null;
+        updated_at?: string | null;
+        pendamping?: { name: string } | null;
+    } | null;
 };
 
 function formatBytes(bytes: number): string {
@@ -96,6 +105,23 @@ function formatBytes(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDateTime(dateStr?: string | null): string {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '-';
+    const d = date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+    const t = date.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).replace('.', ':');
+    return `${d}, ${t}`;
 }
 
 export default function IndikatorDokumenPage({
@@ -246,15 +272,53 @@ export default function IndikatorDokumenPage({
                     {/* Catatan Pendamping */}
                     <Card className="border-border bg-card">
                         <CardContent className="p-4 space-y-2">
-                            <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                                <MessageSquare className="h-4 w-4 text-amber-600" />
-                                <span>Catatan Review Pendamping</span>
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                    <MessageSquare className="h-4 w-4 text-amber-600" />
+                                    <span>Catatan Review Pendamping</span>
+                                </div>
+                                {skor?.status_validasi === 'valid' && (
+                                    <Badge
+                                        variant="outline"
+                                        className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 text-[10px] gap-1 font-semibold"
+                                    >
+                                        <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                        <span>Valid</span>
+                                    </Badge>
+                                )}
+                                {skor?.status_validasi === 'perlu_revisi' && (
+                                    <Badge
+                                        variant="outline"
+                                        className="bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800 text-[10px] gap-1 font-semibold"
+                                    >
+                                        <AlertCircle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
+                                        <span>Perlu Revisi</span>
+                                    </Badge>
+                                )}
+                                {(!skor?.status_validasi || skor?.status_validasi === 'belum_divalidasi') && (
+                                    <Badge
+                                        variant="outline"
+                                        className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800 text-[10px] gap-1 font-semibold"
+                                    >
+                                        <Clock className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                        <span>Belum Divalidasi</span>
+                                    </Badge>
+                                )}
                             </div>
                             {skor?.komentar_pendamping ? (
                                 <div className="text-xs text-foreground bg-amber-50/70 dark:bg-amber-950/30 p-2.5 rounded border border-amber-200 dark:border-amber-800 leading-relaxed">
                                     {skor.komentar_pendamping}
-                                    <div className="text-[10px] text-muted-foreground mt-1">
-                                        Oleh: {skor.pendamping?.name ?? 'Pendamping Inovasi'}
+                                    <div className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                        <span>Oleh: {skor.pendamping?.name ?? 'Pendamping Inovasi'}</span>
+                                        {(skor.komentar_at || skor.updated_at) && (
+                                            <>
+                                                <span>•</span>
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    <span>{formatDateTime(skor.komentar_at || skor.updated_at)}</span>
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             ) : (

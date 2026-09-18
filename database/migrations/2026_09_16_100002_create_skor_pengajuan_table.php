@@ -16,6 +16,7 @@ return new class extends Migration
             $table->decimal('skor', 6, 2);
             $table->text('catatan')->nullable();
             $table->text('komentar_pendamping')->nullable();
+            $table->string('status_validasi', 30)->default('belum_divalidasi');
             $table->foreignId('pendamping_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('komentar_at')->nullable();
             $table->timestamps();

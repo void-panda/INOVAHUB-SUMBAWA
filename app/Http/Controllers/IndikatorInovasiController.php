@@ -10,6 +10,7 @@ use App\Models\SkorPengajuan;
 use App\Services\InovasiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -51,15 +52,24 @@ class IndikatorInovasiController extends Controller
             ->get();
 
         $dokumenInfo = [];
+        $dokumenLastUpdated = [];
         foreach ($dokumenList as $dok) {
             $indId = $dok->indikator_sid_id;
             if (! isset($dokumenInfo[$indId])) {
                 $dokumenInfo[$indId] = [
                     'count' => 0,
                     'types' => [],
+                    'last_updated' => null,
                 ];
+                $dokumenLastUpdated[$indId] = null;
             }
             $dokumenInfo[$indId]['count']++;
+
+            $dokTime = $dok->updated_at ?? $dok->created_at;
+            if ($dokTime && ($dokumenLastUpdated[$indId] === null || $dokTime->gt($dokumenLastUpdated[$indId]))) {
+                $dokumenLastUpdated[$indId] = $dokTime;
+                $dokumenInfo[$indId]['last_updated'] = $dokTime->toIso8601String();
+            }
 
             $ext = strtoupper(pathinfo((string) $dok->nama_asal, PATHINFO_EXTENSION));
             if ($dok->mime === 'url' || $dok->jenis === 'video') {
@@ -72,7 +82,6 @@ class IndikatorInovasiController extends Controller
             }
         }
 
-        // Hitung progres & skor estimasi
         // Hitung progres & skor estimasi
         $filled = $kelengkapan->filter(fn ($k) => $k->parameter !== null && $k->parameter !== '')->count();
         $totalIndikator = $indikatorList->count();
@@ -170,7 +179,13 @@ class IndikatorInovasiController extends Controller
         );
 
         $validated = $request->validate([
-            'komentar_pendamping' => ['nullable', 'string', 'max:1000'],
+            'status_validasi' => ['nullable', 'string', 'in:belum_divalidasi,valid,perlu_revisi'],
+            'komentar_pendamping' => [
+                Rule::requiredIf(fn () => $request->input('status_validasi') === 'perlu_revisi'),
+                'nullable',
+                'string',
+                'max:1000',
+            ],
         ]);
 
         $skor = SkorPengajuan::firstOrNew([
@@ -178,7 +193,10 @@ class IndikatorInovasiController extends Controller
             'indikator_id' => $indikator->id,
         ]);
 
-        $skor->komentar_pendamping = $validated['komentar_pendamping'];
+        $skor->komentar_pendamping = $validated['komentar_pendamping'] ?? null;
+        if (! empty($validated['status_validasi'])) {
+            $skor->status_validasi = $validated['status_validasi'];
+        }
         $skor->pendamping_id = $request->user()->id;
         $skor->komentar_at = now();
         if (! $skor->exists) {

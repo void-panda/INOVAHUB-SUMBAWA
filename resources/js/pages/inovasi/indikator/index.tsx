@@ -6,6 +6,7 @@ import {
     CheckCircle2,
     ChevronDown,
     ChevronUp,
+    Clock,
     FileEdit,
     FolderOpen,
     Info,
@@ -29,7 +30,15 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -57,8 +66,10 @@ type SkorItem = {
     skor: number;
     catatan?: string | null;
     komentar_pendamping?: string | null;
+    status_validasi?: 'belum_divalidasi' | 'valid' | 'perlu_revisi' | string | null;
     pendamping_id?: number | null;
     komentar_at?: string | null;
+    updated_at?: string | null;
     pendamping?: { id: number; name: string } | null;
 };
 
@@ -77,7 +88,7 @@ type Props = {
     indikatorList: IndikatorSidItem[];
     kelengkapan: Record<number, KelengkapanItem>;
     skorList: Record<number, SkorItem>;
-    dokumenInfo: Record<number, { count: number; types: string[] }>;
+    dokumenInfo: Record<number, { count: number; types: string[]; last_updated?: string | null }>;
     progress: {
         filled: number;
         total: number;
@@ -87,6 +98,23 @@ type Props = {
     skorMaks: number;
     canComment?: boolean;
 };
+
+function formatDateTime(dateStr?: string | null): string {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '-';
+    const d = date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+    const t = date.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).replace('.', ':');
+    return `${d}, ${t}`;
+}
 
 const statusBadgeMap: Record<
     string,
@@ -143,6 +171,8 @@ export default function IndikatorIndex({
     const [commentModalOpen, setCommentModalOpen] = useState(false);
     const [commentIndikator, setCommentIndikator] = useState<IndikatorSidItem | null>(null);
     const [commentText, setCommentText] = useState('');
+    const [commentStatus, setCommentStatus] = useState<'belum_divalidasi' | 'valid' | 'perlu_revisi'>('belum_divalidasi');
+    const [commentError, setCommentError] = useState<string | null>(null);
     const [isSavingComment, setIsSavingComment] = useState(false);
 
     // Ping State
@@ -162,7 +192,10 @@ export default function IndikatorIndex({
     const openCommentModal = (ind: IndikatorSidItem) => {
         setCommentIndikator(ind);
         const existingComment = skorList[ind.id]?.komentar_pendamping || '';
+        const existingStatus = (skorList[ind.id]?.status_validasi as 'belum_divalidasi' | 'valid' | 'perlu_revisi') || 'belum_divalidasi';
         setCommentText(existingComment);
+        setCommentStatus(existingStatus);
+        setCommentError(null);
         setCommentModalOpen(true);
     };
 
@@ -170,10 +203,19 @@ export default function IndikatorIndex({
         e.preventDefault();
         if (!commentIndikator) return;
 
+        if (commentStatus === 'perlu_revisi' && !commentText.trim()) {
+            setCommentError('Catatan evaluasi wajib diisi jika status validasi adalah Perlu Revisi.');
+            return;
+        }
+
+        setCommentError(null);
         setIsSavingComment(true);
         router.post(
             `/pengajuan-lomba/${pengajuan.id}/indikator/${commentIndikator.id}/komentar`,
-            { komentar_pendamping: commentText.trim() || null },
+            {
+                status_validasi: commentStatus,
+                komentar_pendamping: commentText.trim() || null,
+            },
             {
                 onFinish: () => {
                     setIsSavingComment(false);
@@ -381,13 +423,14 @@ export default function IndikatorIndex({
                                 <TableHead className="w-[80px] text-center font-semibold">BOBOT</TableHead>
                                 <TableHead className="w-[160px] text-center font-semibold">PARAMETER</TableHead>
                                 <TableHead className="w-[130px] text-center font-semibold">BUKTI DUKUNG</TableHead>
+                                <TableHead className="w-[150px] text-center font-semibold">TERAKHIR UPDATE</TableHead>
                                 <TableHead className="min-w-[220px] font-semibold">CATATAN PENDAMPING</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {displayedIndikator.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center text-xs text-muted-foreground">
+                                    <TableCell colSpan={7} className="h-24 text-center text-xs text-muted-foreground">
                                         Tidak ada indikator yang cocok dengan kriteria pencarian.
                                     </TableCell>
                                 </TableRow>
@@ -431,8 +474,16 @@ export default function IndikatorIndex({
                                         }
                                     }
 
+                                    const statusVal = (skor?.status_validasi as 'belum_divalidasi' | 'valid' | 'perlu_revisi') || 'belum_divalidasi';
+                                    const rowColorClass =
+                                        statusVal === 'perlu_revisi'
+                                            ? 'bg-rose-50/50 dark:bg-rose-950/25 hover:bg-rose-50/80 dark:hover:bg-rose-950/40 border-l-4 border-l-rose-500'
+                                            : statusVal === 'valid'
+                                            ? 'bg-emerald-50/40 dark:bg-emerald-950/20 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30 border-l-4 border-l-emerald-500'
+                                            : 'bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50/70 dark:hover:bg-blue-950/30 border-l-4 border-l-blue-500';
+
                                     return (
-                                        <TableRow key={ind.id} className="align-top hover:bg-muted/30">
+                                        <TableRow key={ind.id} className={`align-top transition-colors ${rowColorClass}`}>
                                             {/* Kode */}
                                             <TableCell className="font-mono font-bold text-xs text-primary pt-3.5">
                                                 {ind.kode}
@@ -541,40 +592,83 @@ export default function IndikatorIndex({
                                                 )}
                                             </TableCell>
 
+                                            {/* Terakhir Update Dokumen */}
+                                            <TableCell className="text-center pt-3.5 text-xs">
+                                                {dok.last_updated ? (
+                                                    <span className="font-medium text-foreground text-[11px] block">
+                                                        {formatDateTime(dok.last_updated)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-muted-foreground text-xs">-</span>
+                                                )}
+                                            </TableCell>
+
                                             {/* Komentar Pendamping Inline */}
-                                            <TableCell className="pt-3 space-y-1">
+                                            <TableCell className="pt-3 space-y-2">
+                                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                    {/* Status Badge */}
+                                                    {statusVal === 'valid' && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 text-[10px] gap-1 font-semibold"
+                                                        >
+                                                            <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                                            <span>Valid</span>
+                                                        </Badge>
+                                                    )}
+                                                    {statusVal === 'perlu_revisi' && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800 text-[10px] gap-1 font-semibold"
+                                                        >
+                                                            <AlertCircle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
+                                                            <span>Perlu Revisi</span>
+                                                        </Badge>
+                                                    )}
+                                                    {statusVal === 'belum_divalidasi' && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800 text-[10px] gap-1 font-semibold"
+                                                        >
+                                                            <Clock className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                                            <span>Belum Divalidasi</span>
+                                                        </Badge>
+                                                    )}
+
+                                                    {canComment && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openCommentModal(ind)}
+                                                            className="text-[11px] text-teal-700 dark:text-teal-400 hover:underline font-medium ml-auto"
+                                                        >
+                                                            {skor?.komentar_pendamping || skor?.status_validasi ? 'Ubah Status / Catatan' : 'Validasi / Beri Catatan'}
+                                                        </button>
+                                                    )}
+                                                </div>
+
                                                 {skor?.komentar_pendamping ? (
                                                     <div className="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded p-2 text-xs space-y-1">
                                                         <div className="text-foreground leading-relaxed">
                                                             {skor.komentar_pendamping}
                                                         </div>
                                                         <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-1 border-t border-amber-200/50 dark:border-amber-800/50">
-                                                            <span>Oleh: {skor.pendamping?.name ?? 'Pendamping'}</span>
-                                                            {canComment && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => openCommentModal(ind)}
-                                                                    className="text-teal-700 dark:text-teal-400 hover:underline font-medium"
-                                                                >
-                                                                    Edit
-                                                                </button>
-                                                            )}
+                                                            <span className="flex items-center gap-1.5 flex-wrap">
+                                                                <span>Oleh: {skor.pendamping?.name ?? 'Pendamping'}</span>
+                                                                {(skor.komentar_at || skor.updated_at) && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <span className="inline-flex items-center gap-1 text-muted-foreground">
+                                                                            <Clock className="h-3 w-3" />
+                                                                            <span>{formatDateTime(skor.komentar_at || skor.updated_at)}</span>
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="text-[11px] text-muted-foreground italic flex items-center justify-between">
-                                                        <span>Belum ada catatan.</span>
-                                                        {canComment && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => openCommentModal(ind)}
-                                                                className="h-6 text-[11px] px-2 text-teal-700 hover:bg-teal-50"
-                                                            >
-                                                                <MessageSquare className="h-3 w-3 mr-1" />
-                                                                Beri Catatan
-                                                            </Button>
-                                                        )}
+                                                    <div className="text-[11px] text-muted-foreground italic">
+                                                        Belum ada catatan tertulis.
                                                     </div>
                                                 )}
                                             </TableCell>
@@ -612,16 +706,79 @@ export default function IndikatorIndex({
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="py-3">
-                            <Textarea
-                                placeholder="Tuliskan catatan evaluasi atau petunjuk berkas yang kurang..."
-                                value={commentText}
-                                onChange={(e) => setCommentText(e.target.value)}
-                                className="min-h-[100px] text-xs"
-                                maxLength={1000}
-                            />
-                            <div className="text-[10px] text-muted-foreground text-right mt-1">
-                                {commentText.length}/1000 karakter
+                        <div className="py-3 space-y-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-foreground">
+                                    Status Validasi Bukti Dukung <span className="text-destructive">*</span>
+                                </Label>
+                                <Select
+                                    value={commentStatus}
+                                    onValueChange={(val: 'belum_divalidasi' | 'valid' | 'perlu_revisi') => {
+                                        setCommentStatus(val);
+                                        if (val !== 'perlu_revisi') {
+                                            setCommentError(null);
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full text-xs h-9 bg-card">
+                                        <SelectValue placeholder="Pilih status validasi" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="belum_divalidasi">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                                                <span className="font-medium text-blue-700 dark:text-blue-400">Belum divalidasi</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="valid">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                                                <span className="font-medium text-emerald-700 dark:text-emerald-400">Valid</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="perlu_revisi">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+                                                <span className="font-medium text-rose-700 dark:text-rose-400">Perlu Revisi</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                                    <span>Catatan Review / Arahan Perbaikan</span>
+                                    {commentStatus === 'perlu_revisi' ? (
+                                        <span className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold">Wajib diisi *</span>
+                                    ) : (
+                                        <span className="text-[11px] text-muted-foreground font-normal">Opsional</span>
+                                    )}
+                                </Label>
+                                <Textarea
+                                    placeholder={
+                                        commentStatus === 'perlu_revisi'
+                                            ? 'Jelaskan kekurangan atau arahan perbaikan dokumen bukti yang harus direvisi oleh inovator...'
+                                            : 'Tuliskan catatan review atau petunjuk evaluasi untuk indikator ini...'
+                                    }
+                                    value={commentText}
+                                    onChange={(e) => {
+                                        setCommentText(e.target.value);
+                                        if (commentError && e.target.value.trim()) {
+                                            setCommentError(null);
+                                        }
+                                    }}
+                                    className="min-h-[100px] text-xs bg-card"
+                                    maxLength={1000}
+                                />
+                                {commentError && (
+                                    <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">
+                                        {commentError}
+                                    </p>
+                                )}
+                                <div className="text-[10px] text-muted-foreground text-right mt-1">
+                                    {commentText.length}/1000 karakter
+                                </div>
                             </div>
                         </div>
 

@@ -156,6 +156,53 @@ class IndikatorInovasiControllerTest extends TestCase
         ]);
     }
 
+    public function test_pendamping_can_update_inline_komentar_with_status_validasi(): void
+    {
+        [, $pengajuan, $pendamping] = $this->setupUserAndPengajuan();
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        // 1. Valid status
+        $this->actingAs($pendamping)->post(
+            route('pengajuan-lomba.indikator.komentar.update', [$pengajuan, $indikator]),
+            [
+                'status_validasi' => 'valid',
+                'komentar_pendamping' => 'Dokumen sudah sesuai dan terverifikasi.',
+            ]
+        )->assertRedirect();
+
+        $this->assertDatabaseHas('skor_pengajuan', [
+            'pengajuan_lomba_id' => $pengajuan->id,
+            'indikator_id' => $indikator->id,
+            'status_validasi' => 'valid',
+            'komentar_pendamping' => 'Dokumen sudah sesuai dan terverifikasi.',
+        ]);
+
+        // 2. Perlu revisi requires komentar
+        $this->actingAs($pendamping)->post(
+            route('pengajuan-lomba.indikator.komentar.update', [$pengajuan, $indikator]),
+            [
+                'status_validasi' => 'perlu_revisi',
+                'komentar_pendamping' => '',
+            ]
+        )->assertSessionHasErrors('komentar_pendamping');
+
+        // 3. Perlu revisi with komentar succeeds
+        $this->actingAs($pendamping)->post(
+            route('pengajuan-lomba.indikator.komentar.update', [$pengajuan, $indikator]),
+            [
+                'status_validasi' => 'perlu_revisi',
+                'komentar_pendamping' => 'Mohon unggah dokumen SK yang bertanda tangan basah.',
+            ]
+        )->assertRedirect();
+
+        $this->assertDatabaseHas('skor_pengajuan', [
+            'pengajuan_lomba_id' => $pengajuan->id,
+            'indikator_id' => $indikator->id,
+            'status_validasi' => 'perlu_revisi',
+            'komentar_pendamping' => 'Mohon unggah dokumen SK yang bertanda tangan basah.',
+        ]);
+    }
+
     public function test_inovator_can_view_dokumen_indikator_page(): void
     {
         [$user, $pengajuan] = $this->setupUserAndPengajuan();
