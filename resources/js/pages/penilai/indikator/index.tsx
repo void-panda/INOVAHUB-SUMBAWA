@@ -1,14 +1,30 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Layers, Pencil, Plus, Sliders, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import {
+    AlertCircle,
+    Info,
+    Layers,
+    Pencil,
+    Plus,
+    Sliders,
+    Trash2,
+} from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
 import { HeroBanner } from '@/components/hero-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Column } from '@/components/ui/data-table';
 import { DataTable } from '@/components/ui/data-table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import type { BreadcrumbItem } from '@/types';
 
@@ -42,10 +58,101 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Master Indikator Penilaian', href: '/penilai/indikator' },
 ];
 
+/**
+ * Subcomponent for rendering individual parameter option row.
+ * Defined outside the main component to follow react-patterns (preventing inline re-creation on every render).
+ */
+interface OptionRowProps {
+    index: number;
+    option: ParameterOption;
+    canRemove: boolean;
+    onUpdate: (index: number, field: 'label' | 'bobot', value: any) => void;
+    onRemove: (index: number) => void;
+    errorMessage?: string;
+}
+
+function OptionRow({
+    index,
+    option,
+    canRemove,
+    onUpdate,
+    onRemove,
+    errorMessage,
+}: OptionRowProps) {
+    return (
+        <div className="flex flex-col gap-2 p-3 rounded-lg border bg-muted/20 transition-colors hover:border-primary/30">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-foreground">
+                        Opsi {index + 1}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground px-1.5 py-0">
+                        {option.id || `p${index + 1}`}
+                    </Badge>
+                </div>
+                {canRemove && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onRemove(index)}
+                        className="text-destructive hover:bg-destructive/10 h-7 w-7 shrink-0 cursor-pointer"
+                        title="Hapus Opsi"
+                    >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span className="sr-only">Hapus Opsi {index + 1}</span>
+                    </Button>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-start">
+                <div className="sm:col-span-3 space-y-1">
+                    <Label htmlFor={`opsi-label-${index}`} className="text-[11px] font-semibold text-foreground block">
+                        Teks Kriteria / Deskripsi Pemenuhan <span className="text-destructive">*</span>
+                    </Label>
+                    <Textarea
+                        id={`opsi-label-${index}`}
+                        rows={2}
+                        value={option.label}
+                        onChange={(e) => onUpdate(index, 'label', e.target.value)}
+                        placeholder="Contoh: Memenuhi 1 atau 2 unsur substansi..."
+                        className="text-xs resize-none"
+                        required
+                    />
+                    {errorMessage && (
+                        <p className="text-[11px] text-destructive flex items-center gap-1 mt-0.5">
+                            <AlertCircle className="h-3 w-3" /> {errorMessage}
+                        </p>
+                    )}
+                </div>
+
+                <div className="sm:col-span-1 space-y-1">
+                    <Label htmlFor={`opsi-bobot-${index}`} className="text-[11px] font-semibold text-foreground block">
+                        Bobot Poin <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                        id={`opsi-bobot-${index}`}
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={option.bobot}
+                        onChange={(e) => onUpdate(index, 'bobot', e.target.value)}
+                        className="text-xs"
+                        placeholder="e.g. 1"
+                        required
+                    />
+                    <p className="text-[10px] text-muted-foreground">Skor pilihan ini</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
     const [activeTab, setActiveTab] = useState<'spd' | 'sid'>('sid');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Indikator | null>(null);
+    const [formValidationError, setFormValidationError] = useState<string | null>(null);
 
     const [optionsList, setOptionsList] = useState<ParameterOption[]>([
         { id: 'p1', label: '', bobot: 1 },
@@ -75,8 +182,9 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
         opsi: [],
     });
 
-    const openCreateModal = () => {
+    const openCreateModal = useCallback(() => {
         setEditingItem(null);
+        setFormValidationError(null);
         form.reset();
         form.setData('kode', activeTab === 'spd' ? 'SPD-' : 'SID-');
         setOptionsList([
@@ -85,20 +193,31 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
             { id: 'p3', label: '', bobot: 3 },
         ]);
         setDialogOpen(true);
-    };
+    }, [activeTab, form]);
 
-    const openEditModal = (item: Indikator) => {
+    const openEditModal = useCallback((item: Indikator) => {
         setEditingItem(item);
+        setFormValidationError(null);
+
         let initialOpsi: ParameterOption[] = [];
         if (item.opsi_list && item.opsi_list.length > 0) {
-            initialOpsi = item.opsi_list.map((o) => ({ id: o.id, label: o.label, bobot: o.bobot }));
+            initialOpsi = item.opsi_list.map((o) => ({
+                id: o.id,
+                label: o.label,
+                bobot: o.bobot,
+            }));
         } else if (item.opsi && item.opsi.length > 0) {
-            initialOpsi = item.opsi.map((o) => ({ id: o.id, label: o.label, bobot: o.bobot }));
+            initialOpsi = item.opsi.map((o) => ({
+                id: o.id,
+                label: o.label,
+                bobot: o.bobot,
+            }));
         } else {
             if (item.p1) initialOpsi.push({ id: 'p1', label: item.p1, bobot: 1 });
             if (item.p2) initialOpsi.push({ id: 'p2', label: item.p2, bobot: 2 });
             if (item.p3) initialOpsi.push({ id: 'p3', label: item.p3, bobot: 3 });
         }
+
         if (initialOpsi.length === 0) {
             initialOpsi = [
                 { id: 'p1', label: '', bobot: 1 },
@@ -106,6 +225,7 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
                 { id: 'p3', label: '', bobot: 3 },
             ];
         }
+
         setOptionsList(initialOpsi);
         form.setData({
             kode: item.kode,
@@ -119,42 +239,59 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
             opsi: initialOpsi,
         });
         setDialogOpen(true);
-    };
+    }, [form]);
 
-    const addOption = () => {
-        const nextIdx = optionsList.length + 1;
-        setOptionsList((prev) => [
-            ...prev,
-            { id: `p${nextIdx}`, label: '', bobot: nextIdx },
-        ]);
-    };
+    const addOption = useCallback(() => {
+        setOptionsList((prev) => {
+            const nextIdx = prev.length + 1;
+            return [
+                ...prev,
+                { id: `p${nextIdx}`, label: '', bobot: nextIdx },
+            ];
+        });
+    }, []);
 
-    const updateOption = (index: number, field: 'label' | 'bobot', value: any) => {
+    const updateOption = useCallback((index: number, field: 'label' | 'bobot', value: any) => {
+        setFormValidationError(null);
         setOptionsList((prev) => {
             const next = [...prev];
             next[index] = { ...next[index], [field]: value };
             return next;
         });
-    };
+    }, []);
 
-    const removeOption = (index: number) => {
-        if (optionsList.length <= 1) return;
-        setOptionsList((prev) => prev.filter((_, i) => i !== index));
-    };
+    const removeOption = useCallback((index: number) => {
+        setOptionsList((prev) => {
+            if (prev.length <= 1) return prev;
+            return prev.filter((_, i) => i !== index);
+        });
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setFormValidationError(null);
+
+        // Validate that all options have non-empty labels
+        const emptyIndex = optionsList.findIndex((opt) => opt.label.trim() === '');
+        if (emptyIndex !== -1) {
+            setFormValidationError(`Teks kriteria pada Opsi ${emptyIndex + 1} masih kosong. Mohon lengkapi atau hapus opsi tersebut.`);
+            return;
+        }
+
+        const validOpsi = optionsList.map((o, idx) => ({
+            id: o.id || `p${idx + 1}`,
+            label: o.label.trim(),
+            bobot: Number(o.bobot) || (idx + 1),
+        }));
+
+        if (validOpsi.length === 0) {
+            setFormValidationError('Minimal harus ada 1 opsi parameter yang tersusun.');
+            return;
+        }
+
         const url = activeTab === 'spd'
             ? (editingItem ? `/penilai/indikator/spd/${editingItem.id}` : '/penilai/indikator/spd')
             : (editingItem ? `/penilai/indikator/sid/${editingItem.id}` : '/penilai/indikator/sid');
-
-        const validOpsi = optionsList
-            .filter((o) => o.label.trim() !== '')
-            .map((o, idx) => ({
-                id: o.id || `p${idx + 1}`,
-                label: o.label.trim(),
-                bobot: Number(o.bobot) || (idx + 1),
-            }));
 
         form.transform((data) => ({
             ...data,
@@ -177,7 +314,7 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
 
     const currentList = activeTab === 'spd' ? spdList : sidList;
 
-    const columns: Column<Indikator>[] = [
+    const columns: Column<Indikator>[] = useMemo(() => [
         {
             header: 'Kode',
             accessorKey: 'kode',
@@ -215,20 +352,40 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
             ),
         },
         {
+            header: 'Opsi Parameter',
+            cell: (row) => {
+                const count = (row.opsi_list && row.opsi_list.length > 0)
+                    ? row.opsi_list.length
+                    : (row.opsi && row.opsi.length > 0)
+                        ? row.opsi.length
+                        : [row.p1, row.p2, row.p3].filter(Boolean).length;
+                return (
+                    <div className="flex items-center gap-1.5">
+                        <Badge
+                            variant="secondary"
+                            className="font-medium text-xs bg-teal-50 text-teal-800 dark:bg-teal-950/50 dark:text-teal-300 border-teal-200/60 dark:border-teal-800/60"
+                        >
+                            {count} Opsi
+                        </Badge>
+                    </div>
+                );
+            },
+        },
+        {
             header: 'Aksi',
             align: 'right',
             cell: (row) => (
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 text-xs gap-1"
+                    className="h-8 text-xs gap-1 cursor-pointer"
                     onClick={() => openEditModal(row)}
                 >
                     <Pencil className="h-3.5 w-3.5" /> Edit
                 </Button>
             ),
         },
-    ];
+    ], [openEditModal]);
 
     return (
         <>
@@ -240,9 +397,12 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
                     badgeIcon={Sliders}
                     badgeText="Master Configuration"
                     title="Master Data Indikator & Bobot Penilaian"
-                    description="Kelola bobot dan parameter ambang P1/P2/P3 indikator Satuan Pemerintahan Daerah (SPD) dan Satuan Inovasi Daerah (SID) secara dinamis."
+                    description="Kelola bobot dan parameter ambang indikator Satuan Pemerintahan Daerah (SPD) dan Satuan Inovasi Daerah (SID) secara dinamis."
                 >
-                    <Button onClick={openCreateModal} className="gap-2 bg-background text-foreground hover:bg-background/90 shadow-xs cursor-pointer">
+                    <Button
+                        onClick={openCreateModal}
+                        className="gap-2 bg-background text-foreground hover:bg-background/90 shadow-xs cursor-pointer"
+                    >
                         <Plus className="h-4 w-4" /> Tambah Indikator {activeTab.toUpperCase()}
                     </Button>
                 </HeroBanner>
@@ -285,33 +445,40 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
 
             {/* Create/Edit Dialog */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
-                            <DialogTitle>
+                            <DialogTitle className="text-base md:text-lg font-bold">
                                 {editingItem ? 'Edit' : 'Tambah'} Indikator {activeTab.toUpperCase()}
                             </DialogTitle>
-                            <DialogDescription>
+                            <DialogDescription className="text-xs">
                                 Masukkan kode, nama, bobot, dan opsi parameter dinamis indikator.
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="kode">Kode Indikator <span className="text-destructive">*</span></Label>
+                                    <Label htmlFor="kode" className="text-xs font-semibold">
+                                        Kode Indikator <span className="text-destructive">*</span>
+                                    </Label>
                                     <Input
                                         id="kode"
                                         value={form.data.kode}
                                         onChange={(e) => form.setData('kode', e.target.value)}
                                         placeholder="e.g. SID-01"
+                                        className="text-xs mt-1"
                                         required
                                     />
-                                    {form.errors.kode && <p className="text-xs text-destructive mt-1">{form.errors.kode}</p>}
+                                    {form.errors.kode && (
+                                        <p className="text-xs text-destructive mt-1">{form.errors.kode}</p>
+                                    )}
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="bobot">Bobot Indikator <span className="text-destructive">*</span></Label>
+                                    <Label htmlFor="bobot" className="text-xs font-semibold">
+                                        Bobot Indikator <span className="text-destructive">*</span>
+                                    </Label>
                                     <Input
                                         id="bobot"
                                         type="number"
@@ -319,57 +486,70 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
                                         min="0"
                                         value={form.data.bobot}
                                         onChange={(e) => form.setData('bobot', e.target.value)}
+                                        className="text-xs mt-1"
                                         required
                                     />
-                                    {form.errors.bobot && <p className="text-xs text-destructive mt-1">{form.errors.bobot}</p>}
+                                    {form.errors.bobot && (
+                                        <p className="text-xs text-destructive mt-1">{form.errors.bobot}</p>
+                                    )}
                                 </div>
                             </div>
 
                             <div>
-                                <Label htmlFor="nama">Nama Indikator <span className="text-destructive">*</span></Label>
+                                <Label htmlFor="nama" className="text-xs font-semibold">
+                                    Nama Indikator <span className="text-destructive">*</span>
+                                </Label>
                                 <Input
                                     id="nama"
                                     value={form.data.nama}
                                     onChange={(e) => form.setData('nama', e.target.value)}
                                     placeholder="e.g. Regulasi Inovasi Daerah"
+                                    className="text-xs mt-1"
                                     required
                                 />
-                                {form.errors.nama && <p className="text-xs text-destructive mt-1">{form.errors.nama}</p>}
+                                {form.errors.nama && (
+                                    <p className="text-xs text-destructive mt-1">{form.errors.nama}</p>
+                                )}
                             </div>
 
                             <div>
-                                <Label htmlFor="variabel">Variabel / Catatan Ambang</Label>
+                                <Label htmlFor="variabel" className="text-xs font-semibold">
+                                    Variabel / Catatan Ambang
+                                </Label>
                                 <Input
                                     id="variabel"
                                     value={form.data.variabel}
                                     onChange={(e) => form.setData('variabel', e.target.value)}
                                     placeholder="Opsional, penjelasan variabel..."
+                                    className="text-xs mt-1"
                                 />
                             </div>
 
                             {activeTab === 'sid' && (
                                 <div>
-                                    <Label htmlFor="informasi">Petunjuk Teknis Bukti Dukung (Informasi)</Label>
+                                    <Label htmlFor="informasi" className="text-xs font-semibold">
+                                        Petunjuk Teknis Bukti Dukung (Informasi)
+                                    </Label>
                                     <Textarea
                                         id="informasi"
                                         rows={2}
                                         value={form.data.informasi}
                                         onChange={(e) => form.setData('informasi', e.target.value)}
                                         placeholder="Petunjuk teknis dokumen atau bukti yang harus diunggah..."
-                                        className="text-xs"
+                                        className="text-xs mt-1"
                                     />
                                 </div>
                             )}
 
-                            {/* Dynamic Parameter Options Section */}
-                            <div className="space-y-3 border-t pt-3">
-                                <div className="flex items-center justify-between">
+                            {/* Section Opsi Parameter Dinamis */}
+                            <div className="space-y-3 border-t pt-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                     <div>
                                         <Label className="text-xs font-bold text-foreground uppercase tracking-wider block">
                                             Daftar Opsi Parameter & Bobot Poin
                                         </Label>
                                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                                            Tiap opsi parameter akan muncul di dropdown inovator dengan bobot poin masing-masing.
+                                            Tiap opsi parameter akan muncul di dropdown pilihan indikator beserta nilai bobot poinnya.
                                         </p>
                                     </div>
                                     <Button
@@ -377,72 +557,66 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
                                         variant="outline"
                                         size="sm"
                                         onClick={addOption}
-                                        className="h-7 text-xs gap-1 border-dashed text-primary hover:bg-primary/5"
+                                        className="h-8 text-xs gap-1 border-dashed text-primary hover:bg-primary/5 cursor-pointer self-start sm:self-auto"
                                     >
                                         <Plus className="h-3.5 w-3.5" />
-                                        Tambah Opsi
+                                        Tambah Opsi Parameter
                                     </Button>
                                 </div>
 
+                                {/* Callout Otomatis Opsi Nol */}
+                                <div className="flex items-start gap-2 p-2.5 rounded-md bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-900 dark:text-blue-200">
+                                    <Info className="h-4 w-4 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+                                    <p className="text-[11px] leading-relaxed">
+                                        <strong>Catatan:</strong> Opsi standar <em>"Tidak Dapat Diukur"</em> (Bobot 0) otomatis disediakan oleh sistem saat inovator melengkapi indikator. Anda hanya perlu menyusun opsi-opsi capaian parameter di bawah ini.
+                                    </p>
+                                </div>
+
+                                {formValidationError && (
+                                    <div className="flex items-center gap-2 p-2.5 rounded-md bg-destructive/10 border border-destructive/30 text-xs text-destructive">
+                                        <AlertCircle className="h-4 w-4 shrink-0" />
+                                        <span className="text-[11px] font-medium">{formValidationError}</span>
+                                    </div>
+                                )}
+
                                 <div className="space-y-2.5">
                                     {optionsList.map((opt, idx) => (
-                                        <div key={idx} className="flex items-start gap-2.5 p-3 rounded-lg border bg-muted/20">
-                                            <div className="flex-1 space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <Label className="text-[11px] font-semibold text-foreground">
-                                                        Teks Opsi {idx + 1}
-                                                    </Label>
-                                                    <Badge variant="outline" className="text-[10px] font-mono">
-                                                        ID: {opt.id || `p${idx + 1}`}
-                                                    </Badge>
-                                                </div>
-                                                <Textarea
-                                                    rows={2}
-                                                    value={opt.label}
-                                                    onChange={(e) => updateOption(idx, 'label', e.target.value)}
-                                                    placeholder="Masukkan kriteria atau dokumen pemenuhan opsi ini..."
-                                                    className="text-xs resize-none"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="w-24 space-y-1">
-                                                <Label className="text-[11px] font-semibold text-foreground">
-                                                    Bobot Poin
-                                                </Label>
-                                                <Input
-                                                    type="number"
-                                                    step="0.1"
-                                                    min="0"
-                                                    value={opt.bobot}
-                                                    onChange={(e) => updateOption(idx, 'bobot', e.target.value)}
-                                                    className="text-xs"
-                                                    required
-                                                />
-                                            </div>
-                                            {optionsList.length > 1 && (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => removeOption(idx)}
-                                                    className="mt-5 text-destructive hover:bg-destructive/10 h-8 w-8 shrink-0"
-                                                    title="Hapus Opsi"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
+                                        <OptionRow
+                                            key={idx}
+                                            index={idx}
+                                            option={opt}
+                                            canRemove={optionsList.length > 1}
+                                            onUpdate={updateOption}
+                                            onRemove={removeOption}
+                                        />
                                     ))}
                                 </div>
                             </div>
                         </div>
 
-                        <DialogFooter className="mt-4">
-                            <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setDialogOpen(false)}
+                                disabled={form.processing}
+                                className="text-xs"
+                            >
                                 Batal
                             </Button>
-                            <Button type="submit" disabled={form.processing}>
-                                Simpan Indikator
+                            <Button
+                                type="submit"
+                                disabled={form.processing}
+                                className="text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                            >
+                                {form.processing ? (
+                                    <>
+                                        <Spinner className="mr-1.5 h-3.5 w-3.5" />
+                                        Menyimpan...
+                                    </>
+                                ) : (
+                                    'Simpan Indikator'
+                                )}
                             </Button>
                         </DialogFooter>
                     </form>

@@ -39,7 +39,17 @@ export function AppSidebar() {
     const { auth } = usePage<{ auth: Auth }>().props;
     const permissions = auth?.permissions || [];
     const roles = auth?.roles || [];
+    const isBapperida = roles.includes('bapperida');
     const isTimPenilai = roles.includes('tim_penilai');
+    const isPendamping = roles.includes('pendamping');
+    const isPimpinan = roles.includes('pimpinan');
+
+    const canAccessSimulasi =
+        isBapperida ||
+        isTimPenilai ||
+        isPimpinan ||
+        permissions.includes('view-scoring') ||
+        permissions.includes('manage-master-data');
 
     const navGroups: NavGroup[] = [
         {
@@ -50,12 +60,17 @@ export function AppSidebar() {
                     href: dashboard(),
                     icon: LayoutGrid,
                 },
-                ...(!isTimPenilai
+                {
+                    title: 'Inovasi Daerah',
+                    href: '/inovasi-daerah',
+                    icon: Award,
+                },
+                ...(canAccessSimulasi
                     ? [
                           {
-                              title: 'Inovasi Daerah',
-                              href: '/inovasi-daerah',
-                              icon: Award,
+                              title: 'Simulasi Indeks (IID)',
+                              href: '/simulasi',
+                              icon: Calculator,
                           },
                       ]
                     : []),
@@ -63,8 +78,8 @@ export function AppSidebar() {
         },
     ];
 
-    // Grup Partisipasi & Lomba (Role Inovator OPD & Masyarakat)
-    if (permissions.includes('input-inovasi')) {
+    // Grup Partisipasi & Lomba (Khusus Role Inovator OPD & Masyarakat, disembunyikan dari Superadmin BAPPERIDA)
+    if (permissions.includes('input-inovasi') && !isBapperida && !isPimpinan) {
         navGroups.push({
             title: 'Partisipasi & Lomba',
             items: [
@@ -82,15 +97,18 @@ export function AppSidebar() {
         });
     }
 
-    // Grup Verifikasi & Penilaian (Role Pendamping & Tim Penilai)
+    // Grup Verifikasi & Penilaian (Pendamping & Tim Penilai / Bapperida)
     const verifikasiItems: NavItem[] = [];
-    if (permissions.includes('validate-inovasi')) {
+
+    // Antrean Validasi khusus untuk Pendamping Inovasi lapangan
+    if (permissions.includes('validate-inovasi') && (isPendamping || (!isBapperida && !isTimPenilai))) {
         verifikasiItems.push({
             title: 'Antrean Validasi',
             href: '/pendamping/inovasi',
             icon: ShieldCheck,
         });
     }
+
     if (permissions.includes('assign-pendamping')) {
         verifikasiItems.push({
             title: 'Penugasan Pendamping',
@@ -98,6 +116,7 @@ export function AppSidebar() {
             icon: UserCheck,
         });
     }
+
     if (permissions.includes('scoring-spd') || permissions.includes('scoring-sid')) {
         verifikasiItems.push({
             title: isTimPenilai ? 'Penilaian Lomba Inovasi' : 'Penilaian Inovasi (SID)',
@@ -105,6 +124,7 @@ export function AppSidebar() {
             icon: Trophy,
         });
     }
+
     if (permissions.includes('manage-master-data')) {
         verifikasiItems.push({
             title: 'Peserta Lomba',
@@ -120,7 +140,7 @@ export function AppSidebar() {
         });
     }
 
-    // Grup Administrasi Sistem & Master Data (Role Admin Bappeda / Tim Penilai)
+    // Grup Administrasi Sistem & Master Data (Role Admin Bappeda / Superadmin)
     if (permissions.includes('manage-master-data')) {
         navGroups.push({
             title: 'Administrasi',

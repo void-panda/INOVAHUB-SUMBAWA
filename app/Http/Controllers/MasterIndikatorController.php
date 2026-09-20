@@ -46,9 +46,9 @@ class MasterIndikatorController extends Controller
             nama: $validated['nama'],
             variabel: $validated['variabel'] ?? null,
             bobot: (float) $validated['bobot'],
-            p1: $validated['p1'] ?? null,
-            p2: $validated['p2'] ?? null,
-            p3: $validated['p3'] ?? null,
+            p1: $validated['p1'] ?? ($opsi[0]['label'] ?? null),
+            p2: $validated['p2'] ?? ($opsi[1]['label'] ?? null),
+            p3: $validated['p3'] ?? ($opsi[2]['label'] ?? null),
             opsi: $opsi,
         );
 
@@ -80,9 +80,9 @@ class MasterIndikatorController extends Controller
             nama: $validated['nama'],
             variabel: $validated['variabel'] ?? null,
             bobot: (float) $validated['bobot'],
-            p1: $validated['p1'] ?? null,
-            p2: $validated['p2'] ?? null,
-            p3: $validated['p3'] ?? null,
+            p1: $validated['p1'] ?? ($opsi[0]['label'] ?? null),
+            p2: $validated['p2'] ?? ($opsi[1]['label'] ?? null),
+            p3: $validated['p3'] ?? ($opsi[2]['label'] ?? null),
             opsi: $opsi,
         );
 
@@ -115,9 +115,9 @@ class MasterIndikatorController extends Controller
             nama: $validated['nama'],
             variabel: $validated['variabel'] ?? null,
             bobot: (float) $validated['bobot'],
-            p1: $validated['p1'] ?? null,
-            p2: $validated['p2'] ?? null,
-            p3: $validated['p3'] ?? null,
+            p1: $validated['p1'] ?? ($opsi[0]['label'] ?? null),
+            p2: $validated['p2'] ?? ($opsi[1]['label'] ?? null),
+            p3: $validated['p3'] ?? ($opsi[2]['label'] ?? null),
             opsi: $opsi,
             informasi: $validated['informasi'] ?? null,
         );
@@ -151,9 +151,9 @@ class MasterIndikatorController extends Controller
             nama: $validated['nama'],
             variabel: $validated['variabel'] ?? null,
             bobot: (float) $validated['bobot'],
-            p1: $validated['p1'] ?? null,
-            p2: $validated['p2'] ?? null,
-            p3: $validated['p3'] ?? null,
+            p1: $validated['p1'] ?? ($opsi[0]['label'] ?? null),
+            p2: $validated['p2'] ?? ($opsi[1]['label'] ?? null),
+            p3: $validated['p3'] ?? ($opsi[2]['label'] ?? null),
             opsi: $opsi,
             informasi: $validated['informasi'] ?? null,
         );
