@@ -15,7 +15,7 @@ import {
     Send,
     Sparkles,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { HeroBanner } from '@/components/hero-banner';
 import { ParameterModal, type IndikatorSidItem } from '@/components/inovasi/parameter-modal';
 import { Badge } from '@/components/ui/badge';
@@ -81,6 +81,8 @@ type PengajuanInfo = {
     tahapan: string;
     is_arsip?: boolean;
     is_inovasi_daerah?: boolean;
+    inovator_nama?: string;
+    inovator_email?: string;
 };
 
 type Props = {
@@ -178,6 +180,19 @@ export default function IndikatorIndex({
     // Ping State
     const [isPinging, setIsPinging] = useState(false);
 
+    // Kirim Notifikasi Pemeriksaan State
+    const [notifDialogOpen, setNotifDialogOpen] = useState(false);
+    const [isSendingNotif, setIsSendingNotif] = useState(false);
+
+    const currentDateFormatted = useMemo(() => {
+        return new Date().toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        });
+    }, []);
+
     const [filterStatus, setFilterStatus] = useState<'all' | 'incomplete' | 'complete'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedInfo, setExpandedInfo] = useState<Record<number, boolean>>({});
@@ -233,6 +248,21 @@ export default function IndikatorIndex({
             {},
             {
                 onFinish: () => setIsPinging(false),
+            }
+        );
+    };
+
+    const handleKirimNotifikasi = () => {
+        setIsSendingNotif(true);
+        router.post(
+            `/pengajuan-lomba/${pengajuan.id}/indikator/kirim-notifikasi`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setIsSendingNotif(false);
+                    setNotifDialogOpen(false);
+                },
             }
         );
     };
@@ -679,6 +709,34 @@ export default function IndikatorIndex({
                         </TableBody>
                     </Table>
                 </div>
+
+                {/* Bilah Aksi Bawah: Kirim Notifikasi Pemeriksaan oleh Pendamping */}
+                {canComment && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-lg border border-teal-200 dark:border-teal-800/60 bg-gradient-to-r from-teal-50/70 via-emerald-50/40 to-teal-50/70 dark:from-teal-950/30 dark:via-emerald-950/20 dark:to-teal-950/30 shadow-xs">
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-teal-100 dark:bg-teal-900/60 flex items-center justify-center shrink-0 text-teal-700 dark:text-teal-300">
+                                <Bell className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <h4 className="text-xs font-bold text-foreground">
+                                    Pemeriksaan Indikator Selesai?
+                                </h4>
+                                <p className="text-[11px] text-muted-foreground">
+                                    Kirimkan pemberitahuan resmi ke email inovator bahwa seluruh catatan review indikator telah diperiksa.
+                                </p>
+                            </div>
+                        </div>
+
+                        <Button
+                            type="button"
+                            onClick={() => setNotifDialogOpen(true)}
+                            className="w-full sm:w-auto bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs gap-2 shadow-xs cursor-pointer ml-auto"
+                        >
+                            <Send className="h-3.5 w-3.5" />
+                            Kirim Notifikasi ke Inovator
+                        </Button>
+                    </div>
+                )}
             </div>
 
             {/* Modal Pemilihan Parameter Mutu P1/P2/P3 */}
@@ -802,6 +860,71 @@ export default function IndikatorIndex({
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal Dialog Konfirmasi Kirim Notifikasi Pemeriksaan */}
+            <Dialog open={notifDialogOpen} onOpenChange={setNotifDialogOpen}>
+                <DialogContent className="sm:max-w-[460px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-foreground text-base">
+                            <Send className="h-4 w-4 text-teal-600" />
+                            Kirim Notifikasi Pemeriksaan
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-muted-foreground">
+                            Kirimkan email pemberitahuan resmi dan notifikasi sistem ke akun inovator.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-3 space-y-3">
+                        <div className="p-3 rounded-lg border border-teal-200 dark:border-teal-800/60 bg-teal-50/50 dark:bg-teal-950/30 text-xs space-y-2">
+                            <div className="font-semibold text-teal-900 dark:text-teal-200 flex items-center gap-1.5">
+                                <Bell className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+                                <span>Pratinjau Pesan yang Akan Dikirim:</span>
+                            </div>
+                            <p className="text-muted-foreground italic bg-background/80 p-2.5 rounded border border-border leading-relaxed text-[11px]">
+                                "Inovasi '{pengajuan.nama_inovasi}' telah diperiksa tanggal {currentDateFormatted}, silahkan cek akun anda."
+                            </p>
+                            <div className="text-[11px] text-muted-foreground pt-1 flex items-center justify-between">
+                                <span>Penerima: <strong>{pengajuan.inovator_nama || 'Inovator'}</strong></span>
+                                {pengajuan.inovator_email && (
+                                    <span className="font-mono text-[10px] text-teal-700 dark:text-teal-300">
+                                        {pengajuan.inovator_email}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setNotifDialogOpen(false)}
+                            disabled={isSendingNotif}
+                            className="text-xs"
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleKirimNotifikasi}
+                            disabled={isSendingNotif}
+                            className="bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs gap-2"
+                        >
+                            {isSendingNotif ? (
+                                <>
+                                    <Clock className="h-3.5 w-3.5 animate-spin" />
+                                    Mengirim Notifikasi...
+                                </>
+                            ) : (
+                                <>
+                                    <Send className="h-3.5 w-3.5" />
+                                    Kirim Notifikasi
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </>

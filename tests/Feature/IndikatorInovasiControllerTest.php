@@ -10,11 +10,13 @@ use App\Models\KelengkapanIndikator;
 use App\Models\PengajuanLomba;
 use App\Models\PeriodeLomba;
 use App\Models\User;
+use App\Mail\InovasiDiperiksaMail;
 use Database\Seeders\IndikatorSeeder;
 use Database\Seeders\PeriodeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -272,5 +274,48 @@ class IndikatorInovasiControllerTest extends TestCase
         );
 
         $response->assertForbidden();
+    }
+
+    public function test_pendamping_can_send_examination_notification_to_innovator(): void
+    {
+        Mail::fake();
+
+        [$user, $pengajuan] = $this->setupUserAndPengajuan();
+
+        $pendamping = User::factory()->create();
+        $pendamping->assignRole('pendamping');
+
+        $response = $this->actingAs($pendamping)->post(
+            route('pengajuan-lomba.indikator.kirim-notifikasi', $pengajuan)
+        );
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        // Verify Mail sent to innovator
+        Mail::assertSent(InovasiDiperiksaMail::class, function ($mail) use ($user) {
+            return $mail->hasTo($user->email);
+        });
+
+        // Verify In-App Notifikasi created
+        $this->assertDatabaseHas('notifikasi', [
+            'user_id' => $user->id,
+            'tipe' => 'pemeriksaan_indikator',
+            'link' => "/pengajuan-lomba/{$pengajuan->id}/indikator",
+        ]);
+    }
+
+    public function test_inovator_cannot_send_examination_notification(): void
+    {
+        Mail::fake();
+
+        [$user, $pengajuan] = $this->setupUserAndPengajuan();
+
+        $response = $this->actingAs($user)->post(
+            route('pengajuan-lomba.indikator.kirim-notifikasi', $pengajuan)
+        );
+
+        $response->assertForbidden();
+        Mail::assertNothingSent();
     }
 }

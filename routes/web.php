@@ -103,6 +103,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             // Rute Kelengkapan 20 Indikator SID per Pengajuan Lomba
             Route::prefix('{pengajuan}/indikator')->name('indikator.')->group(function () {
                 Route::get('/', [IndikatorInovasiController::class, 'index'])->name('index');
+                Route::post('/kirim-notifikasi', [IndikatorInovasiController::class, 'kirimNotifikasiPemeriksaan'])->name('kirim-notifikasi');
                 Route::post('/{indikator}/parameter', [IndikatorInovasiController::class, 'updateParameter'])->name('parameter.update');
                 Route::post('/{indikator}/komentar', [IndikatorInovasiController::class, 'updateKomentar'])->name('komentar.update');
                 Route::get('/{indikator}/dokumen', [IndikatorInovasiController::class, 'dokumen'])->name('dokumen.index');

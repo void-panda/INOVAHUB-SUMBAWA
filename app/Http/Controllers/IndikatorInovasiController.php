@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\InovasiDiperiksaMail;
 use App\Models\IndikatorSid;
 use App\Models\InovasiDokumen;
 use App\Models\KelengkapanIndikator;
+use App\Models\Notifikasi;
 use App\Models\PengajuanLomba;
 use App\Models\SkorPengajuan;
 use App\Services\InovasiService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -111,6 +115,8 @@ class IndikatorInovasiController extends Controller
                 'tahapan' => $inovasi->tahapan,
                 'is_arsip' => (bool) $pengajuan->is_arsip,
                 'is_inovasi_daerah' => (bool) $pengajuan->is_inovasi_daerah,
+                'inovator_nama' => $pengajuan->user?->name ?? $inovasi->user?->name ?? 'Inovator',
+                'inovator_email' => $pengajuan->user?->email ?? $inovasi->user?->email ?? '',
             ],
             'indikatorList' => $indikatorList,
             'kelengkapan' => $kelengkapan,
@@ -320,6 +326,62 @@ class IndikatorInovasiController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Kirim notifikasi pemeriksaan dari Pendamping kepada Inovator via Email dan In-App.
+     */
+    public function kirimNotifikasiPemeriksaan(
+        Request $request,
+        PengajuanLomba $pengajuan
+    ): RedirectResponse {
+        $user = $request->user();
+        abort_unless(
+            $user->hasRole('pendamping')
+                || $user->hasAnyRole(['bapperida', 'tim_penilai'])
+                || $user->can('validate-inovasi'),
+            403,
+            'Hanya pendamping atau tim penilai yang dapat mengirimkan notifikasi hasil pemeriksaan.'
+        );
+
+        $inovasi = $pengajuan->inovasi;
+        $inovator = $pengajuan->user ?? $inovasi->user;
+
+        if (! $inovator) {
+            return back()->with('error', 'Akun inovator tidak ditemukan.');
+        }
+
+        $tanggalFormat = Carbon::now()->locale('id')->translatedFormat('l, d F Y');
+        $namaInovasi = $inovasi->nama_inovasi;
+        $pesanNotifikasi = "Inovasi '{$namaInovasi}' telah diperiksa tanggal {$tanggalFormat}, silahkan cek akun anda.";
+        $actionUrl = url("/pengajuan-lomba/{$pengajuan->id}/indikator");
+
+        // 1. Simpan Notifikasi ke Lonceng Aplikasi INOVA-HUB
+        Notifikasi::create([
+            'user_id' => $inovator->id,
+            'tipe' => 'pemeriksaan_indikator',
+            'pesan' => $pesanNotifikasi,
+            'link' => "/pengajuan-lomba/{$pengajuan->id}/indikator",
+        ]);
+
+        // 2. Kirim Email Resmi ke Akun Inovator
+        if (! empty($inovator->email)) {
+            try {
+                Mail::to($inovator->email)->send(
+                    new InovasiDiperiksaMail(
+                        inovator: $inovator,
+                        pendamping: $user,
+                        pengajuan: $pengajuan,
+                        tanggalPemeriksaan: $tanggalFormat,
+                        actionUrl: $actionUrl
+                    )
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return back()->with('success', "Notifikasi pemeriksaan berhasil dikirim ke email inovator ({$inovator->email}).");
     }
 
     private function authorizeAccess(Request $request, PengajuanLomba $pengajuan): void
