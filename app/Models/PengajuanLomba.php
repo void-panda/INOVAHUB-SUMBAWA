@@ -102,6 +102,23 @@ class PengajuanLomba extends Model
         return $this->hasMany(KelengkapanIndikator::class);
     }
 
+    /** @return HasMany<PenilaianJuri, $this> */
+    public function penilaianJuri(): HasMany
+    {
+        return $this->hasMany(PenilaianJuri::class);
+    }
+
+    public function getNilaiRataRataJuriAttribute(): ?float
+    {
+        $avg = $this->penilaianJuri()->avg('nilai');
+        return $avg !== null ? round((float) $avg, 2) : null;
+    }
+
+    public function getJumlahJuriMenilaiAttribute(): int
+    {
+        return $this->penilaianJuri()->count();
+    }
+
     public function isAktif(): bool
     {
         return (bool) ($this->periodeLomba?->aktif && ! $this->is_arsip);

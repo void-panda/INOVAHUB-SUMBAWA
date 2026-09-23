@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum StatusPengajuan: string
 {
+    case Draft = 'draft';
     case DalamPendampingan = 'dalam_pendampingan';
     case DisahkanOpd = 'disahkan_opd';
     case ReviewInternal = 'review_internal';
@@ -13,6 +14,7 @@ enum StatusPengajuan: string
     public function label(): string
     {
         return match ($this) {
+            self::Draft => 'Draft (Sedang Melengkapi Data)',
             self::DalamPendampingan => 'Dalam Pendampingan',
             self::DisahkanOpd => 'Disahkan OPD',
             self::ReviewInternal => 'Review Internal',

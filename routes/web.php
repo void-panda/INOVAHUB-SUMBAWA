@@ -147,6 +147,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/', [SkoringController::class, 'index'])->name('index');
             Route::get('/{pengajuan}', [SkoringController::class, 'show'])->name('show');
             Route::post('/{pengajuan}', [SkoringController::class, 'store'])->name('store');
+            Route::post('/{pengajuan}/nilai-juri', [SkoringController::class, 'storeNilaiJuri'])->name('nilai.store');
         });
 
     Route::middleware(['auth', 'verified', 'permission:manage-master-data'])
