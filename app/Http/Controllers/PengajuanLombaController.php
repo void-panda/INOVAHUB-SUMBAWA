@@ -126,10 +126,22 @@ class PengajuanLombaController extends Controller
             'kelengkapanIndikator.indikatorSid',
             'validasiLogs.user',
             'pengajuanAsal.periodeLomba',
+            'penilaianJuri.juri',
+        ]);
+
+        $daftarPenilaianJuri = $pengajuan->penilaianJuri->map(fn ($p) => [
+            'id' => $p->id,
+            'nama_juri' => $p->juri?->name ?? 'Juri Lomba',
+            'nilai' => $p->nilai,
+            'catatan' => $p->catatan,
+            'updated_at' => $p->updated_at?->format('d M Y, H:i') ?? '',
         ]);
 
         return Inertia::render('pengajuan-lomba/show', [
             'pengajuan' => $pengajuan,
+            'nilaiRataRataJuri' => $pengajuan->nilai_rata_rata_juri,
+            'jumlahJuriMenilai' => $pengajuan->jumlah_juri_menilai,
+            'daftarPenilaianJuri' => $daftarPenilaianJuri,
             'canManageInovasiDaerah' => $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
             'canRekomendasikan' => $request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
         ]);

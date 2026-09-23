@@ -12,6 +12,7 @@ import {
     History,
     Layers,
     Lock,
+    MessageSquare,
     Send,
     ShieldAlert,
     Sparkles,
@@ -32,10 +33,21 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type { PengajuanLomba } from '@/types/models';
 
+interface PenilaianItem {
+    id: number;
+    nama_juri: string;
+    nilai: number;
+    catatan: string | null;
+    updated_at: string;
+}
+
 type Props = {
     pengajuan: PengajuanLomba;
     canManageInovasiDaerah?: boolean;
     canRekomendasikan?: boolean;
+    nilaiRataRataJuri?: number | null;
+    jumlahJuriMenilai?: number;
+    daftarPenilaianJuri?: PenilaianItem[];
 };
 
 const statusSteps = [
@@ -58,6 +70,9 @@ export default function PengajuanLombaShow({
     pengajuan,
     canManageInovasiDaerah = false,
     canRekomendasikan = false,
+    nilaiRataRataJuri = null,
+    jumlahJuriMenilai = 0,
+    daftarPenilaianJuri = [],
 }: Props) {
     const [actionDialogOpen, setActionDialogOpen] = useState(false);
     const [actionType, setActionType] = useState<string>('');
@@ -388,6 +403,59 @@ export default function PengajuanLombaShow({
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Catatan & Penilaian Tim Juri Lomba */}
+                <Card className="border-border bg-card">
+                    <CardHeader className="p-4 pb-2 border-b border-border">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4 text-teal-600" />
+                                Penilaian & Masukan Tim Juri Lomba ({daftarPenilaianJuri.length} Juri)
+                            </CardTitle>
+                            {nilaiRataRataJuri !== null && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Nilai Rata-rata:</span>
+                                    <Badge className="bg-teal-600 text-white font-bold text-xs px-2 py-0.5">
+                                        {nilaiRataRataJuri} / 100
+                                    </Badge>
+                                </div>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                        {daftarPenilaianJuri.length > 0 ? (
+                            <div className="space-y-3">
+                                {daftarPenilaianJuri.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="p-3.5 rounded-lg border border-teal-200/60 dark:border-teal-900/60 bg-teal-50/20 dark:bg-teal-950/10 text-xs space-y-2"
+                                    >
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-foreground">
+                                                    {item.nama_juri}
+                                                </span>
+                                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" /> {item.updated_at}
+                                                </span>
+                                            </div>
+                                            <Badge variant="outline" className="border-teal-500 text-teal-700 dark:text-teal-300 font-bold">
+                                                Skor: {item.nilai}
+                                            </Badge>
+                                        </div>
+                                        <div className="bg-background/80 p-2.5 rounded-md border text-foreground/90 whitespace-pre-line leading-relaxed">
+                                            {item.catatan || <span className="text-muted-foreground italic">Tidak ada catatan evaluasi tertulis.</span>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-muted-foreground italic text-center py-4">
+                                Belum ada masukan dan skor dari tim juri penilai lomba.
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Audit Trail / Validasi Log History */}
                 <Card className="border-border bg-card">
