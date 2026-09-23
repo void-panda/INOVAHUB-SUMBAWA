@@ -360,13 +360,24 @@ export default function SkoringShow({ pengajuan, inovasi, penilaianSaya, daftarP
                                                     </div>
                                                 </div>
 
-                                                <a
-                                                    href={`/inovasi-dokumen/${doc.id}/download`}
-                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition-colors shrink-0"
-                                                    title="Unduh Berkas"
-                                                >
-                                                    <Download className="h-3 w-3" /> Unduh
-                                                </a>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <a
+                                                        href={`/inovasi/dokumen/${doc.id}/preview`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                                        title="Pratinjau Dokumen"
+                                                    >
+                                                        <Eye className="h-3.5 w-3.5" />
+                                                    </a>
+                                                    <a
+                                                        href={`/inovasi/dokumen/${doc.id}/download`}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground transition-colors shrink-0"
+                                                        title="Unduh Berkas"
+                                                    >
+                                                        <Download className="h-3 w-3" /> Unduh
+                                                    </a>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

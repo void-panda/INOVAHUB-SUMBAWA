@@ -19,7 +19,7 @@ class InovasiRepository
         $query = $user->inovasi()
             ->with([
                 'dokumen',
-                'pengajuanLomba' => fn ($q) => $q->with(['periodeLomba', 'kelengkapanIndikator', 'skorPengajuan'])->latest(),
+                'pengajuanLomba' => fn ($q) => $q->with(['periodeLomba', 'kelengkapanIndikator', 'skorPengajuan', 'penilaianJuri'])->latest(),
             ]);
 
         if ($isDaerah !== null) {

@@ -118,6 +118,15 @@ export interface PengajuanLomba {
     skor_pengajuan?: SkorPengajuan[];
     kelengkapan_indikator?: KelengkapanIndikator[];
     dokumen?: InovasiDokumen[];
+    penilaian_juri?: Array<{
+        id: number;
+        pengajuan_lomba_id: number;
+        juri_user_id: number;
+        nilai: number;
+        catatan?: string | null;
+        created_at?: string;
+        updated_at?: string;
+    }>;
 }
 
 export interface Inovasi {

@@ -2,7 +2,6 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     AlertCircle,
     ArrowLeft,
-    Bell,
     CheckCircle2,
     ChevronDown,
     ChevronUp,
@@ -177,9 +176,6 @@ export default function IndikatorIndex({
     const [commentError, setCommentError] = useState<string | null>(null);
     const [isSavingComment, setIsSavingComment] = useState(false);
 
-    // Ping State
-    const [isPinging, setIsPinging] = useState(false);
-
     // Kirim Notifikasi Pemeriksaan State
     const [notifDialogOpen, setNotifDialogOpen] = useState(false);
     const [isSendingNotif, setIsSendingNotif] = useState(false);
@@ -241,16 +237,6 @@ export default function IndikatorIndex({
         );
     };
 
-    const handlePingPendamping = () => {
-        setIsPinging(true);
-        router.post(
-            `/pengajuan-lomba/${pengajuan.id}/ping`,
-            {},
-            {
-                onFinish: () => setIsPinging(false),
-            }
-        );
-    };
 
     const handleKirimNotifikasi = () => {
         setIsSendingNotif(true);
@@ -325,22 +311,7 @@ export default function IndikatorIndex({
                         )}
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* Tombol Ping Pendamping */}
-                        {!isLocked && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1.5 text-xs text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/40"
-                                onClick={handlePingPendamping}
-                                disabled={isPinging}
-                                title="Kirim notifikasi ke tim pendamping untuk meninjau indikator"
-                            >
-                                <Bell className="h-3.5 w-3.5 text-amber-600" />
-                                <span>{isPinging ? 'Mengirim...' : 'Ping Pendamping'}</span>
-                            </Button>
-                        )}
-                    </div>
+
                 </div>
 
                 {/* Hero Banner Sumbawa */}

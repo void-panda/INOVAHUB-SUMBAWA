@@ -92,7 +92,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/', [PengajuanLombaController::class, 'store'])->name('store');
             Route::get('/{pengajuan}', [PengajuanLombaController::class, 'show'])->name('show');
             Route::post('/{pengajuan}/tetapkan', [PengajuanLombaController::class, 'tetapkanInovasiDaerah'])->name('tetapkan');
-            Route::post('/{pengajuan}/ping', [PengajuanLombaController::class, 'ping'])->name('ping');
             Route::post('/{pengajuan}/ajukan-kembali', [PengajuanLombaController::class, 'ajukanKembali'])->name('ajukan-kembali');
             Route::post('/{pengajuan}/rekomendasikan', [PengajuanLombaController::class, 'rekomendasikan'])->name('rekomendasikan');
             Route::post('/{pengajuan}/sahkan-opd', [ValidasiController::class, 'sahkanOpd'])->name('sahkan-opd');

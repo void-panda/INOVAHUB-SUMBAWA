@@ -271,35 +271,6 @@ class PengajuanLombaService
         });
     }
 
-    /**
-     * Kirim notifikasi 'Ping' ke pendamping tanpa mengubah status.
-     */
-    public function pingPendamping(PengajuanLomba $pengajuan, User $sender): void
-    {
-        $penugasan = PenugasanPendamping::where('periode_lomba_id', $pengajuan->periode_lomba_id)
-            ->where(function (Builder $query) use ($pengajuan) {
-                $query->where('inovasi_id', $pengajuan->inovasi_id);
-                if ($pengajuan->inovasi->opd_id) {
-                    $query->orWhere('opd_id', $pengajuan->inovasi->opd_id);
-                }
-                $query->orWhere('inovator_id', $pengajuan->user_id);
-            })
-            ->get();
-
-        $pendampingIds = $penugasan->pluck('pendamping_id')->unique();
-        if ($pendampingIds->isEmpty()) {
-            $pendampingIds = User::role('pendamping')->pluck('id');
-        }
-
-        foreach ($pendampingIds as $pId) {
-            Notifikasi::create([
-                'user_id' => $pId,
-                'tipe' => 'ping_pendamping',
-                'pesan' => "Inovator {$sender->name} meminta peninjauan dokumen indikator '{$pengajuan->inovasi->nama_inovasi}'.",
-                'link' => "/pengajuan-lomba/{$pengajuan->id}/indikator",
-            ]);
-        }
-    }
 
     /**
      * Rekomendasikan pengajuan dari Pendamping ke Kepala OPD.

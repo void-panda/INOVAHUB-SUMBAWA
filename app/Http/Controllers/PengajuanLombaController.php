@@ -20,9 +20,15 @@ class PengajuanLombaController extends Controller
     /**
      * Daftar pengajuan lomba (berdasarkan role user atau periode aktif).
      */
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
+
+        // Role inovator dilebur ke menu Inovasi Saya
+        if ($user->hasRole('inovator') && ! $user->hasAnyRole(['bapperida', 'tim_penilai', 'pimpinan', 'pendamping'])) {
+            return redirect()->route('inovasi.index');
+        }
+
         $periodeId = $request->input('periode_id');
 
         $periodeAktif = PeriodeLomba::where('aktif', true)->first();
@@ -42,10 +48,7 @@ class PengajuanLombaController extends Controller
 
         // Filter per role
         if ($user->hasRole('inovator')) {
-            $query->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                    ->orWhereHas('inovasi', fn ($i) => $i->where('opd_id', $user->opd_id));
-            });
+            $query->where('user_id', $user->id);
         } elseif ($user->hasRole('pendamping')) {
             // Optional: filter by assignment or show all in OPD
             if ($user->opd_id) {
@@ -98,8 +101,8 @@ class PengajuanLombaController extends Controller
 
         $inovasi = Inovasi::findOrFail($validated['inovasi_id']);
 
-        // Pastikan user memiliki inovasi ini atau berwenang
-        abort_unless($inovasi->user_id === $request->user()->id || $request->user()->can('input-inovasi'), 403);
+        // Pastikan user memiliki inovasi ini (Inovator hanya boleh mendaftarkan inovasi miliknya)
+        abort_unless($inovasi->user_id === $request->user()->id || $request->user()->can('validate-inovasi'), 403);
 
         $pengajuan = $this->pengajuanService->ajukanKeLomba($inovasi, $request->user());
 
@@ -108,7 +111,7 @@ class PengajuanLombaController extends Controller
             'message' => __("Inovasi ':nama' berhasil didaftarkan ke periode lomba!", ['nama' => $inovasi->nama_inovasi]),
         ]);
 
-        return to_route('pengajuan-lomba.show', $pengajuan);
+        return to_route('inovasi.index');
     }
 
     /**
@@ -116,6 +119,15 @@ class PengajuanLombaController extends Controller
      */
     public function show(Request $request, PengajuanLomba $pengajuan): Response
     {
+        // Pastikan inovator hanya bisa melihat pengajuan miliknya sendiri
+        if ($request->user()->hasRole('inovator') && ! $request->user()->hasAnyRole(['bapperida', 'tim_penilai', 'pimpinan', 'pendamping'])) {
+            abort_unless(
+                $pengajuan->user_id === $request->user()->id || $pengajuan->inovasi?->user_id === $request->user()->id,
+                403,
+                'Anda tidak memiliki akses ke pengajuan inovasi ini.'
+            );
+        }
+
         $pengajuan->load([
             'inovasi.user.opd',
             'inovasi.opd',
@@ -137,13 +149,27 @@ class PengajuanLombaController extends Controller
             'updated_at' => $p->updated_at?->format('d M Y, H:i') ?? '',
         ]);
 
+        $dokumenUmum = \App\Models\InovasiDokumen::where('inovasi_id', $pengajuan->inovasi_id)
+            ->whereNull('indikator_sid_id')
+            ->get()
+            ->map(fn ($d) => [
+                'id' => $d->id,
+                'nama_asal' => $d->nama_asal ?? basename($d->path),
+                'jenis' => $d->jenis,
+                'mime' => $d->mime,
+                'path' => $d->path,
+                'ukuran' => $d->ukuran ?? 0,
+            ]);
+
         return Inertia::render('pengajuan-lomba/show', [
             'pengajuan' => $pengajuan,
             'nilaiRataRataJuri' => $pengajuan->nilai_rata_rata_juri,
             'jumlahJuriMenilai' => $pengajuan->jumlah_juri_menilai,
             'daftarPenilaianJuri' => $daftarPenilaianJuri,
+            'dokumenUmum' => $dokumenUmum,
             'canManageInovasiDaerah' => $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
             'canRekomendasikan' => $request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
+            'canNilaiJuri' => $request->user()->hasRole('tim_penilai') || $request->user()->can('scoring-spd') || $request->user()->can('scoring-sid'),
         ]);
     }
 
@@ -166,20 +192,6 @@ class PengajuanLombaController extends Controller
         return back();
     }
 
-    /**
-     * Kirim notifikasi 'Ping' ke pendamping untuk meninjau indikator.
-     */
-    public function ping(Request $request, PengajuanLomba $pengajuan): RedirectResponse
-    {
-        $this->pengajuanService->pingPendamping($pengajuan, $request->user());
-
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => __('Pemberitahuan telah dikirimkan kepada tim pendamping untuk meninjau kelengkapan indikator.'),
-        ]);
-
-        return back();
-    }
 
     /**
      * Ajukan kembali dari arsip periode sebelumnya ke periode aktif.

@@ -86,11 +86,6 @@ export function AppSidebar() {
                 {
                     title: 'Inovasi Saya',
                     href: '/inovasi',
-                    icon: ListChecks,
-                },
-                {
-                    title: 'Pengajuan Lomba',
-                    href: '/pengajuan-lomba',
                     icon: Trophy,
                 },
             ],

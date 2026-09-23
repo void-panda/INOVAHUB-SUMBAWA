@@ -104,37 +104,6 @@ class PengajuanLombaControllerTest extends TestCase
         $this->assertFalse($inovasi->fresh()->is_inovasi_daerah);
     }
 
-    public function test_inovator_can_ping_pendamping(): void
-    {
-        [$inovator, $pendamping] = $this->setupUsers();
-        $periode = PeriodeLomba::where('aktif', true)->first();
-
-        $inovasi = Inovasi::create([
-            'nama_inovasi' => 'Inovasi Ping',
-            'tahapan' => 'penerapan',
-            'nama_inisiator' => 'Dinkes',
-            'koordinat' => '-8.49,117.41',
-            'waktu_penerapan' => '2026-01-10',
-            'user_id' => $inovator->id,
-        ]);
-
-        $pengajuan = PengajuanLomba::create([
-            'inovasi_id' => $inovasi->id,
-            'periode_lomba_id' => $periode->id,
-            'user_id' => $inovator->id,
-            'is_inovasi_daerah' => true,
-            'status' => StatusPengajuan::DalamPendampingan,
-        ]);
-
-        $this->actingAs($inovator)
-            ->post(route('pengajuan-lomba.ping', $pengajuan))
-            ->assertRedirect();
-
-        $this->assertDatabaseHas('notifikasi', [
-            'user_id' => $pendamping->id,
-            'tipe' => 'ping_pendamping',
-        ]);
-    }
 
     public function test_inovator_can_ajukan_kembali_from_arsip(): void
     {

@@ -35,6 +35,7 @@ export interface DataTableProps<T> {
     pageSize?: number;
     title?: React.ReactNode;
     description?: React.ReactNode;
+    toolbarRight?: React.ReactNode;
 }
 
 export function DataTable<T extends { id?: string | number }>({
@@ -51,6 +52,7 @@ export function DataTable<T extends { id?: string | number }>({
     pageSize = 10,
     title,
     description,
+    toolbarRight,
 }: DataTableProps<T>) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('all');
@@ -129,7 +131,7 @@ export function DataTable<T extends { id?: string | number }>({
 
     return (
         <Card className="border-border/60 shadow-xs overflow-hidden">
-            {(title || description || headerRightAction || searchPlaceholder || filterOptions) && (
+            {(title || description || headerRightAction || searchPlaceholder || filterOptions || toolbarRight) && (
                 <CardHeader className="border-b bg-muted/20 p-4 md:p-6 space-y-4">
                     {(title || description || headerRightAction) && (
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -164,8 +166,11 @@ export function DataTable<T extends { id?: string | number }>({
                             )}
                         </div>
 
+                        {/* Custom Toolbar Right / Tabs */}
+                        {toolbarRight}
+
                         {/* Filter Tabs / Select */}
-                        {filterOptions && filterOptions.length > 0 && (
+                        {!toolbarRight && filterOptions && filterOptions.length > 0 && (
                             <div className="flex rounded-md border bg-muted/50 p-1 text-xs w-fit">
                                 {filterOptions.map((opt) => (
                                     <button

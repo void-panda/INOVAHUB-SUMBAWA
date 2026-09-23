@@ -11,7 +11,9 @@ import {
     Plus,
     Printer,
     Send,
+    Star,
     Trash2,
+    Trophy,
 } from 'lucide-react';
 import { useState } from 'react';
 import { HeroBanner } from '@/components/hero-banner';
@@ -144,10 +146,11 @@ export default function InovasiIndex({
             header: 'Nama Inovasi',
             accessorKey: 'nama_inovasi',
             sortable: true,
+            className: 'min-w-[260px]',
             cell: (row) => (
-                <div className="space-y-1.5 py-1">
+                <div className="space-y-1.5 py-1 min-w-[240px] max-w-md">
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-foreground text-sm leading-snug">
+                        <span className="font-semibold text-foreground text-sm leading-snug break-words whitespace-normal">
                             {row.nama_inovasi}
                         </span>
                         <Badge
@@ -166,6 +169,71 @@ export default function InovasiIndex({
                     </div>
                 </div>
             ),
+        },
+        {
+            header: 'Status Lomba',
+            cell: (row) => {
+                const activePengajuan = row.pengajuan_lomba?.find((p) => p.periode_lomba?.aktif && !p.is_arsip);
+                if (!activePengajuan) {
+                    return (
+                        <div className="space-y-0.5">
+                            <Badge variant="secondary" className="text-[11px] text-muted-foreground font-normal">
+                                Belum Diajukan
+                            </Badge>
+                            <div className="text-[10px] text-muted-foreground">
+                                Bank Data
+                            </div>
+                        </div>
+                    );
+                }
+
+                const juriList = activePengajuan.penilaian_juri ?? (activePengajuan as any).penilaianJuri ?? [];
+                const hasNilaiJuri = juriList.length > 0;
+                const avgScore = hasNilaiJuri
+                    ? (juriList.reduce((acc: number, cur: any) => acc + Number(cur.nilai || 0), 0) / juriList.length).toFixed(1)
+                    : null;
+
+                if (hasNilaiJuri) {
+                    return (
+                        <div className="space-y-1">
+                            <Badge variant="outline" className="text-[11px] border-emerald-500 text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/30 font-bold gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                Sudah Dinilai ({juriList.length} Juri)
+                            </Badge>
+                            <div className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+                                <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                                <span>Rata-rata: {avgScore} / 100</span>
+                            </div>
+                        </div>
+                    );
+                }
+
+                if (activePengajuan.status === 'draft') {
+                    return (
+                        <div className="space-y-0.5">
+                            <Badge variant="outline" className="text-[11px] border-amber-500/50 text-amber-700 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/20 font-medium gap-1">
+                                <Clock className="h-3 w-3 text-amber-600" />
+                                Sedang Melengkapi Data
+                            </Badge>
+                            <div className="text-[10px] text-muted-foreground">
+                                Periode {activePengajuan.periode_lomba?.tahun}
+                            </div>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="space-y-0.5">
+                        <Badge variant="outline" className="text-[11px] border-blue-500/50 text-blue-700 dark:text-blue-300 bg-blue-50/70 dark:bg-blue-950/20 font-semibold gap-1">
+                            <Send className="h-3 w-3 text-blue-600" />
+                            Sudah di-Submit
+                        </Badge>
+                        <div className="text-[10px] text-muted-foreground">
+                            Periode {activePengajuan.periode_lomba?.tahun}
+                        </div>
+                    </div>
+                );
+            },
         },
         {
             header: 'Tahapan',
@@ -198,29 +266,6 @@ export default function InovasiIndex({
                     </span>
                 </div>
             ),
-        },
-        {
-            header: 'Status Pengajuan',
-            cell: (row) => {
-                const activePengajuan = row.pengajuan_lomba?.find((p) => p.periode_lomba?.aktif && !p.is_arsip);
-                if (!activePengajuan) {
-                    return (
-                        <Badge variant="secondary" className="text-[11px] text-muted-foreground font-normal">
-                            Belum Diajukan
-                        </Badge>
-                    );
-                }
-                return (
-                    <div className="space-y-1">
-                        <Badge variant="outline" className="text-[11px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/20 font-semibold">
-                            Telah Disubmit
-                        </Badge>
-                        <div className="text-[10px] text-muted-foreground">
-                            Periode {activePengajuan.periode_lomba?.tahun}
-                        </div>
-                    </div>
-                );
-            },
         },
         {
             header: 'Dokumen',
@@ -273,6 +318,22 @@ export default function InovasiIndex({
                             )
                         )}
 
+                        {/* Tombol Aksi Lomba: Jika sudah diajukan, tampilkan tombol langsung ke lembar lomba & evaluasi juri */}
+                        {activePengajuan && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="h-8 px-2.5 text-xs gap-1.5 border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/30 font-medium"
+                                title="Buka detail lembar lomba & rekapitulasi nilai juri"
+                            >
+                                <Link href={`/pengajuan-lomba/${activePengajuan.id}`}>
+                                    <Trophy className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+                                    <span>Status Lomba & Juri</span>
+                                </Link>
+                            </Button>
+                        )}
+
                         {/* Tombol Aksi: Lihat Detail jika telah disubmit, Edit jika masih draft */}
                         {activePengajuan ? (
                             <Button
@@ -284,7 +345,7 @@ export default function InovasiIndex({
                             >
                                 <Link href={`/inovasi/${row.id}/edit`}>
                                     <Eye className="h-3.5 w-3.5" />
-                                    <span>Lihat Detail</span>
+                                    <span>Lihat Profil</span>
                                 </Link>
                             </Button>
                         ) : (
@@ -474,10 +535,15 @@ export default function InovasiIndex({
                     </div>
                 </div>
 
-                {/* Filter Tabs & Data Table */}
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-xl border">
+                {/* Data Table with Integrated Toolbar & Tabs */}
+                <DataTable
+                    columns={columns}
+                    data={filteredInovasi}
+                    searchPlaceholder="Cari nama inovasi, inisiator, atau urusan..."
+                    pageSize={10}
+                    emptyMessage="Belum ada data inovasi yang tersimpan."
+                    toolbarRight={
+                        <div className="flex items-center gap-1 p-1 bg-muted/60 rounded-lg border text-xs flex-wrap">
                             {(
                                 [
                                     { key: 'semua', label: 'Semua Inovasi', count: totalInovasi },
@@ -490,34 +556,27 @@ export default function InovasiIndex({
                                     key={tab.key}
                                     type="button"
                                     onClick={() => setActiveTahapanFilter(tab.key)}
-                                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${activeTahapanFilter === tab.key
+                                    className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                                        activeTahapanFilter === tab.key
                                             ? 'bg-background text-foreground shadow-xs'
                                             : 'text-muted-foreground hover:text-foreground'
-                                        }`}
+                                    }`}
                                 >
                                     <span>{tab.label}</span>
                                     <span
-                                        className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTahapanFilter === tab.key
+                                        className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                                            activeTahapanFilter === tab.key
                                                 ? 'bg-primary/10 text-primary font-bold'
                                                 : 'bg-muted text-muted-foreground'
-                                            }`}
+                                        }`}
                                     >
                                         {tab.count}
                                     </span>
                                 </button>
                             ))}
                         </div>
-                    </div>
-
-                    <DataTable
-                        columns={columns}
-                        data={filteredInovasi}
-                        searchable
-                        searchPlaceholder="Cari nama inovasi, inisiator, atau urusan..."
-                        pageSize={10}
-                        emptyMessage="Belum ada data inovasi yang tersimpan."
-                    />
-                </div>
+                    }
+                />
             </div>
 
             {/* Modal Dialog Ajukan ke Seleksi Lomba / Penetapan Inovasi Daerah */}
