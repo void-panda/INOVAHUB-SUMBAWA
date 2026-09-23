@@ -1,12 +1,9 @@
 import { Head, useForm } from '@inertiajs/react';
 import {
-    AlertCircle,
-    Info,
     Layers,
     Pencil,
     Plus,
     Sliders,
-    Trash2,
 } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
 import { HeroBanner } from '@/components/hero-banner';
@@ -24,6 +21,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import type { BreadcrumbItem } from '@/types';
@@ -58,107 +62,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Master Indikator Penilaian', href: '/penilai/indikator' },
 ];
 
-/**
- * Subcomponent for rendering individual parameter option row.
- * Defined outside the main component to follow react-patterns (preventing inline re-creation on every render).
- */
-interface OptionRowProps {
-    index: number;
-    option: ParameterOption;
-    canRemove: boolean;
-    onUpdate: (index: number, field: 'label' | 'bobot', value: any) => void;
-    onRemove: (index: number) => void;
-    errorMessage?: string;
-}
-
-function OptionRow({
-    index,
-    option,
-    canRemove,
-    onUpdate,
-    onRemove,
-    errorMessage,
-}: OptionRowProps) {
-    return (
-        <div className="flex flex-col gap-2 p-3 rounded-lg border bg-muted/20 transition-colors hover:border-primary/30">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-foreground">
-                        Opsi {index + 1}
-                    </span>
-                    <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground px-1.5 py-0">
-                        {option.id || `p${index + 1}`}
-                    </Badge>
-                </div>
-                {canRemove && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onRemove(index)}
-                        className="text-destructive hover:bg-destructive/10 h-7 w-7 shrink-0 cursor-pointer"
-                        title="Hapus Opsi"
-                    >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        <span className="sr-only">Hapus Opsi {index + 1}</span>
-                    </Button>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-start">
-                <div className="sm:col-span-3 space-y-1">
-                    <Label htmlFor={`opsi-label-${index}`} className="text-[11px] font-semibold text-foreground block">
-                        Teks Kriteria / Deskripsi Pemenuhan <span className="text-destructive">*</span>
-                    </Label>
-                    <Textarea
-                        id={`opsi-label-${index}`}
-                        rows={2}
-                        value={option.label}
-                        onChange={(e) => onUpdate(index, 'label', e.target.value)}
-                        placeholder="Contoh: Memenuhi 1 atau 2 unsur substansi..."
-                        className="text-xs resize-none"
-                        required
-                    />
-                    {errorMessage && (
-                        <p className="text-[11px] text-destructive flex items-center gap-1 mt-0.5">
-                            <AlertCircle className="h-3 w-3" /> {errorMessage}
-                        </p>
-                    )}
-                </div>
-
-                <div className="sm:col-span-1 space-y-1">
-                    <Label htmlFor={`opsi-bobot-${index}`} className="text-[11px] font-semibold text-foreground block">
-                        Bobot Poin <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                        id={`opsi-bobot-${index}`}
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={option.bobot}
-                        onChange={(e) => onUpdate(index, 'bobot', e.target.value)}
-                        className="text-xs"
-                        placeholder="e.g. 1"
-                        required
-                    />
-                    <p className="text-[10px] text-muted-foreground">Skor pilihan ini</p>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
     const [activeTab, setActiveTab] = useState<'spd' | 'sid'>('sid');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Indikator | null>(null);
-    const [formValidationError, setFormValidationError] = useState<string | null>(null);
-
-    const [optionsList, setOptionsList] = useState<ParameterOption[]>([
-        { id: 'p1', label: '', bobot: 1 },
-        { id: 'p2', label: '', bobot: 2 },
-        { id: 'p3', label: '', bobot: 3 },
-    ]);
 
     const form = useForm<{
         kode: string;
@@ -166,148 +73,100 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
         variabel: string;
         informasi: string;
         bobot: string;
-        p1: string;
-        p2: string;
-        p3: string;
-        opsi: ParameterOption[];
     }>({
         kode: '',
         nama: '',
         variabel: '',
         informasi: '',
-        bobot: '1.00',
-        p1: '',
-        p2: '',
-        p3: '',
-        opsi: [],
+        bobot: '1',
     });
 
     const openCreateModal = useCallback(() => {
         setEditingItem(null);
-        setFormValidationError(null);
         form.reset();
-        form.setData('kode', activeTab === 'spd' ? 'SPD-' : 'SID-');
-        setOptionsList([
-            { id: 'p1', label: '', bobot: 1 },
-            { id: 'p2', label: '', bobot: 2 },
-            { id: 'p3', label: '', bobot: 3 },
-        ]);
+        form.setData({
+            kode: '',
+            nama: '',
+            variabel: '',
+            informasi: '',
+            bobot: '1',
+        });
         setDialogOpen(true);
-    }, [activeTab, form]);
+    }, [form]);
 
     const openEditModal = useCallback((item: Indikator) => {
         setEditingItem(item);
-        setFormValidationError(null);
-
-        let initialOpsi: ParameterOption[] = [];
-        if (item.opsi_list && item.opsi_list.length > 0) {
-            initialOpsi = item.opsi_list.map((o) => ({
-                id: o.id,
-                label: o.label,
-                bobot: o.bobot,
-            }));
-        } else if (item.opsi && item.opsi.length > 0) {
-            initialOpsi = item.opsi.map((o) => ({
-                id: o.id,
-                label: o.label,
-                bobot: o.bobot,
-            }));
-        } else {
-            if (item.p1) initialOpsi.push({ id: 'p1', label: item.p1, bobot: 1 });
-            if (item.p2) initialOpsi.push({ id: 'p2', label: item.p2, bobot: 2 });
-            if (item.p3) initialOpsi.push({ id: 'p3', label: item.p3, bobot: 3 });
-        }
-
-        if (initialOpsi.length === 0) {
-            initialOpsi = [
-                { id: 'p1', label: '', bobot: 1 },
-                { id: 'p2', label: '', bobot: 2 },
-                { id: 'p3', label: '', bobot: 3 },
-            ];
-        }
-
-        setOptionsList(initialOpsi);
+        const normalizedBobot = Number(item.bobot).toString();
         form.setData({
             kode: item.kode,
             nama: item.nama,
             variabel: item.variabel ?? '',
             informasi: item.informasi ?? '',
-            bobot: String(item.bobot),
-            p1: item.p1 ?? '',
-            p2: item.p2 ?? '',
-            p3: item.p3 ?? '',
-            opsi: initialOpsi,
+            bobot: normalizedBobot,
         });
         setDialogOpen(true);
     }, [form]);
 
-    const addOption = useCallback(() => {
-        setOptionsList((prev) => {
-            const nextIdx = prev.length + 1;
-            return [
-                ...prev,
-                { id: `p${nextIdx}`, label: '', bobot: nextIdx },
+    const bobotOptions = useMemo(() => {
+        const baseOptions = activeTab === 'sid'
+            ? [
+                { value: '1', label: '1 — Bobot 1 (Standar / Operasional)' },
+                { value: '2', label: '2 — Bobot 2 (Menengah / Signifikan)' },
+                { value: '3', label: '3 — Bobot 3 (Tinggi / Kunci)' },
+                { value: '4', label: '4 — Bobot 4 (Kritis / Maksimal)' },
+            ]
+            : [
+                { value: '1', label: '1.0 — Bobot 1.0 (Standar)' },
+                { value: '1.5', label: '1.5 — Bobot 1.5 (Menengah)' },
+                { value: '2', label: '2.0 — Bobot 2.0 (Tinggi)' },
             ];
-        });
-    }, []);
 
-    const updateOption = useCallback((index: number, field: 'label' | 'bobot', value: any) => {
-        setFormValidationError(null);
-        setOptionsList((prev) => {
-            const next = [...prev];
-            next[index] = { ...next[index], [field]: value };
-            return next;
-        });
-    }, []);
+        if (form.data.bobot && !baseOptions.some((opt) => opt.value === form.data.bobot)) {
+            return [
+                ...baseOptions,
+                { value: form.data.bobot, label: `${form.data.bobot} — Nilai Khusus` },
+            ];
+        }
 
-    const removeOption = useCallback((index: number) => {
-        setOptionsList((prev) => {
-            if (prev.length <= 1) return prev;
-            return prev.filter((_, i) => i !== index);
-        });
-    }, []);
+        return baseOptions;
+    }, [activeTab, form.data.bobot]);
+
+    const currentPrefix = activeTab === 'spd' ? 'SPD-' : 'SID-';
+
+    const kodeSuffix = useMemo(() => {
+        if (!form.data.kode) return '';
+        if (form.data.kode.startsWith(currentPrefix)) {
+            return form.data.kode.slice(currentPrefix.length);
+        }
+        return form.data.kode.replace(/^(SPD-|SID-)/i, '');
+    }, [form.data.kode, currentPrefix]);
+
+    const handleSuffixChange = (val: string) => {
+        const cleaned = val.replace(/^(SPD-|SID-)/i, '').trim();
+        form.setData('kode', cleaned ? `${currentPrefix}${cleaned}` : '');
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setFormValidationError(null);
-
-        // Validate that all options have non-empty labels
-        const emptyIndex = optionsList.findIndex((opt) => opt.label.trim() === '');
-        if (emptyIndex !== -1) {
-            setFormValidationError(`Teks kriteria pada Opsi ${emptyIndex + 1} masih kosong. Mohon lengkapi atau hapus opsi tersebut.`);
-            return;
-        }
-
-        const validOpsi = optionsList.map((o, idx) => ({
-            id: o.id || `p${idx + 1}`,
-            label: o.label.trim(),
-            bobot: Number(o.bobot) || (idx + 1),
-        }));
-
-        if (validOpsi.length === 0) {
-            setFormValidationError('Minimal harus ada 1 opsi parameter yang tersusun.');
-            return;
-        }
 
         const url = activeTab === 'spd'
             ? (editingItem ? `/penilai/indikator/spd/${editingItem.id}` : '/penilai/indikator/spd')
             : (editingItem ? `/penilai/indikator/sid/${editingItem.id}` : '/penilai/indikator/sid');
 
-        form.transform((data) => ({
-            ...data,
-            p1: validOpsi[0]?.label ?? '',
-            p2: validOpsi[1]?.label ?? '',
-            p3: validOpsi[2]?.label ?? '',
-            opsi: validOpsi,
-        }));
-
         if (editingItem) {
             form.put(url, {
-                onSuccess: () => setDialogOpen(false),
+                onSuccess: () => {
+                    setDialogOpen(false);
+                    setEditingItem(null);
+                    form.reset();
+                },
             });
         } else {
             form.post(url, {
-                onSuccess: () => setDialogOpen(false),
+                onSuccess: () => {
+                    setDialogOpen(false);
+                    form.reset();
+                },
             });
         }
     };
@@ -411,22 +270,20 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
                 <div className="flex rounded-lg border bg-muted/60 p-1 w-fit text-sm">
                     <button
                         onClick={() => setActiveTab('sid')}
-                        className={`px-4 py-2 rounded-md font-semibold transition-all flex items-center gap-2 cursor-pointer ${
-                            activeTab === 'sid'
+                        className={`px-4 py-2 rounded-md font-semibold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'sid'
                                 ? 'bg-background text-foreground shadow-xs'
                                 : 'text-muted-foreground hover:text-foreground'
-                        }`}
+                            }`}
                     >
                         <Layers className="h-4 w-4 text-primary" />
                         Indikator SID ({sidList.length})
                     </button>
                     <button
                         onClick={() => setActiveTab('spd')}
-                        className={`px-4 py-2 rounded-md font-semibold transition-all flex items-center gap-2 cursor-pointer ${
-                            activeTab === 'spd'
+                        className={`px-4 py-2 rounded-md font-semibold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'spd'
                                 ? 'bg-background text-foreground shadow-xs'
                                 : 'text-muted-foreground hover:text-foreground'
-                        }`}
+                            }`}
                     >
                         <Layers className="h-4 w-4 text-primary" />
                         Indikator SPD ({spdList.length})
@@ -445,31 +302,40 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
 
             {/* Create/Edit Dialog */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-xl">
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
                             <DialogTitle className="text-base md:text-lg font-bold">
                                 {editingItem ? 'Edit' : 'Tambah'} Indikator {activeTab.toUpperCase()}
                             </DialogTitle>
                             <DialogDescription className="text-xs">
-                                Masukkan kode, nama, bobot, dan opsi parameter dinamis indikator.
+                                Masukkan kode, nama, dan bobot pengali indikator sesuai standar Kemendagri.
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="grid gap-4 py-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="kode" className="text-xs font-semibold">
+                                    <Label htmlFor="kode_suffix" className="text-xs font-semibold">
                                         Kode Indikator <span className="text-destructive">*</span>
                                     </Label>
-                                    <Input
-                                        id="kode"
-                                        value={form.data.kode}
-                                        onChange={(e) => form.setData('kode', e.target.value)}
-                                        placeholder="e.g. SID-01"
-                                        className="text-xs mt-1"
-                                        required
-                                    />
+                                    <div className="flex h-9 items-stretch mt-1 rounded-md border border-input bg-background shadow-xs focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] transition-[color,box-shadow] overflow-hidden">
+                                        <div className="flex items-center justify-center px-3 bg-muted/80 border-r border-input text-xs font-mono font-bold text-muted-foreground select-none">
+                                            {currentPrefix}
+                                        </div>
+                                        <input
+                                            id="kode_suffix"
+                                            type="text"
+                                            value={kodeSuffix}
+                                            onChange={(e) => handleSuffixChange(e.target.value)}
+                                            placeholder="01"
+                                            className="flex-1 min-w-0 bg-transparent px-3 py-1 text-xs font-mono text-foreground focus:outline-none placeholder:text-muted-foreground"
+                                            required
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground mt-1">
+                                        Prefix <code className="font-mono text-primary font-semibold">{currentPrefix}</code> disematkan otomatis.
+                                    </p>
                                     {form.errors.kode && (
                                         <p className="text-xs text-destructive mt-1">{form.errors.kode}</p>
                                     )}
@@ -477,18 +343,28 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
 
                                 <div>
                                     <Label htmlFor="bobot" className="text-xs font-semibold">
-                                        Bobot Indikator <span className="text-destructive">*</span>
+                                        Bobot Pengali Indikator<span className="text-destructive">*</span>
                                     </Label>
-                                    <Input
-                                        id="bobot"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
+                                    <Select
                                         value={form.data.bobot}
-                                        onChange={(e) => form.setData('bobot', e.target.value)}
-                                        className="text-xs mt-1"
-                                        required
-                                    />
+                                        onValueChange={(val) => form.setData('bobot', val)}
+                                    >
+                                        <SelectTrigger id="bobot" className="text-xs mt-1 w-full bg-background cursor-pointer">
+                                            <SelectValue placeholder="Pilih bobot pengali" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {bobotOptions.map((opt) => (
+                                                <SelectItem key={opt.value} value={opt.value} className="text-xs cursor-pointer">
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-[10px] text-muted-foreground mt-1">
+                                        {activeTab === 'sid'
+                                            ? 'Pilihan baku Kemendagri: 1, 2, 3, atau 4 (mencegah input desimal bebas).'
+                                            : 'Pilihan baku Kemendagri: 1.0, 1.5, atau 2.0.'}
+                                    </p>
                                     {form.errors.bobot && (
                                         <p className="text-xs text-destructive mt-1">{form.errors.bobot}</p>
                                     )}
@@ -507,6 +383,9 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
                                     className="text-xs mt-1"
                                     required
                                 />
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                    Nama lengkap indikator penilaian kematangan inovasi daerah.
+                                </p>
                                 {form.errors.nama && (
                                     <p className="text-xs text-destructive mt-1">{form.errors.nama}</p>
                                 )}
@@ -532,66 +411,14 @@ export default function MasterIndikatorIndex({ spdList, sidList }: Props) {
                                     </Label>
                                     <Textarea
                                         id="informasi"
-                                        rows={2}
+                                        rows={3}
                                         value={form.data.informasi}
                                         onChange={(e) => form.setData('informasi', e.target.value)}
-                                        placeholder="Petunjuk teknis dokumen atau bukti yang harus diunggah..."
+                                        placeholder="Petunjuk teknis dokumen atau bukti yang harus diunggah inovator..."
                                         className="text-xs mt-1"
                                     />
                                 </div>
                             )}
-
-                            {/* Section Opsi Parameter Dinamis */}
-                            <div className="space-y-3 border-t pt-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                    <div>
-                                        <Label className="text-xs font-bold text-foreground uppercase tracking-wider block">
-                                            Daftar Opsi Parameter & Bobot Poin
-                                        </Label>
-                                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                                            Tiap opsi parameter akan muncul di dropdown pilihan indikator beserta nilai bobot poinnya.
-                                        </p>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={addOption}
-                                        className="h-8 text-xs gap-1 border-dashed text-primary hover:bg-primary/5 cursor-pointer self-start sm:self-auto"
-                                    >
-                                        <Plus className="h-3.5 w-3.5" />
-                                        Tambah Opsi Parameter
-                                    </Button>
-                                </div>
-
-                                {/* Callout Otomatis Opsi Nol */}
-                                <div className="flex items-start gap-2 p-2.5 rounded-md bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-900 dark:text-blue-200">
-                                    <Info className="h-4 w-4 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
-                                    <p className="text-[11px] leading-relaxed">
-                                        <strong>Catatan:</strong> Opsi standar <em>"Tidak Dapat Diukur"</em> (Bobot 0) otomatis disediakan oleh sistem saat inovator melengkapi indikator. Anda hanya perlu menyusun opsi-opsi capaian parameter di bawah ini.
-                                    </p>
-                                </div>
-
-                                {formValidationError && (
-                                    <div className="flex items-center gap-2 p-2.5 rounded-md bg-destructive/10 border border-destructive/30 text-xs text-destructive">
-                                        <AlertCircle className="h-4 w-4 shrink-0" />
-                                        <span className="text-[11px] font-medium">{formValidationError}</span>
-                                    </div>
-                                )}
-
-                                <div className="space-y-2.5">
-                                    {optionsList.map((opt, idx) => (
-                                        <OptionRow
-                                            key={idx}
-                                            index={idx}
-                                            option={opt}
-                                            canRemove={optionsList.length > 1}
-                                            onUpdate={updateOption}
-                                            onRemove={removeOption}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
                         </div>
 
                         <DialogFooter className="mt-4 gap-2">
