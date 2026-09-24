@@ -288,9 +288,9 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
 
                 const numScore = Number(score);
                 const scoreColor =
-                    numScore >= 80
+                    numScore >= 45
                         ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
-                        : numScore >= 50
+                        : numScore >= 30
                             ? 'bg-teal-50 text-teal-800 border-teal-300 dark:bg-teal-950/40 dark:text-teal-300'
                             : 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300';
 
@@ -298,9 +298,9 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                     <div className="flex flex-col items-center gap-0.5">
                         <Badge variant="outline" className={`font-bold text-xs px-2 py-0.5 ${scoreColor}`}>
                             <Sparkles className="h-3 w-3 mr-1 text-emerald-600 dark:text-emerald-400" />
-                            {numScore.toFixed(2)}
+                            {numScore.toFixed(0)}
                         </Badge>
-                        <span className="text-[10px] text-muted-foreground">Maks: 111.00</span>
+                        <span className="text-[10px] text-muted-foreground">Maks: 60 Poin</span>
                     </div>
                 );
             },

@@ -68,56 +68,38 @@ export function ParameterModal({
         }
     }, [open, currentParameter, currentCatatan]);
 
-    const bobotIndikator = indikator ? Number(indikator.bobot) : 0;
-
     const options: ParameterOption[] = useMemo(() => {
         if (!indikator) return [];
 
-        if (Array.isArray(indikator.opsi_list) && indikator.opsi_list.length > 0) {
-            return indikator.opsi_list;
-        }
+        const p1Label = indikator.p1 || (indikator.opsi?.[0]?.label ?? indikator.opsi_list?.[0]?.label ?? 'Bukti Standar Minimal');
+        const p2Label = indikator.p2 || (indikator.opsi?.[1]?.label ?? indikator.opsi_list?.[1]?.label ?? 'Bukti Standar Menengah');
+        const p3Label = indikator.p3 || (indikator.opsi?.[2]?.label ?? indikator.opsi_list?.[2]?.label ?? 'Bukti Standar Tertinggi');
 
-        if (Array.isArray(indikator.opsi) && indikator.opsi.length > 0) {
-            return indikator.opsi;
-        }
-
-        const fallback: ParameterOption[] = [];
-        if (indikator.p1) fallback.push({ id: 'p1', label: indikator.p1, bobot: 1 });
-        if (indikator.p2) fallback.push({ id: 'p2', label: indikator.p2, bobot: 2 });
-        if (indikator.p3) fallback.push({ id: 'p3', label: indikator.p3, bobot: 3 });
-        return fallback;
+        return [
+            { id: 'p1', label: `Parameter P1 (1 Poin): ${p1Label}`, bobot: 1 },
+            { id: 'p2', label: `Parameter P2 (2 Poin): ${p2Label}`, bobot: 2 },
+            { id: 'p3', label: `Parameter P3 (3 Poin): ${p3Label}`, bobot: 3 },
+        ];
     }, [indikator]);
 
     const activeScoreInfo = useMemo(() => {
-        if (!selectedParam || selectedParam === 'tidak_dapat_diukur') {
+        if (!selectedParam || selectedParam === 'tidak_dapat_diukur' || selectedParam === '0') {
             return {
                 poin: 0,
                 skor: 0,
-                text: `0.00 Poin (0 × ${bobotIndikator.toFixed(2)})`,
+                text: '0 Poin (Tidak Dapat Diukur)',
             };
         }
 
-        const matching = options.find((opt) => opt.id === selectedParam);
-        if (matching) {
-            const poin = Number(matching.bobot);
-            const total = poin * bobotIndikator;
-            return {
-                poin,
-                skor: total,
-                text: `${total.toFixed(2)} Poin (${poin} × ${bobotIndikator.toFixed(2)})`,
-            };
-        }
-
-        // Fallback p1, p2, p3
         const tierMap: Record<string, number> = { p1: 1, p2: 2, p3: 3 };
-        const tier = tierMap[selectedParam.toLowerCase()] ?? 0;
-        const total = tier * bobotIndikator;
+        const poin = tierMap[selectedParam.toLowerCase()] ?? (options.find((o) => o.id === selectedParam)?.bobot ?? 0);
+
         return {
-            poin: tier,
-            skor: total,
-            text: `${total.toFixed(2)} Poin (${tier} × ${bobotIndikator.toFixed(2)})`,
+            poin,
+            skor: poin,
+            text: `${poin} Poin`,
         };
-    }, [selectedParam, options, bobotIndikator]);
+    }, [selectedParam, options]);
 
     if (!indikator) return null;
 

@@ -194,7 +194,7 @@ export default function IndikatorIndex({
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedInfo, setExpandedInfo] = useState<Record<number, boolean>>({});
 
-    const isLocked = pengajuan.status !== 'dalam_pendampingan' || Boolean(pengajuan.is_arsip);
+    const isLocked = !['draft', 'dalam_pendampingan', 'revisi'].includes(pengajuan.status) || Boolean(pengajuan.is_arsip);
 
     const openParamModal = (ind: IndikatorSidItem) => {
         setSelectedIndikator(ind);
@@ -350,14 +350,14 @@ export default function IndikatorIndex({
                                 </div>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-2xl font-bold tracking-tight text-teal-700 dark:text-teal-400">
-                                        {skorEstimasi.toFixed(2)}
+                                        {skorEstimasi.toFixed(0)}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                        / maks {skorMaks.toFixed(2)} poin
+                                        / maks {skorMaks.toFixed(0)} poin ({skorMaks > 0 ? Math.round((skorEstimasi / skorMaks) * 100) : 0}%)
                                     </span>
                                 </div>
                                 <p className="text-[11px] text-muted-foreground">
-                                    Kalkulasi berdasarkan bobot riil Permendagri & IGA 2026.
+                                    Kalkulasi akumulasi parameter SID standar IGA 2026 (maks 60 poin).
                                 </p>
                             </div>
 
@@ -422,7 +422,7 @@ export default function IndikatorIndex({
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
                                 <TableHead className="w-[80px] font-semibold">KODE</TableHead>
                                 <TableHead className="min-w-[200px] font-semibold">INDIKATOR & DEFINISI</TableHead>
-                                <TableHead className="w-[80px] text-center font-semibold">BOBOT</TableHead>
+                                <TableHead className="w-[80px] text-center font-semibold">MAKS POIN</TableHead>
                                 <TableHead className="w-[160px] text-center font-semibold">PARAMETER</TableHead>
                                 <TableHead className="w-[130px] text-center font-semibold">BUKTI DUKUNG</TableHead>
                                 <TableHead className="w-[150px] text-center font-semibold">TERAKHIR UPDATE</TableHead>
@@ -451,27 +451,27 @@ export default function IndikatorIndex({
                                             paramInfo = {
                                                 label: 'Tidak Dapat Diukur',
                                                 badgeClass: 'bg-muted text-muted-foreground border-border',
-                                                skor: '0.00',
+                                                skor: '0 Poin',
                                             };
                                         } else if (matchingOpsi) {
                                             paramInfo = {
                                                 label: matchingOpsi.label.length > 25 ? matchingOpsi.label.substring(0, 25) + '...' : matchingOpsi.label,
                                                 fullLabel: matchingOpsi.label,
                                                 badgeClass: 'bg-primary/10 text-primary border-primary/30',
-                                                skor: (Number(matchingOpsi.bobot) * Number(ind.bobot)).toFixed(2),
+                                                skor: `${Number(matchingOpsi.bobot ?? 0)} Poin`,
                                             };
                                         } else if (parameterTierMap[kel.parameter.toLowerCase()]) {
                                             const t = parameterTierMap[kel.parameter.toLowerCase()];
                                             paramInfo = {
                                                 label: t.label,
                                                 badgeClass: t.badgeClass,
-                                                skor: (t.tier * Number(ind.bobot)).toFixed(2),
+                                                skor: `${t.tier} Poin`,
                                             };
                                         } else {
                                             paramInfo = {
                                                 label: kel.parameter,
                                                 badgeClass: 'bg-primary/10 text-primary border-primary/30',
-                                                skor: '0.00',
+                                                skor: '0 Poin',
                                             };
                                         }
                                     }
@@ -529,9 +529,9 @@ export default function IndikatorIndex({
                                                 )}
                                             </TableCell>
 
-                                            {/* Bobot */}
+                                            {/* Maks Poin */}
                                             <TableCell className="text-center font-bold text-xs pt-3.5">
-                                                {Number(ind.bobot).toFixed(2)}
+                                                3
                                             </TableCell>
 
                                             {/* Parameter Button / Status */}
@@ -546,7 +546,7 @@ export default function IndikatorIndex({
                                                             {paramInfo.label}
                                                         </Badge>
                                                         <div className="text-[10px] text-muted-foreground">
-                                                            Skor: {paramInfo.skor}
+                                                            Nilai: {paramInfo.skor}
                                                         </div>
                                                         {!isLocked && (
                                                             <button

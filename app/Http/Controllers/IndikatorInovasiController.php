@@ -66,7 +66,7 @@ class IndikatorInovasiController extends Controller
                 'persen' => $progress['persen'],
             ],
             'skorEstimasi' => $progress['skorEstimasi'],
-            'skorMaks' => 111.00, // 37 bobot dasar × 3 (SID-01 s.d. SID-20)
+            'skorMaks' => 60.00, // 20 indikator × 3 poin maksimal
             'canComment' => $request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
         ]);
     }
@@ -302,9 +302,9 @@ class IndikatorInovasiController extends Controller
             : (string) $pengajuan->status;
 
         abort_unless(
-            in_array($statusVal, ['dalam_pendampingan'], true) && ! $pengajuan->is_arsip,
+            in_array($statusVal, ['draft', 'dalam_pendampingan', 'revisi'], true) && ! $pengajuan->is_arsip,
             403,
-            'Indikator tidak dapat diubah saat pengajuan sudah disahkan atau diarsipkan.'
+            'Indikator tidak dapat diubah saat pengajuan sudah disahkan, siap kirim, atau diarsipkan.'
         );
     }
 }

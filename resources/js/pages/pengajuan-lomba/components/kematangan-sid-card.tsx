@@ -32,10 +32,10 @@ export function KematanganSidCard({ pengajuan }: KematanganSidCardProps) {
                         <span className="text-[11px] text-muted-foreground block">Estimasi Skor Kematangan SID</span>
                         <span className="text-xl font-bold text-teal-700 dark:text-teal-400">
                             {pengajuan.estimasi_skor_kematangan
-                                ? Number(pengajuan.estimasi_skor_kematangan).toFixed(2)
-                                : '0.00'}
+                                ? Number(pengajuan.estimasi_skor_kematangan).toFixed(0)
+                                : '0'}
                         </span>
-                        <span className="text-[10px] text-muted-foreground block">Maksimal 111.00 Poin</span>
+                        <span className="text-[10px] text-muted-foreground block">Maksimal 60 Poin (Skala IGA)</span>
                     </div>
 
                     <div className="p-3 bg-muted/30 rounded-lg border border-border">

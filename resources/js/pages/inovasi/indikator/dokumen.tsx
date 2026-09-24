@@ -145,7 +145,7 @@ export default function IndikatorDokumenPage({
 
     const [deleteTarget, setDeleteTarget] = useState<DokumenItem | null>(null);
 
-    const isLocked = pengajuan.status !== 'dalam_pendampingan' || Boolean(pengajuan.is_arsip);
+    const isLocked = !['draft', 'dalam_pendampingan', 'revisi'].includes(pengajuan.status) || Boolean(pengajuan.is_arsip);
 
     const openUploadModal = () => {
         setSelectedFiles([]);

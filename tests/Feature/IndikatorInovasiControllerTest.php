@@ -129,10 +129,10 @@ class IndikatorInovasiControllerTest extends TestCase
             'parameter' => 'opt_sub_2',
         ]);
 
-        // Verify index calculation: 2.5 * bobot
+        // Verify index calculation: pure points without multiplier
         $indexResponse = $this->actingAs($user)->get(route('pengajuan-lomba.indikator.index', $pengajuan));
         $indexResponse->assertOk();
-        $expectedSkor = round(2.5 * (float) $indikator->bobot, 2);
+        $expectedSkor = 2.5;
         $indexResponse->assertInertia(fn ($page) => $page
             ->where('skorEstimasi', $expectedSkor)
         );

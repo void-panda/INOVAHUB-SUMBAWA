@@ -236,12 +236,12 @@ class InovasiService
             if ($kel && $kel->parameter) {
                 $opsiList = $ind->opsi_list;
                 $matchingOpsi = collect($opsiList)->firstWhere('id', $kel->parameter);
-                if ($matchingOpsi) {
-                    $skorEstimasi += (float) ($matchingOpsi['bobot'] ?? 0) * (float) $ind->bobot;
+                if ($matchingOpsi && isset($matchingOpsi['bobot'])) {
+                    $skorEstimasi += (float) $matchingOpsi['bobot'];
                 } else {
                     $tierMap = ['p1' => 1, 'p2' => 2, 'p3' => 3];
                     $tier = $tierMap[strtolower($kel->parameter)] ?? 0;
-                    $skorEstimasi += $tier * (float) $ind->bobot;
+                    $skorEstimasi += $tier;
                 }
             }
         }

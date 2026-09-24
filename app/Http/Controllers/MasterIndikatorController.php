@@ -29,7 +29,7 @@ class MasterIndikatorController extends Controller
             'kode' => ['required', 'string', 'max:20', 'unique:indikator_spd,kode'],
             'nama' => ['required', 'string', 'max:255'],
             'variabel' => ['nullable', 'string', 'max:255'],
-            'bobot' => ['required', 'numeric', 'min:0'],
+            'bobot' => ['nullable', 'numeric', 'min:0'],
             'p1' => ['nullable', 'string'],
             'p2' => ['nullable', 'string'],
             'p3' => ['nullable', 'string'],
@@ -39,10 +39,14 @@ class MasterIndikatorController extends Controller
             'opsi.*.bobot' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        $p1 = $validated['p1'] ?? null;
+        $p2 = $validated['p2'] ?? null;
+        $p3 = $validated['p3'] ?? null;
+
         $defaultOpsi = [
-            ['id' => 'p1', 'label' => 'Tier 1 - Bukti Standar Minimal', 'bobot' => 1.0],
-            ['id' => 'p2', 'label' => 'Tier 2 - Bukti Standar Menengah', 'bobot' => 2.0],
-            ['id' => 'p3', 'label' => 'Tier 3 - Bukti Standar Tertinggi', 'bobot' => 3.0],
+            ['id' => 'p1', 'label' => $p1 ?: 'Tier 1 - Bukti Standar Minimal', 'bobot' => 1.0],
+            ['id' => 'p2', 'label' => $p2 ?: 'Tier 2 - Bukti Standar Menengah', 'bobot' => 2.0],
+            ['id' => 'p3', 'label' => $p3 ?: 'Tier 3 - Bukti Standar Tertinggi', 'bobot' => 3.0],
         ];
 
         $opsi = $request->has('opsi') ? $this->formatOpsi($validated['opsi']) : $defaultOpsi;
@@ -51,10 +55,10 @@ class MasterIndikatorController extends Controller
             kode: $validated['kode'],
             nama: $validated['nama'],
             variabel: $validated['variabel'] ?? null,
-            bobot: (float) $validated['bobot'],
-            p1: $validated['p1'] ?? ($opsi[0]['label'] ?? null),
-            p2: $validated['p2'] ?? ($opsi[1]['label'] ?? null),
-            p3: $validated['p3'] ?? ($opsi[2]['label'] ?? null),
+            bobot: (float) ($validated['bobot'] ?? 1.0),
+            p1: $p1 ?? ($opsi[0]['label'] ?? null),
+            p2: $p2 ?? ($opsi[1]['label'] ?? null),
+            p3: $p3 ?? ($opsi[2]['label'] ?? null),
             opsi: $opsi,
         );
 
@@ -69,7 +73,7 @@ class MasterIndikatorController extends Controller
             'kode' => ['required', 'string', 'max:20', 'unique:indikator_spd,kode,'.$id],
             'nama' => ['required', 'string', 'max:255'],
             'variabel' => ['nullable', 'string', 'max:255'],
-            'bobot' => ['required', 'numeric', 'min:0'],
+            'bobot' => ['nullable', 'numeric', 'min:0'],
             'p1' => ['nullable', 'string'],
             'p2' => ['nullable', 'string'],
             'p3' => ['nullable', 'string'],
@@ -80,18 +84,27 @@ class MasterIndikatorController extends Controller
         ]);
 
         $existing = \App\Models\IndikatorSpd::find($id);
+
+        $p1 = $validated['p1'] ?? $existing?->p1;
+        $p2 = $validated['p2'] ?? $existing?->p2;
+        $p3 = $validated['p3'] ?? $existing?->p3;
+
         $opsi = $request->has('opsi')
             ? $this->formatOpsi($validated['opsi'])
-            : ($existing?->opsi);
+            : [
+                ['id' => 'p1', 'label' => $p1 ?: 'Tier 1 - Bukti Standar Minimal', 'bobot' => 1.0],
+                ['id' => 'p2', 'label' => $p2 ?: 'Tier 2 - Bukti Standar Menengah', 'bobot' => 2.0],
+                ['id' => 'p3', 'label' => $p3 ?: 'Tier 3 - Bukti Standar Tertinggi', 'bobot' => 3.0],
+            ];
 
         $dto = new IndikatorData(
             kode: $validated['kode'],
             nama: $validated['nama'],
             variabel: $validated['variabel'] ?? null,
-            bobot: (float) $validated['bobot'],
-            p1: $validated['p1'] ?? ($opsi[0]['label'] ?? $existing?->p1),
-            p2: $validated['p2'] ?? ($opsi[1]['label'] ?? $existing?->p2),
-            p3: $validated['p3'] ?? ($opsi[2]['label'] ?? $existing?->p3),
+            bobot: (float) ($validated['bobot'] ?? $existing?->bobot ?? 1.0),
+            p1: $p1,
+            p2: $p2,
+            p3: $p3,
             opsi: $opsi,
         );
 
@@ -107,7 +120,7 @@ class MasterIndikatorController extends Controller
             'nama' => ['required', 'string', 'max:255'],
             'variabel' => ['nullable', 'string', 'max:255'],
             'informasi' => ['nullable', 'string'],
-            'bobot' => ['required', 'numeric', 'min:0'],
+            'bobot' => ['nullable', 'numeric', 'min:0'],
             'p1' => ['nullable', 'string'],
             'p2' => ['nullable', 'string'],
             'p3' => ['nullable', 'string'],
@@ -117,10 +130,14 @@ class MasterIndikatorController extends Controller
             'opsi.*.bobot' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        $p1 = $validated['p1'] ?? null;
+        $p2 = $validated['p2'] ?? null;
+        $p3 = $validated['p3'] ?? null;
+
         $defaultOpsi = [
-            ['id' => 'p1', 'label' => 'Tier 1 - Bukti Standar Minimal', 'bobot' => 1.0],
-            ['id' => 'p2', 'label' => 'Tier 2 - Bukti Standar Menengah', 'bobot' => 2.0],
-            ['id' => 'p3', 'label' => 'Tier 3 - Bukti Standar Tertinggi', 'bobot' => 3.0],
+            ['id' => 'p1', 'label' => $p1 ?: 'Tier 1 - Bukti Standar Minimal', 'bobot' => 1.0],
+            ['id' => 'p2', 'label' => $p2 ?: 'Tier 2 - Bukti Standar Menengah', 'bobot' => 2.0],
+            ['id' => 'p3', 'label' => $p3 ?: 'Tier 3 - Bukti Standar Tertinggi', 'bobot' => 3.0],
         ];
 
         $opsi = $request->has('opsi') ? $this->formatOpsi($validated['opsi']) : $defaultOpsi;
@@ -129,10 +146,10 @@ class MasterIndikatorController extends Controller
             kode: $validated['kode'],
             nama: $validated['nama'],
             variabel: $validated['variabel'] ?? null,
-            bobot: (float) $validated['bobot'],
-            p1: $validated['p1'] ?? ($opsi[0]['label'] ?? null),
-            p2: $validated['p2'] ?? ($opsi[1]['label'] ?? null),
-            p3: $validated['p3'] ?? ($opsi[2]['label'] ?? null),
+            bobot: (float) ($validated['bobot'] ?? 1.0),
+            p1: $p1 ?? ($opsi[0]['label'] ?? null),
+            p2: $p2 ?? ($opsi[1]['label'] ?? null),
+            p3: $p3 ?? ($opsi[2]['label'] ?? null),
             opsi: $opsi,
             informasi: $validated['informasi'] ?? null,
         );
@@ -149,7 +166,7 @@ class MasterIndikatorController extends Controller
             'nama' => ['required', 'string', 'max:255'],
             'variabel' => ['nullable', 'string', 'max:255'],
             'informasi' => ['nullable', 'string'],
-            'bobot' => ['required', 'numeric', 'min:0'],
+            'bobot' => ['nullable', 'numeric', 'min:0'],
             'p1' => ['nullable', 'string'],
             'p2' => ['nullable', 'string'],
             'p3' => ['nullable', 'string'],
@@ -160,18 +177,27 @@ class MasterIndikatorController extends Controller
         ]);
 
         $existing = \App\Models\IndikatorSid::find($id);
+
+        $p1 = $validated['p1'] ?? $existing?->p1;
+        $p2 = $validated['p2'] ?? $existing?->p2;
+        $p3 = $validated['p3'] ?? $existing?->p3;
+
         $opsi = $request->has('opsi')
             ? $this->formatOpsi($validated['opsi'])
-            : ($existing?->opsi);
+            : [
+                ['id' => 'p1', 'label' => $p1 ?: 'Tier 1 - Bukti Standar Minimal', 'bobot' => 1.0],
+                ['id' => 'p2', 'label' => $p2 ?: 'Tier 2 - Bukti Standar Menengah', 'bobot' => 2.0],
+                ['id' => 'p3', 'label' => $p3 ?: 'Tier 3 - Bukti Standar Tertinggi', 'bobot' => 3.0],
+            ];
 
         $dto = new IndikatorData(
             kode: $validated['kode'],
             nama: $validated['nama'],
             variabel: $validated['variabel'] ?? null,
-            bobot: (float) $validated['bobot'],
-            p1: $validated['p1'] ?? ($opsi[0]['label'] ?? $existing?->p1),
-            p2: $validated['p2'] ?? ($opsi[1]['label'] ?? $existing?->p2),
-            p3: $validated['p3'] ?? ($opsi[2]['label'] ?? $existing?->p3),
+            bobot: (float) ($validated['bobot'] ?? $existing?->bobot ?? 1.0),
+            p1: $p1,
+            p2: $p2,
+            p3: $p3,
             opsi: $opsi,
             informasi: $validated['informasi'] ?? null,
         );
