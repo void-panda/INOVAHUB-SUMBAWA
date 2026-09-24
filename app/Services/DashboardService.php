@@ -28,21 +28,54 @@ class DashboardService
 
         $userRole = $user ? ($user->getRoleNames()->first() ?? 'inovator') : 'bapperida';
 
-        // 1. Inovasi Master
-        $masterInovasiQuery = Inovasi::with(['user', 'opd']);
-        $allMasterInovasi = $masterInovasiQuery->get();
+        // 1. Master Inovasi Aggregates (Direct SQL)
+        $totalInovasi = Inovasi::count();
+        $totalInovasiDaerah = Inovasi::where('is_inovasi_daerah', true)->count();
 
-        // 2. Pengajuan Lomba in Periode
-        $pengajuanQuery = PengajuanLomba::with(['inovasi.user', 'inovasi.opd', 'dokumen', 'kelengkapanIndikator']);
+        $tahapanCountsRaw = Inovasi::select('tahapan', DB::raw('count(*) as aggregate'))
+            ->groupBy('tahapan')
+            ->pluck('aggregate', 'tahapan')
+            ->toArray();
+        $tahapanCounts = [
+            'inisiatif' => (int) ($tahapanCountsRaw['inisiatif'] ?? 0),
+            'ujicoba' => (int) ($tahapanCountsRaw['ujicoba'] ?? 0),
+            'penerapan' => (int) ($tahapanCountsRaw['penerapan'] ?? 0),
+        ];
+
+        $urusanDistribution = Inovasi::select('urusan_utama', DB::raw('count(*) as count'))
+            ->groupBy('urusan_utama')
+            ->orderByDesc('count')
+            ->take(6)
+            ->get()
+            ->map(function ($row) {
+                return [
+                    'urusan' => $row->urusan_utama ?: 'Lainnya / Umum',
+                    'count' => (int) $row->count,
+                ];
+            })
+            ->values();
+
+        $opdAktifCount = Inovasi::whereNotNull('opd_id')->distinct('opd_id')->count('opd_id');
+
+        // 2. Base Pengajuan Lomba Query (Direct SQL)
+        $pengajuanBaseQuery = PengajuanLomba::query();
         if ($periode) {
-            $pengajuanQuery->where('periode_lomba_id', $periode->id);
+            $pengajuanBaseQuery->where('periode_lomba_id', $periode->id);
         }
-        $allPengajuan = $pengajuanQuery->get();
+
+        $totalPengajuan = (clone $pengajuanBaseQuery)->count();
+        $siapKirimCount = (clone $pengajuanBaseQuery)->whereIn('status', ['siap_kirim', 'terkirim'])->count();
 
         // 3. IID Simulation Data (Macro)
         $simulasi = $this->simulasiService->getSimulasiData($periode?->id);
 
-        // 4. Status Breakdown for Pengajuan Lomba (5 Status Baru)
+        // 4. Status Breakdown for Pengajuan Lomba (5 Status) via SQL GROUP BY
+        $statusCountsRaw = (clone $pengajuanBaseQuery)
+            ->select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
         $allStatuses = [
             StatusPengajuan::DalamPendampingan->value,
             StatusPengajuan::DisahkanOpd->value,
@@ -50,40 +83,12 @@ class DashboardService
             StatusPengajuan::SiapKirim->value,
             StatusPengajuan::Terkirim->value,
         ];
-        $statusCounts = array_fill_keys($allStatuses, 0);
-
-        foreach ($allPengajuan as $item) {
-            $st = $item->status instanceof StatusPengajuan ? $item->status->value : (string) $item->status;
-            if (isset($statusCounts[$st])) {
-                $statusCounts[$st]++;
-            }
+        $statusCounts = [];
+        foreach ($allStatuses as $st) {
+            $statusCounts[$st] = (int) ($statusCountsRaw[$st] ?? 0);
         }
 
-        // 5. Tahapan Breakdown (Master)
-        $tahapanCounts = [
-            'inisiatif' => $allMasterInovasi->where('tahapan', 'inisiatif')->count(),
-            'ujicoba' => $allMasterInovasi->where('tahapan', 'ujicoba')->count(),
-            'penerapan' => $allMasterInovasi->where('tahapan', 'penerapan')->count(),
-        ];
-
-        // 6. Distribution by Urusan Utama
-        $urusanDistribution = $allMasterInovasi
-            ->groupBy('urusan_utama')
-            ->map(function ($items, $key) {
-                return [
-                    'urusan' => $key ?: 'Lainnya / Umum',
-                    'count' => $items->count(),
-                ];
-            })
-            ->values()
-            ->sortByDesc('count')
-            ->take(6)
-            ->values();
-
-        // 7. Active OPDs count
-        $opdAktifCount = $allMasterInovasi->pluck('opd_id')->filter()->unique()->count();
-
-        // 8. Recent Audit Trail / Validation Logs
+        // 5. Recent Audit Trail / Validation Logs
         $recentLogsQuery = ValidasiLog::with(['user', 'inovasi', 'pengajuanLomba.inovasi']);
         if ($userRole === 'inovator' && $user) {
             $recentLogsQuery->where(function ($q) use ($user) {
@@ -111,19 +116,24 @@ class DashboardService
                 ];
             });
 
-        // 9. Recent Inovasi Master
-        $recentInovasi = $allMasterInovasi->sortByDesc('created_at')->take(5)->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'nama_inovasi' => $item->nama_inovasi,
-                'is_inovasi_daerah' => (bool) $item->is_inovasi_daerah,
-                'tahapan' => $item->tahapan,
-                'opd_nama' => $item->opd?->nama ?? $item->user?->nama_pemda ?? 'OPD',
-                'created_at' => $item->created_at?->format('d M Y') ?? '',
-            ];
-        })->values();
+        // 6. Recent Inovasi Master
+        $recentInovasi = Inovasi::with(['opd:id,nama', 'user:id,nama_pemda'])
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'nama_inovasi' => $item->nama_inovasi,
+                    'is_inovasi_daerah' => (bool) $item->is_inovasi_daerah,
+                    'tahapan' => $item->tahapan,
+                    'opd_nama' => $item->opd?->nama ?? $item->user?->nama_pemda ?? 'OPD',
+                    'created_at' => $item->created_at?->format('d M Y') ?? '',
+                ];
+            })
+            ->values();
 
-        // 10. Linimasa / Timeline IGA
+        // 7. Linimasa / Timeline IGA
         $linimasa = $periode
             ? DB::table('linimasa')
                 ->where('periode_lomba_id', $periode->id)
@@ -145,25 +155,38 @@ class DashboardService
                 })
             : collect([]);
 
-        // 11. Role Specific Custom Dataset
+        // 8. Role Specific Custom Dataset
         $roleData = [];
         if ($userRole === 'inovator' && $user) {
-            $myMasterInovasi = $allMasterInovasi->filter(function ($item) use ($user) {
-                return $item->user_id === $user->id || ($user->opd_id && $item->opd_id === $user->opd_id);
+            $myMasterCount = Inovasi::where(function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+                if ($user->opd_id) {
+                    $q->orWhere('opd_id', $user->opd_id);
+                }
+            })->count();
+
+            $myPengajuanQuery = (clone $pengajuanBaseQuery)->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+                if ($user->opd_id) {
+                    $q->orWhereHas('inovasi', fn ($sq) => $sq->where('opd_id', $user->opd_id));
+                }
             });
 
-            $myPengajuan = $allPengajuan->filter(function ($item) use ($user) {
-                return $item->user_id === $user->id || ($user->opd_id && $item->inovasi?->opd_id === $user->opd_id);
-            });
+            $myPengajuanCount = (clone $myPengajuanQuery)->count();
+            $myDisahkanCount = (clone $myPengajuanQuery)->where('status', StatusPengajuan::DisahkanOpd)->count();
+            $myDalamPendampinganCount = (clone $myPengajuanQuery)->where('status', StatusPengajuan::DalamPendampingan)->count();
+            $myAvgSkor = round((float) ((clone $myPengajuanQuery)->avg('estimasi_skor_kematangan') ?? 0), 2);
 
-            $roleData = [
-                'total_my_inovasi' => $myMasterInovasi->count(),
-                'total_my_pengajuan' => $myPengajuan->count(),
-                'status_counts' => $statusCounts,
-                'disahkan_opd_count' => $myPengajuan->where('status', StatusPengajuan::DisahkanOpd)->count(),
-                'dalam_pendampingan_count' => $myPengajuan->where('status', StatusPengajuan::DalamPendampingan)->count(),
-                'avg_skor_kematangan' => round((float) ($myPengajuan->avg('estimasi_skor_kematangan') ?? 0), 2),
-                'my_inovasi_list' => $myPengajuan->sortByDesc('updated_at')->take(8)->map(function ($item) {
+            $myInovasiList = (clone $myPengajuanQuery)
+                ->with([
+                    'inovasi:id,nama_inovasi,tahapan',
+                    'dokumen:id,pengajuan_lomba_id',
+                    'kelengkapanIndikator:id,pengajuan_lomba_id,parameter',
+                ])
+                ->latest('updated_at')
+                ->take(8)
+                ->get()
+                ->map(function ($item) {
                     $filledIndikator = $item->kelengkapanIndikator ? $item->kelengkapanIndikator->filter(fn ($k) => ! empty($k->parameter))->count() : 0;
 
                     return [
@@ -178,7 +201,17 @@ class DashboardService
                         'updated_at' => $item->updated_at?->format('d M Y') ?? '',
                         'updated_at_relative' => $item->updated_at?->diffForHumans() ?? '',
                     ];
-                })->values(),
+                })
+                ->values();
+
+            $roleData = [
+                'total_my_inovasi' => $myMasterCount,
+                'total_my_pengajuan' => $myPengajuanCount,
+                'status_counts' => $statusCounts,
+                'disahkan_opd_count' => $myDisahkanCount,
+                'dalam_pendampingan_count' => $myDalamPendampinganCount,
+                'avg_skor_kematangan' => $myAvgSkor,
+                'my_inovasi_list' => $myInovasiList,
             ];
         } elseif ($userRole === 'pendamping' && $user) {
             $assignedInovasiIds = DB::table('penugasan_pendamping')
@@ -199,27 +232,47 @@ class DashboardService
                 ->pluck('inovator_id')
                 ->toArray();
 
-            $assignedItems = $allPengajuan->filter(function ($item) use ($assignedInovasiIds, $assignedOpdIds, $assignedInovatorIds) {
-                return in_array($item->inovasi_id, $assignedInovasiIds, true)
-                    || in_array($item->inovasi?->opd_id, $assignedOpdIds, true)
-                    || in_array($item->user_id, $assignedInovatorIds, true);
-            });
+            $assignedBase = (clone $pengajuanBaseQuery);
+            $hasAssignment = ! empty($assignedInovasiIds) || ! empty($assignedOpdIds) || ! empty($assignedInovatorIds);
 
-            if ($assignedItems->isEmpty() && empty($assignedInovasiIds) && empty($assignedOpdIds) && empty($assignedInovatorIds)) {
-                $assignedItems = $allPengajuan;
+            if ($hasAssignment) {
+                $assignedBase->where(function ($q) use ($assignedInovasiIds, $assignedOpdIds, $assignedInovatorIds) {
+                    if (! empty($assignedInovasiIds)) {
+                        $q->whereIn('inovasi_id', $assignedInovasiIds);
+                    }
+                    if (! empty($assignedOpdIds)) {
+                        $q->orWhereHas('inovasi', fn ($i) => $i->whereIn('opd_id', $assignedOpdIds));
+                    }
+                    if (! empty($assignedInovatorIds)) {
+                        $q->orWhereIn('user_id', $assignedInovatorIds);
+                    }
+                });
             }
 
-            $roleData = [
-                'total_assigned' => $assignedItems->count(),
-                'dalam_pendampingan' => $assignedItems->where('status', StatusPengajuan::DalamPendampingan)->count(),
-                'disahkan_opd' => $assignedItems->where('status', StatusPengajuan::DisahkanOpd)->count(),
-                'pending_list' => $assignedItems->where('status', StatusPengajuan::DalamPendampingan)->take(5)->map(fn ($item) => [
+            $totalAssigned = (clone $assignedBase)->count();
+            $assignedDalamPendampingan = (clone $assignedBase)->where('status', StatusPengajuan::DalamPendampingan)->count();
+            $assignedDisahkan = (clone $assignedBase)->where('status', StatusPengajuan::DisahkanOpd)->count();
+
+            $pendingList = (clone $assignedBase)
+                ->where('status', StatusPengajuan::DalamPendampingan)
+                ->with(['inovasi.opd:id,nama', 'inovasi.user:id,nama_pemda'])
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(fn ($item) => [
                     'id' => $item->id,
                     'nama_inovasi' => $item->inovasi?->nama_inovasi,
                     'opd_nama' => $item->inovasi?->opd?->nama ?? $item->inovasi?->user?->nama_pemda ?? 'OPD',
                     'status' => $item->status instanceof StatusPengajuan ? $item->status->value : (string) $item->status,
                     'created_at' => $item->created_at?->format('d M Y') ?? '',
-                ])->values(),
+                ])
+                ->values();
+
+            $roleData = [
+                'total_assigned' => $totalAssigned,
+                'dalam_pendampingan' => $assignedDalamPendampingan,
+                'disahkan_opd' => $assignedDisahkan,
+                'pending_list' => $pendingList,
             ];
         }
 
@@ -228,10 +281,10 @@ class DashboardService
             'role_data' => $roleData,
             'periode' => $periode,
             'summary' => [
-                'total_inovasi' => $allMasterInovasi->count(),
-                'total_inovasi_daerah' => $allMasterInovasi->where('is_inovasi_daerah', true)->count(),
-                'total_pengajuan' => $allPengajuan->count(),
-                'siap_kirim_count' => $allPengajuan->filter(fn ($p) => in_array($p->status instanceof StatusPengajuan ? $p->status->value : (string) $p->status, ['siap_kirim', 'terkirim'], true))->count(),
+                'total_inovasi' => $totalInovasi,
+                'total_inovasi_daerah' => $totalInovasiDaerah,
+                'total_pengajuan' => $totalPengajuan,
+                'siap_kirim_count' => $siapKirimCount,
                 'opd_aktif_count' => $opdAktifCount > 0 ? $opdAktifCount : Opd::count(),
                 'iid_score' => $simulasi['iid_score'],
                 'kategori_iga' => $simulasi['kategori_iga'],

@@ -20,22 +20,34 @@ class AdminUserController extends Controller
      */
     public function index(Request $request): Response
     {
-        $users = User::with(['roles', 'opd'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (User $user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'nama_pemda' => $user->nama_pemda,
-                'tipe_inovator' => $user->tipe_inovator,
-                'opd_id' => $user->opd_id,
-                'opd_nama' => $user->opd?->nama,
-                'status_aktif' => (bool) $user->status_aktif,
-                'roles' => $user->roles->pluck('name')->all(),
-                'role_utama' => $user->roles->first()?->name ?? 'inovator',
-                'created_at' => $user->created_at?->format('d/m/Y'),
-            ]);
+        $query = User::with(['roles', 'opd']);
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('email', 'ilike', "%{$search}%")
+                    ->orWhere('nama_pemda', 'ilike', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('role') && $request->input('role') !== 'all') {
+            $query->role($request->input('role'));
+        }
+
+        $users = $query->orderBy('name')->paginate(15)->withQueryString()->through(fn (User $user) => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'nama_pemda' => $user->nama_pemda,
+            'tipe_inovator' => $user->tipe_inovator,
+            'opd_id' => $user->opd_id,
+            'opd_nama' => $user->opd?->nama,
+            'status_aktif' => (bool) $user->status_aktif,
+            'roles' => $user->roles->pluck('name')->all(),
+            'role_utama' => $user->roles->first()?->name ?? 'inovator',
+            'created_at' => $user->created_at?->format('d/m/Y'),
+        ]);
 
         $roles = Role::orderBy('name')->pluck('name')->all();
         $opdList = Opd::orderBy('nama')->get(['id', 'nama', 'kode']);
@@ -44,13 +56,14 @@ class AdminUserController extends Controller
             'users' => $users,
             'roles' => $roles,
             'opdList' => $opdList,
+            'filters' => $request->only(['search', 'role']),
             'metrics' => [
-                'total' => $users->count(),
-                'bapperida' => $users->filter(fn ($u) => in_array('bapperida', $u['roles']))->count(),
-                'pendamping' => $users->filter(fn ($u) => in_array('pendamping', $u['roles']))->count(),
-                'penilai' => $users->filter(fn ($u) => in_array('tim_penilai', $u['roles']))->count(),
-                'inovator' => $users->filter(fn ($u) => in_array('inovator', $u['roles']))->count(),
-                'pimpinan' => $users->filter(fn ($u) => in_array('pimpinan', $u['roles']))->count(),
+                'total' => User::count(),
+                'bapperida' => User::role('bapperida')->count(),
+                'pendamping' => User::role('pendamping')->count(),
+                'penilai' => User::role('tim_penilai')->count(),
+                'inovator' => User::role('inovator')->count(),
+                'pimpinan' => User::role('pimpinan')->count(),
             ],
         ]);
     }

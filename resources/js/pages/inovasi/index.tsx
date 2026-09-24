@@ -15,7 +15,7 @@ import {
     Trash2,
     Trophy,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { HeroBanner } from '@/components/hero-banner';
 import {
     AlertDialog,
@@ -30,7 +30,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Column } from '@/components/ui/data-table';
+import type { Column, PaginationData } from '@/components/ui/data-table';
 import { DataTable } from '@/components/ui/data-table';
 import {
     Dialog,
@@ -71,10 +71,14 @@ export default function InovasiIndex({
     inovasi,
     countdown,
 }: {
-    inovasi: Inovasi[];
+    inovasi: Inovasi[] | PaginationData<Inovasi>;
     countdown?: CountdownData | null;
 }) {
     const { auth } = usePage<{ auth: Auth }>().props;
+
+    const isPaginated = Boolean(inovasi && typeof inovasi === 'object' && 'data' in inovasi);
+    const inovasiList: Inovasi[] = isPaginated ? ((inovasi as PaginationData<Inovasi>).data ?? []) : (Array.isArray(inovasi) ? inovasi : []);
+    const pagination = isPaginated ? (inovasi as PaginationData<Inovasi>) : undefined;
 
     const [activeTahapanFilter, setActiveTahapanFilter] = useState<'semua' | 'penerapan' | 'ujicoba' | 'inisiatif'>('semua');
     const [selectedInovasiForLomba, setSelectedInovasiForLomba] = useState<Inovasi | null>(null);
@@ -86,13 +90,13 @@ export default function InovasiIndex({
     const [isDeleting, setIsDeleting] = useState(false);
 
     // Metrik ringkasan portofolio inovasi
-    const totalInovasi = inovasi.length;
-    const penerapanCount = inovasi.filter((i) => i.tahapan === 'penerapan').length;
-    const ujicobaCount = inovasi.filter((i) => i.tahapan === 'ujicoba').length;
-    const inisiatifCount = inovasi.filter((i) => i.tahapan === 'inisiatif').length;
+    const totalInovasi = pagination?.total ?? inovasiList.length;
+    const penerapanCount = inovasiList.filter((i) => i.tahapan === 'penerapan').length;
+    const ujicobaCount = inovasiList.filter((i) => i.tahapan === 'ujicoba').length;
+    const inisiatifCount = inovasiList.filter((i) => i.tahapan === 'inisiatif').length;
 
     // Filter berdasarkan tahapan
-    const filteredInovasi = inovasi.filter((i) => {
+    const filteredInovasi = inovasiList.filter((i) => {
         if (activeTahapanFilter === 'semua') return true;
         return i.tahapan === activeTahapanFilter;
     });
@@ -141,7 +145,7 @@ export default function InovasiIndex({
         });
     };
 
-    const columns: Column<Inovasi>[] = [
+    const columns: Column<Inovasi>[] = useMemo(() => [
         {
             header: 'Nama Inovasi',
             accessorKey: 'nama_inovasi',
@@ -392,7 +396,7 @@ export default function InovasiIndex({
                 );
             },
         },
-    ];
+    ], [countdown]);
 
     return (
         <>
@@ -539,6 +543,7 @@ export default function InovasiIndex({
                 <DataTable
                     columns={columns}
                     data={filteredInovasi}
+                    pagination={pagination}
                     searchPlaceholder="Cari nama inovasi, inisiator, atau urusan..."
                     pageSize={10}
                     emptyMessage="Belum ada data inovasi yang tersimpan."

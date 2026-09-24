@@ -1,9 +1,10 @@
+import { useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { Calculator } from 'lucide-react';
 import { HeroBanner } from '@/components/hero-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { Column } from '@/components/ui/data-table';
+import type { Column, PaginationData } from '@/components/ui/data-table';
 import { DataTable } from '@/components/ui/data-table';
 import type { BreadcrumbItem } from '@/types';
 
@@ -25,17 +26,9 @@ interface InovasiItem {
     periode_lomba?: { tahun: number; nama: string };
 }
 
-interface PaginatedInovasi {
-    data: InovasiItem[];
-    current_page: number;
-    last_page: number;
-    total: number;
-    links: { url: string | null; label: string; active: boolean }[];
-}
-
 interface Props {
-    inovasi?: PaginatedInovasi;
-    pengajuanList?: PaginatedInovasi;
+    inovasi?: PaginationData<InovasiItem>;
+    pengajuanList?: PaginationData<InovasiItem>;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -62,8 +55,10 @@ const statusBadge: Record<string, { label: string; variant: 'default' | 'outline
 };
 
 export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
-    const listData = inovasi?.data ?? pengajuanList?.data ?? [];
-    const columns: Column<InovasiItem>[] = [
+    const pagination = inovasi ?? pengajuanList;
+    const listData = pagination?.data ?? [];
+    const columns: Column<InovasiItem>[] = useMemo(
+        () => [
         {
             header: 'Nama Inovasi',
             accessorKey: 'nama_inovasi',
@@ -149,7 +144,7 @@ export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
                 </Link>
             ),
         },
-    ];
+    ], []);
 
     const filterOptions = [
         { label: 'Semua Peserta Lomba', value: 'all' },
@@ -175,6 +170,7 @@ export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
                 <DataTable
                     data={listData}
                     columns={columns}
+                    pagination={pagination}
                     searchPlaceholder="Cari nama inovasi atau pengusul..."
                     filterOptions={filterOptions}
                     filterKey={(row) => row.status_juri}

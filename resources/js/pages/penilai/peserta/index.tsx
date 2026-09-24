@@ -20,7 +20,7 @@ import { HeroBanner } from '@/components/hero-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Column } from '@/components/ui/data-table';
+import type { Column, PaginationData } from '@/components/ui/data-table';
 import { DataTable } from '@/components/ui/data-table';
 import {
     Dialog,
@@ -65,7 +65,7 @@ export interface PesertaItem {
 }
 
 interface Props {
-    peserta: PesertaItem[];
+    peserta: PesertaItem[] | PaginationData<PesertaItem>;
     periode?: {
         id: number;
         tahun: string | number;
@@ -91,14 +91,20 @@ const statusBadgeStyles: Record<string, { label: string; className: string }> = 
     terkirim: { label: 'Terkirim', className: 'bg-teal-700 text-white font-bold' },
 };
 
-export default function PesertaLombaIndex({ peserta = [], periode, summary }: Props) {
+export default function PesertaLombaIndex({ peserta, periode, summary }: Props) {
+    const isPaginated = Boolean(peserta && typeof peserta === 'object' && 'data' in peserta);
+    const pesertaList: PesertaItem[] = isPaginated
+        ? ((peserta as PaginationData<PesertaItem>).data ?? [])
+        : (Array.isArray(peserta) ? peserta : []);
+    const pagination = isPaginated ? (peserta as PaginationData<PesertaItem>) : undefined;
+
     const [filterKategori, setFilterKategori] = useState<'all' | 'dinas' | 'masyarakat'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedPeserta, setSelectedPeserta] = useState<PesertaItem | null>(null);
 
     // Filter list data
     const filteredPeserta = useMemo(() => {
-        return peserta.filter((p) => {
+        return pesertaList.filter((p) => {
             const matchesSearch =
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -374,7 +380,7 @@ export default function PesertaLombaIndex({ peserta = [], periode, summary }: Pr
                                         : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
-                                Semua ({peserta.length})
+                                Semua ({summary.total_peserta ?? pagination?.total ?? pesertaList.length})
                             </button>
                             <button
                                 type="button"
@@ -416,6 +422,7 @@ export default function PesertaLombaIndex({ peserta = [], periode, summary }: Pr
                     <DataTable
                         columns={columns}
                         data={filteredPeserta}
+                        pagination={pagination}
                         searchPlaceholder="Cari peserta..."
                         pageSize={10}
                         emptyTitle="Belum Ada Peserta Terdaftar"

@@ -15,12 +15,12 @@ import {
     Sparkles,
     Trophy,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { HeroBanner } from '@/components/hero-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Column } from '@/components/ui/data-table';
+import type { Column, PaginationData } from '@/components/ui/data-table';
 import { DataTable } from '@/components/ui/data-table';
 import {
     Dialog,
@@ -78,11 +78,15 @@ const statusBadgeMap: Record<
 };
 
 type Props = {
-    inovasi: Inovasi[];
+    inovasi: Inovasi[] | PaginationData<Inovasi>;
     periode?: PeriodeLomba | null;
 };
 
 export default function InovasiDaerahPage({ inovasi, periode }: Props) {
+    const isPaginated = Boolean(inovasi && typeof inovasi === 'object' && 'data' in inovasi);
+    const inovasiList: Inovasi[] = isPaginated ? ((inovasi as PaginationData<Inovasi>).data ?? []) : (Array.isArray(inovasi) ? inovasi : []);
+    const pagination = isPaginated ? (inovasi as PaginationData<Inovasi>) : undefined;
+
     const [activeTab, setActiveTab] = useState<'aktif' | 'arsip' | 'semua'>('aktif');
 
     // State untuk Ajukan Kembali dari Arsip
@@ -92,11 +96,11 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
     const [isSubmittingAjukanKembali, setIsSubmittingAjukanKembali] = useState(false);
 
     // Filter daftar inovasi
-    const inovasiAktif = inovasi.filter((item) =>
+    const inovasiAktif = inovasiList.filter((item) =>
         item.pengajuan_lomba?.some((p) => p.periode_lomba?.aktif && !p.is_arsip)
     );
 
-    const inovasiArsip = inovasi.filter((item) =>
+    const inovasiArsip = inovasiList.filter((item) =>
         item.pengajuan_lomba?.some((p) => p.is_arsip || !p.periode_lomba?.aktif) &&
         !item.pengajuan_lomba?.some((p) => p.periode_lomba?.aktif && !p.is_arsip)
     );
@@ -106,14 +110,14 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
             ? inovasiAktif
             : activeTab === 'arsip'
                 ? inovasiArsip
-                : inovasi;
+                : inovasiList;
 
     // Metrik ringkasan
-    const totalDaerah = inovasi.length;
+    const totalDaerah = pagination?.total ?? inovasiList.length;
     const totalAktif = inovasiAktif.length;
 
     // Rata-rata skor kematangan
-    const scores = inovasi
+    const scores = inovasiList
         .map((i) => {
             const p = i.pengajuan_lomba?.find((pl) => pl.periode_lomba?.aktif && !pl.is_arsip);
             return p?.estimasi_skor_kematangan ?? null;
@@ -122,7 +126,7 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
 
     const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
-    const siapKirimCount = inovasi.filter((item) =>
+    const siapKirimCount = inovasiList.filter((item) =>
         item.pengajuan_lomba?.some(
             (p) => (p.status === 'siap_kirim' || p.status === 'terkirim') && p.periode_lomba?.aktif && !p.is_arsip
         )
@@ -153,7 +157,7 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
         );
     };
 
-    const columns: Column<Inovasi>[] = [
+    const columns: Column<Inovasi>[] = useMemo(() => [
         {
             header: 'Nama Inovasi',
             accessorKey: 'nama_inovasi',
@@ -388,7 +392,7 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                 );
             },
         },
-    ];
+    ], []);
 
     return (
         <>
@@ -555,7 +559,7 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                     <DataTable
                         columns={columns}
                         data={displayedInovasi}
-                        searchable
+                        pagination={pagination}
                         searchPlaceholder="Cari nama inovasi daerah, inisiator, atau urusan..."
                         pageSize={10}
                         emptyMessage={

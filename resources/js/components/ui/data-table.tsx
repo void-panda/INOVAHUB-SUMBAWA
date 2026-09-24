@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Link } from '@inertiajs/react';
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Inbox, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -21,6 +22,21 @@ export interface Column<T> {
     className?: string;
 }
 
+export interface PaginationData<T = unknown> {
+    data?: T[];
+    current_page: number;
+    last_page: number;
+    per_page?: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
+}
+
 export interface DataTableProps<T> {
     data: T[];
     columns: Column<T>[];
@@ -36,6 +52,11 @@ export interface DataTableProps<T> {
     title?: React.ReactNode;
     description?: React.ReactNode;
     toolbarRight?: React.ReactNode;
+    pagination?: PaginationData<T>;
+    searchValue?: string;
+    onSearchChange?: (value: string) => void;
+    filterValue?: string;
+    onFilterChange?: (value: string) => void;
 }
 
 export function DataTable<T extends { id?: string | number }>({
@@ -53,16 +74,46 @@ export function DataTable<T extends { id?: string | number }>({
     title,
     description,
     toolbarRight,
+    pagination,
+    searchValue,
+    onSearchChange,
+    filterValue,
+    onFilterChange,
 }: DataTableProps<T>) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedFilter, setSelectedFilter] = useState('all');
+    const isServerPaginated = Boolean(pagination);
+    const [searchTerm, setSearchTerm] = useState(searchValue ?? '');
+    const [selectedFilter, setSelectedFilter] = useState(filterValue ?? 'all');
     const [sortColumnIndex, setSortColumnIndex] = useState<number | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(pageSize);
 
+    React.useEffect(() => {
+        if (searchValue !== undefined) setSearchTerm(searchValue);
+    }, [searchValue]);
+
+    React.useEffect(() => {
+        if (filterValue !== undefined) setSelectedFilter(filterValue);
+    }, [filterValue]);
+
+    const handleSearchChange = (val: string) => {
+        setSearchTerm(val);
+        if (!isServerPaginated) setCurrentPage(1);
+        onSearchChange?.(val);
+    };
+
+    const handleFilterSelect = (val: string) => {
+        setSelectedFilter(val);
+        if (!isServerPaginated) setCurrentPage(1);
+        onFilterChange?.(val);
+    };
+
     // 1. Filter data
     const filteredData = useMemo(() => {
+        if (isServerPaginated && onSearchChange) {
+            return data;
+        }
+
         return data.filter((row) => {
             // Search filter
             let matchesSearch = true;
@@ -79,13 +130,13 @@ export function DataTable<T extends { id?: string | number }>({
 
             // Category/Status filter
             let matchesCategory = true;
-            if (filterKey && selectedFilter !== 'all') {
+            if (filterKey && selectedFilter !== 'all' && !onFilterChange) {
                 matchesCategory = filterKey(row) === selectedFilter;
             }
 
             return matchesSearch && matchesCategory;
         });
-    }, [data, searchTerm, selectedFilter, searchKey, filterKey]);
+    }, [data, searchTerm, selectedFilter, searchKey, filterKey, isServerPaginated, onSearchChange, onFilterChange]);
 
     // 2. Sort data
     const sortedData = useMemo(() => {
@@ -111,9 +162,12 @@ export function DataTable<T extends { id?: string | number }>({
     // 3. Paginate data
     const totalPages = Math.ceil(sortedData.length / itemsPerPage) || 1;
     const paginatedData = useMemo(() => {
+        if (isServerPaginated) {
+            return sortedData;
+        }
         const start = (currentPage - 1) * itemsPerPage;
         return sortedData.slice(start, start + itemsPerPage);
-    }, [sortedData, currentPage, itemsPerPage]);
+    }, [sortedData, currentPage, itemsPerPage, isServerPaginated]);
 
     const handleSort = (index: number) => {
         if (sortColumnIndex === index) {
@@ -149,16 +203,13 @@ export function DataTable<T extends { id?: string | number }>({
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 value={searchTerm}
-                                onChange={(e) => {
-                                    setSearchTerm(e.target.value);
-                                    setCurrentPage(1);
-                                }}
+                                onChange={(e) => handleSearchChange(e.target.value)}
                                 placeholder={searchPlaceholder}
                                 className="pl-9 pr-8 h-9 text-xs"
                             />
                             {searchTerm && (
                                 <button
-                                    onClick={() => setSearchTerm('')}
+                                    onClick={() => handleSearchChange('')}
                                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="h-3.5 w-3.5" />
@@ -175,10 +226,7 @@ export function DataTable<T extends { id?: string | number }>({
                                 {filterOptions.map((opt) => (
                                     <button
                                         key={opt.value}
-                                        onClick={() => {
-                                            setSelectedFilter(opt.value);
-                                            setCurrentPage(1);
-                                        }}
+                                        onClick={() => handleFilterSelect(opt.value)}
                                         className={`px-3 py-1 rounded-sm font-medium transition-all ${
                                             selectedFilter === opt.value
                                                 ? 'bg-background text-foreground shadow-xs'
@@ -278,59 +326,108 @@ export function DataTable<T extends { id?: string | number }>({
                 </div>
 
                 {/* Footer Controls */}
-                {sortedData.length > 0 && (
+                {isServerPaginated && pagination ? (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t p-4 bg-muted/10 text-xs">
                         <div className="text-muted-foreground">
-                            Menampilkan <strong className="text-foreground">{(currentPage - 1) * itemsPerPage + 1}</strong> -{' '}
-                            <strong className="text-foreground">
-                                {Math.min(currentPage * itemsPerPage, sortedData.length)}
-                            </strong>{' '}
-                            dari <strong className="text-foreground">{sortedData.length}</strong> data
+                            Menampilkan <strong className="text-foreground">{pagination.from ?? 0}</strong> -{' '}
+                            <strong className="text-foreground">{pagination.to ?? 0}</strong>{' '}
+                            dari <strong className="text-foreground">{pagination.total}</strong> data
                         </div>
 
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1 text-muted-foreground">
-                                <span>Per halaman:</span>
-                                <select
-                                    value={itemsPerPage}
-                                    onChange={(e) => {
-                                        setItemsPerPage(Number(e.target.value));
-                                        setCurrentPage(1);
-                                    }}
-                                    className="bg-background border rounded px-1.5 py-0.5 text-xs text-foreground cursor-pointer"
-                                >
-                                    <option value={5}>5</option>
-                                    <option value={10}>10</option>
-                                    <option value={25}>25</option>
-                                    <option value={50}>50</option>
-                                </select>
-                            </div>
+                        {pagination.links && pagination.links.length > 3 && (
+                            <div className="flex flex-wrap items-center gap-1">
+                                {pagination.links.map((link, idx) => {
+                                    const label = link.label
+                                        .replace(/&laquo;/g, '«')
+                                        .replace(/&raquo;/g, '»')
+                                        .replace('Previous', 'Sebelumnya')
+                                        .replace('Next', 'Selanjutnya');
 
-                            <div className="flex items-center space-x-1">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="h-8 w-8 p-0"
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <span className="px-2 text-xs font-semibold">
-                                    {currentPage} / {totalPages}
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="h-8 w-8 p-0"
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
+                                    if (!link.url) {
+                                        return (
+                                            <span
+                                                key={idx}
+                                                className="px-2.5 py-1 text-xs text-muted-foreground/50 border border-transparent rounded cursor-not-allowed select-none"
+                                            >
+                                                {label}
+                                            </span>
+                                        );
+                                    }
+
+                                    return (
+                                        <Link
+                                            key={idx}
+                                            href={link.url}
+                                            preserveScroll
+                                            preserveState
+                                            className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                                                link.active
+                                                    ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
+                                                    : 'text-foreground hover:bg-accent border border-border/60 bg-background'
+                                            }`}
+                                        >
+                                            {label}
+                                        </Link>
+                                    );
+                                })}
                             </div>
-                        </div>
+                        )}
                     </div>
+                ) : (
+                    sortedData.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t p-4 bg-muted/10 text-xs">
+                            <div className="text-muted-foreground">
+                                Menampilkan <strong className="text-foreground">{(currentPage - 1) * itemsPerPage + 1}</strong> -{' '}
+                                <strong className="text-foreground">
+                                    {Math.min(currentPage * itemsPerPage, sortedData.length)}
+                                </strong>{' '}
+                                dari <strong className="text-foreground">{sortedData.length}</strong> data
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                    <span>Per halaman:</span>
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setCurrentPage(1);
+                                        }}
+                                        className="bg-background border rounded px-1.5 py-0.5 text-xs text-foreground cursor-pointer"
+                                    >
+                                        <option value={5}>5</option>
+                                        <option value={10}>10</option>
+                                        <option value={25}>25</option>
+                                        <option value={50}>50</option>
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center space-x-1">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <span className="px-2 text-xs font-semibold">
+                                        {currentPage} / {totalPages}
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )
                 )}
             </CardContent>
         </Card>

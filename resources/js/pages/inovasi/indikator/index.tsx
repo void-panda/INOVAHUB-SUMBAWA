@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     AlertCircle,
     ArrowLeft,
+    Bell,
     CheckCircle2,
     ChevronDown,
     ChevronUp,

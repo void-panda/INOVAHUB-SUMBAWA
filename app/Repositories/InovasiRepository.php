@@ -6,6 +6,7 @@ use App\Models\Inovasi;
 use App\Models\PeriodeLomba;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class InovasiRepository
 {
@@ -30,6 +31,36 @@ class InovasiRepository
     }
 
     /**
+     * Ambil inovasi master milik user secara berpaginasi (server-side).
+     *
+     * @param  array{search?: string|null, tahapan?: string|null}  $filters
+     * @return LengthAwarePaginator<int, Inovasi>
+     */
+    public function getByUserPaginated(User $user, ?bool $isDaerah = null, int $perPage = 15, array $filters = []): LengthAwarePaginator
+    {
+        $query = $user->inovasi()
+            ->with([
+                'dokumen',
+                'pengajuanLomba' => fn ($q) => $q->with(['periodeLomba', 'kelengkapanIndikator', 'skorPengajuan', 'penilaianJuri'])->latest(),
+            ]);
+
+        if ($isDaerah !== null) {
+            $query->where('is_inovasi_daerah', $isDaerah);
+        }
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where('nama_inovasi', 'ilike', "%{$search}%");
+        }
+
+        if (! empty($filters['tahapan']) && $filters['tahapan'] !== 'all') {
+            $query->where('tahapan', $filters['tahapan']);
+        }
+
+        return $query->orderByDesc('updated_at')->paginate($perPage)->withQueryString();
+    }
+
+    /**
      * Ambil seluruh Inovasi Daerah Kabupaten Sumbawa.
      *
      * @return Collection<int, Inovasi>
@@ -45,6 +76,34 @@ class InovasiRepository
             ])
             ->orderByDesc('updated_at')
             ->get();
+    }
+
+    /**
+     * Ambil seluruh Inovasi Daerah Kabupaten Sumbawa secara berpaginasi (server-side).
+     *
+     * @param  array{search?: string|null, tahapan?: string|null}  $filters
+     * @return LengthAwarePaginator<int, Inovasi>
+     */
+    public function getAllInovasiDaerahPaginated(int $perPage = 15, array $filters = []): LengthAwarePaginator
+    {
+        $query = Inovasi::where('is_inovasi_daerah', true)
+            ->with([
+                'user.opd',
+                'opd',
+                'dokumen',
+                'pengajuanLomba' => fn ($q) => $q->with(['periodeLomba', 'kelengkapanIndikator', 'skorPengajuan'])->latest(),
+            ]);
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where('nama_inovasi', 'ilike', "%{$search}%");
+        }
+
+        if (! empty($filters['tahapan']) && $filters['tahapan'] !== 'all') {
+            $query->where('tahapan', $filters['tahapan']);
+        }
+
+        return $query->orderByDesc('updated_at')->paginate($perPage)->withQueryString();
     }
 
     /**

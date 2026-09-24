@@ -2,26 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreIndikatorDokumenRequest;
+use App\Http\Requests\UpdateIndikatorKomentarRequest;
+use App\Http\Requests\UpdateIndikatorParameterRequest;
 use App\Mail\InovasiDiperiksaMail;
 use App\Models\IndikatorSid;
 use App\Models\InovasiDokumen;
-use App\Models\KelengkapanIndikator;
 use App\Models\Notifikasi;
 use App\Models\PengajuanLomba;
-use App\Models\SkorPengajuan;
+use App\Repositories\IndikatorRepository;
 use App\Services\InovasiService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class IndikatorInovasiController extends Controller
 {
     public function __construct(
-        private readonly InovasiService $inovasiService
+        private readonly InovasiService $inovasiService,
+        private readonly IndikatorRepository $indikatorRepository
     ) {}
 
     /**
@@ -34,77 +36,13 @@ class IndikatorInovasiController extends Controller
 
         $inovasi = $pengajuan->inovasi;
 
-        $indikatorList = IndikatorSid::where('kode', '!=', 'SID-21')
-            ->orderBy('kode')
-            ->get();
+        $indikatorList = $this->indikatorRepository->getSidKompetisi();
+        $kelengkapan = $this->indikatorRepository->getKelengkapanMap($pengajuan);
+        $skorList = $this->indikatorRepository->getSkorMap($pengajuan);
+        $dokumenList = $this->indikatorRepository->getDokumenIndikatorList($inovasi->id, $pengajuan->id);
 
-        $kelengkapan = $pengajuan->kelengkapanIndikator()
-            ->get()
-            ->keyBy('indikator_sid_id');
-
-        $skorList = $pengajuan->skorPengajuan()
-            ->with('pendamping')
-            ->get()
-            ->keyBy('indikator_id');
-
-        // Hitung rincian dokumen per indikator beserta ekstensi/mime
-        $dokumenList = InovasiDokumen::where(function ($q) use ($inovasi, $pengajuan) {
-            $q->where('pengajuan_lomba_id', $pengajuan->id)
-                ->orWhere('inovasi_id', $inovasi->id);
-        })
-            ->whereNotNull('indikator_sid_id')
-            ->get();
-
-        $dokumenInfo = [];
-        $dokumenLastUpdated = [];
-        foreach ($dokumenList as $dok) {
-            $indId = $dok->indikator_sid_id;
-            if (! isset($dokumenInfo[$indId])) {
-                $dokumenInfo[$indId] = [
-                    'count' => 0,
-                    'types' => [],
-                    'last_updated' => null,
-                ];
-                $dokumenLastUpdated[$indId] = null;
-            }
-            $dokumenInfo[$indId]['count']++;
-
-            $dokTime = $dok->updated_at ?? $dok->created_at;
-            if ($dokTime && ($dokumenLastUpdated[$indId] === null || $dokTime->gt($dokumenLastUpdated[$indId]))) {
-                $dokumenLastUpdated[$indId] = $dokTime;
-                $dokumenInfo[$indId]['last_updated'] = $dokTime->toIso8601String();
-            }
-
-            $ext = strtoupper(pathinfo((string) $dok->nama_asal, PATHINFO_EXTENSION));
-            if ($dok->mime === 'url' || $dok->jenis === 'video') {
-                $ext = 'Link/Video';
-            } elseif (! $ext) {
-                $ext = 'Berkas';
-            }
-            if (! in_array($ext, $dokumenInfo[$indId]['types'], true)) {
-                $dokumenInfo[$indId]['types'][] = $ext;
-            }
-        }
-
-        // Hitung progres & skor estimasi
-        $filled = $kelengkapan->filter(fn ($k) => $k->parameter !== null && $k->parameter !== '')->count();
-        $totalIndikator = $indikatorList->count();
-
-        $skorEstimasi = 0;
-        foreach ($indikatorList as $ind) {
-            $kel = $kelengkapan->get($ind->id);
-            if ($kel && $kel->parameter) {
-                $opsiList = $ind->opsi_list;
-                $matchingOpsi = collect($opsiList)->firstWhere('id', $kel->parameter);
-                if ($matchingOpsi) {
-                    $skorEstimasi += (float) ($matchingOpsi['bobot'] ?? 0) * (float) $ind->bobot;
-                } else {
-                    $tierMap = ['p1' => 1, 'p2' => 2, 'p3' => 3];
-                    $tier = $tierMap[strtolower($kel->parameter)] ?? 0;
-                    $skorEstimasi += $tier * (float) $ind->bobot;
-                }
-            }
-        }
+        $dokumenInfo = $this->inovasiService->hitungDokumenInfo($dokumenList);
+        $progress = $this->inovasiService->hitungSkorEstimasiDanProgres($indikatorList, $kelengkapan);
 
         return Inertia::render('inovasi/indikator/index', [
             'pengajuan' => [
@@ -123,13 +61,11 @@ class IndikatorInovasiController extends Controller
             'skorList' => $skorList,
             'dokumenInfo' => $dokumenInfo,
             'progress' => [
-                'filled' => $filled,
-                'total' => $totalIndikator,
-                'persen' => $totalIndikator > 0
-                    ? (int) round(($filled / $totalIndikator) * 100)
-                    : 0,
+                'filled' => $progress['filled'],
+                'total' => $progress['total'],
+                'persen' => $progress['persen'],
             ],
-            'skorEstimasi' => round($skorEstimasi, 2),
+            'skorEstimasi' => $progress['skorEstimasi'],
             'skorMaks' => 111.00, // 37 bobot dasar × 3 (SID-01 s.d. SID-20)
             'canComment' => $request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
         ]);
@@ -139,27 +75,20 @@ class IndikatorInovasiController extends Controller
      * Update parameter pilihan inovator untuk satu indikator.
      */
     public function updateParameter(
-        Request $request,
+        UpdateIndikatorParameterRequest $request,
         PengajuanLomba $pengajuan,
         IndikatorSid $indikator
     ): RedirectResponse {
         $this->authorizeAccess($request, $pengajuan);
         $this->abortIfLocked($pengajuan);
 
-        $validated = $request->validate([
-            'parameter' => ['nullable', 'string', 'max:50'],
-            'catatan' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $validated = $request->validated();
 
-        KelengkapanIndikator::updateOrCreate(
-            [
-                'pengajuan_lomba_id' => $pengajuan->id,
-                'indikator_sid_id' => $indikator->id,
-            ],
-            [
-                'parameter' => $validated['parameter'] ?? null,
-                'catatan' => $validated['catatan'] ?? null,
-            ]
+        $this->indikatorRepository->updateOrCreateKelengkapan(
+            pengajuanId: $pengajuan->id,
+            indikatorId: $indikator->id,
+            parameter: $validated['parameter'] ?? null,
+            catatan: $validated['catatan'] ?? null
         );
 
         Inertia::flash('toast', [
@@ -174,7 +103,7 @@ class IndikatorInovasiController extends Controller
      * Update komentar pendamping inline untuk satu indikator.
      */
     public function updateKomentar(
-        Request $request,
+        UpdateIndikatorKomentarRequest $request,
         PengajuanLomba $pengajuan,
         IndikatorSid $indikator
     ): RedirectResponse {
@@ -184,32 +113,15 @@ class IndikatorInovasiController extends Controller
             'Hanya pendamping atau tim penilai/BAPPERIDA yang dapat memberikan catatan review indikator.'
         );
 
-        $validated = $request->validate([
-            'status_validasi' => ['nullable', 'string', 'in:belum_divalidasi,valid,perlu_revisi'],
-            'komentar_pendamping' => [
-                Rule::requiredIf(fn () => $request->input('status_validasi') === 'perlu_revisi'),
-                'nullable',
-                'string',
-                'max:1000',
-            ],
-        ]);
+        $validated = $request->validated();
 
-        $skor = SkorPengajuan::firstOrNew([
-            'pengajuan_lomba_id' => $pengajuan->id,
-            'indikator_id' => $indikator->id,
-        ]);
-
-        $skor->komentar_pendamping = $validated['komentar_pendamping'] ?? null;
-        if (! empty($validated['status_validasi'])) {
-            $skor->status_validasi = $validated['status_validasi'];
-        }
-        $skor->pendamping_id = $request->user()->id;
-        $skor->komentar_at = now();
-        if (! $skor->exists) {
-            $skor->tier = 1;
-            $skor->skor = 0.0;
-        }
-        $skor->save();
+        $this->indikatorRepository->updateOrCreateKomentar(
+            pengajuanId: $pengajuan->id,
+            indikatorId: $indikator->id,
+            pendampingId: $request->user()->id,
+            komentar: $validated['komentar_pendamping'] ?? null,
+            statusValidasi: $validated['status_validasi'] ?? null
+        );
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -231,19 +143,13 @@ class IndikatorInovasiController extends Controller
 
         $inovasi = $pengajuan->inovasi;
 
-        $dokumenList = InovasiDokumen::where(function ($q) use ($inovasi, $pengajuan) {
-            $q->where('pengajuan_lomba_id', $pengajuan->id)
-                ->orWhere('inovasi_id', $inovasi->id);
-        })
-            ->where('indikator_sid_id', $indikator->id)
-            ->latest()
-            ->get();
+        $dokumenList = $this->indikatorRepository->getDokumenForSpesifikIndikator($inovasi->id, $pengajuan->id, $indikator->id);
 
-        $kelengkapan = KelengkapanIndikator::where('pengajuan_lomba_id', $pengajuan->id)
+        $kelengkapan = $pengajuan->kelengkapanIndikator()
             ->where('indikator_sid_id', $indikator->id)
             ->first();
 
-        $skor = SkorPengajuan::where('pengajuan_lomba_id', $pengajuan->id)
+        $skor = $pengajuan->skorPengajuan()
             ->where('indikator_id', $indikator->id)
             ->with('pendamping')
             ->first();
@@ -267,21 +173,12 @@ class IndikatorInovasiController extends Controller
      * Upload dokumen pendukung untuk indikator tertentu.
      */
     public function uploadDokumen(
-        Request $request,
+        StoreIndikatorDokumenRequest $request,
         PengajuanLomba $pengajuan,
         IndikatorSid $indikator
     ): RedirectResponse {
         $this->authorizeAccess($request, $pengajuan);
         $this->abortIfLocked($pengajuan);
-
-        $request->validate([
-            'nomor_surat' => ['nullable', 'string', 'max:255'],
-            'tanggal_surat' => ['nullable', 'date'],
-            'tentang' => ['nullable', 'string', 'max:500'],
-            'dokumen' => ['required'],
-            'dokumen.*' => ['file', 'max:20480'],
-            'jenis' => ['nullable', 'string'],
-        ]);
 
         $uploaded = $request->file('dokumen');
         /** @var \Illuminate\Http\UploadedFile[] $files */

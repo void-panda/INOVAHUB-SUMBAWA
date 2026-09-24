@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AjukanKembaliRequest;
 use App\Models\Inovasi;
 use App\Models\PengajuanLomba;
 use App\Models\PeriodeLomba;
+use App\Repositories\PengajuanLombaRepository;
 use App\Services\PengajuanLombaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +16,8 @@ use Inertia\Response;
 class PengajuanLombaController extends Controller
 {
     public function __construct(
-        private readonly PengajuanLombaService $pengajuanService
+        private readonly PengajuanLombaService $pengajuanService,
+        private readonly PengajuanLombaRepository $pengajuanRepository
     ) {}
 
     /**
@@ -78,7 +81,7 @@ class PengajuanLombaController extends Controller
             });
         }
 
-        $pengajuan = $query->latest()->get();
+        $pengajuan = $query->latest()->paginate(15)->withQueryString();
         $allPeriodes = PeriodeLomba::orderByDesc('tahun')->get();
 
         return Inertia::render('pengajuan-lomba/index', [
@@ -149,9 +152,7 @@ class PengajuanLombaController extends Controller
             'updated_at' => $p->updated_at?->format('d M Y, H:i') ?? '',
         ]);
 
-        $dokumenUmum = \App\Models\InovasiDokumen::where('inovasi_id', $pengajuan->inovasi_id)
-            ->whereNull('indikator_sid_id')
-            ->get()
+        $dokumenUmum = $this->pengajuanRepository->getDokumenUmum($pengajuan->inovasi_id)
             ->map(fn ($d) => [
                 'id' => $d->id,
                 'nama_asal' => $d->nama_asal ?? basename($d->path),
@@ -196,13 +197,11 @@ class PengajuanLombaController extends Controller
     /**
      * Ajukan kembali dari arsip periode sebelumnya ke periode aktif.
      */
-    public function ajukanKembali(Request $request, PengajuanLomba $pengajuan): RedirectResponse
+    public function ajukanKembali(AjukanKembaliRequest $request, PengajuanLomba $pengajuan): RedirectResponse
     {
         abort_unless($pengajuan->is_arsip, 400, 'Hanya pengajuan dari periode arsip yang dapat diajukan kembali.');
 
-        $validated = $request->validate([
-            'penjelasan_pengembangan' => ['required', 'string', 'min:10', 'max:2000'],
-        ]);
+        $validated = $request->validated();
 
         $newPengajuan = $this->pengajuanService->ajukanKembali(
             $pengajuan,

@@ -282,8 +282,8 @@ class InovasiControllerTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('inovasi/index')
-                ->has('inovasi', 1)
-                ->where('inovasi.0.nama_inovasi', 'Inovasi Biasa Contoh')
+                ->has('inovasi.data', 1)
+                ->where('inovasi.data.0.nama_inovasi', 'Inovasi Biasa Contoh')
             );
 
         // Test /inovasi-daerah only returns inovasi daerah (count 1)
@@ -292,8 +292,8 @@ class InovasiControllerTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('inovasi/daerah')
-                ->has('inovasi', 1)
-                ->where('inovasi.0.nama_inovasi', 'Inovasi Daerah Resmi')
+                ->has('inovasi.data', 1)
+                ->where('inovasi.data.0.nama_inovasi', 'Inovasi Daerah Resmi')
             );
 
         // Test Tim Penilai can also view all inovasi daerah
@@ -305,8 +305,8 @@ class InovasiControllerTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('inovasi/daerah')
-                ->has('inovasi', 1)
-                ->where('inovasi.0.nama_inovasi', 'Inovasi Daerah Resmi')
+                ->has('inovasi.data', 1)
+                ->where('inovasi.data.0.nama_inovasi', 'Inovasi Daerah Resmi')
             );
     }
 

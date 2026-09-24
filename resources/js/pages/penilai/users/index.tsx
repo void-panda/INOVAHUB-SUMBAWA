@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
 import {
     Award,
@@ -24,7 +24,7 @@ import { HeroBanner } from '@/components/hero-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Column } from '@/components/ui/data-table';
+import type { Column, PaginationData } from '@/components/ui/data-table';
 import { DataTable } from '@/components/ui/data-table';
 import {
     Dialog,
@@ -75,7 +75,7 @@ type OpdItem = {
 };
 
 type Props = {
-    users: UserItem[];
+    users: UserItem[] | PaginationData<UserItem>;
     roles: string[];
     opdList: OpdItem[];
     metrics: {
@@ -117,6 +117,12 @@ const roleLabels: Record<string, { label: string; variant: 'default' | 'secondar
 };
 
 export default function UserManagementIndex({ users, roles, opdList, metrics }: Props) {
+    const isPaginated = Boolean(users && typeof users === 'object' && 'data' in users);
+    const userList: UserItem[] = isPaginated
+        ? ((users as PaginationData<UserItem>).data ?? [])
+        : (Array.isArray(users) ? users : []);
+    const pagination = isPaginated ? (users as PaginationData<UserItem>) : undefined;
+
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<UserItem | null>(null);
     const [deletingUser, setDeletingUser] = useState<UserItem | null>(null);
@@ -194,7 +200,8 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
         router.patch(`/penilai/users/${user.id}/toggle-status`);
     };
 
-    const columns: Column<UserItem>[] = [
+    const columns: Column<UserItem>[] = useMemo(
+        () => [
         {
             header: 'Nama & Email',
             cell: (row) => (
@@ -284,7 +291,7 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
                 </div>
             ),
         },
-    ];
+    ], [toggleStatus, handleOpenEdit, setDeletingUser]);
 
     const filterOptions = [
         { label: 'Semua Peran', value: 'all' },
@@ -412,8 +419,9 @@ export default function UserManagementIndex({ users, roles, opdList, metrics }: 
                 <Card className="border-border bg-card shadow-2xs">
                     <CardContent className="p-4 sm:p-6">
                         <DataTable
-                            data={users}
+                            data={userList}
                             columns={columns}
+                            pagination={pagination}
                             searchPlaceholder="Cari nama pengguna, email, atau OPD..."
                             filterOptions={filterOptions}
                             filterKey={(row) => row.role_utama}

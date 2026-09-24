@@ -170,8 +170,93 @@ class InovasiService
         }
     }
 
+    /**
+     * Susun metadata dokumen per indikator SID (jumlah, jenis/ekstensi, waktu update terakhir).
+     *
+     * @param  iterable<\App\Models\InovasiDokumen>  $dokumenList
+     * @return array<int, array{count: int, types: string[], last_updated: ?string}>
+     */
+    public function hitungDokumenInfo(iterable $dokumenList): array
+    {
+        $dokumenInfo = [];
+        $dokumenLastUpdated = [];
+
+        foreach ($dokumenList as $dok) {
+            $indId = $dok->indikator_sid_id;
+            if (! $indId) {
+                continue;
+            }
+
+            if (! isset($dokumenInfo[$indId])) {
+                $dokumenInfo[$indId] = [
+                    'count' => 0,
+                    'types' => [],
+                    'last_updated' => null,
+                ];
+                $dokumenLastUpdated[$indId] = null;
+            }
+            $dokumenInfo[$indId]['count']++;
+
+            $dokTime = $dok->updated_at ?? $dok->created_at;
+            if ($dokTime && ($dokumenLastUpdated[$indId] === null || $dokTime->gt($dokumenLastUpdated[$indId]))) {
+                $dokumenLastUpdated[$indId] = $dokTime;
+                $dokumenInfo[$indId]['last_updated'] = $dokTime->toIso8601String();
+            }
+
+            $ext = strtoupper(pathinfo((string) $dok->nama_asal, PATHINFO_EXTENSION));
+            if ($dok->mime === 'url' || $dok->jenis === 'video') {
+                $ext = 'Link/Video';
+            } elseif (! $ext) {
+                $ext = 'Berkas';
+            }
+
+            if (! in_array($ext, $dokumenInfo[$indId]['types'], true)) {
+                $dokumenInfo[$indId]['types'][] = $ext;
+            }
+        }
+
+        return $dokumenInfo;
+    }
+
+    /**
+     * Hitung progres kelengkapan dan estimasi skor SID kematangan.
+     *
+     * @param  iterable<\App\Models\IndikatorSid>  $indikatorList
+     * @param  \Illuminate\Support\Collection<int, \App\Models\KelengkapanIndikator>  $kelengkapanMap
+     * @return array{filled: int, total: int, persen: int, skorEstimasi: float}
+     */
+    public function hitungSkorEstimasiDanProgres(iterable $indikatorList, $kelengkapanMap): array
+    {
+        $filled = $kelengkapanMap->filter(fn ($k) => $k->parameter !== null && $k->parameter !== '')->count();
+        $totalIndikator = is_countable($indikatorList) ? count($indikatorList) : 0;
+
+        $skorEstimasi = 0.0;
+        foreach ($indikatorList as $ind) {
+            $kel = $kelengkapanMap->get($ind->id);
+            if ($kel && $kel->parameter) {
+                $opsiList = $ind->opsi_list;
+                $matchingOpsi = collect($opsiList)->firstWhere('id', $kel->parameter);
+                if ($matchingOpsi) {
+                    $skorEstimasi += (float) ($matchingOpsi['bobot'] ?? 0) * (float) $ind->bobot;
+                } else {
+                    $tierMap = ['p1' => 1, 'p2' => 2, 'p3' => 3];
+                    $tier = $tierMap[strtolower($kel->parameter)] ?? 0;
+                    $skorEstimasi += $tier * (float) $ind->bobot;
+                }
+            }
+        }
+
+        return [
+            'filled' => $filled,
+            'total' => $totalIndikator,
+            'persen' => $totalIndikator > 0 ? (int) round(($filled / $totalIndikator) * 100) : 0,
+            'skorEstimasi' => round($skorEstimasi, 2),
+        ];
+    }
+
     private function storageDir(int $inovasiId): string
     {
         return "inovasi/{$inovasiId}";
     }
 }
+

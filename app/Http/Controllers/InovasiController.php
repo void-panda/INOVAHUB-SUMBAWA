@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DTOs\InovasiData;
 use App\Http\Requests\InovasiStoreRequest;
+use App\Http\Requests\AjukanKembaliRequest;
 use App\Enums\StatusPengajuan;
 use App\Models\Inovasi;
 use App\Models\InovasiDokumen;
@@ -32,12 +33,14 @@ class InovasiController extends Controller
      */
     public function index(Request $request): Response
     {
-        $inovasi = $this->inovasiRepository->getByUser($request->user(), false);
+        $filters = $request->only(['search', 'tahapan']);
+        $inovasi = $this->inovasiRepository->getByUserPaginated($request->user(), false, 15, $filters);
         $countdown = app(\App\Services\PengajuanLombaService::class)->getPengumpulanCountdown();
 
         return Inertia::render('inovasi/index', [
             'inovasi' => $inovasi,
             'countdown' => $countdown,
+            'filters' => $filters,
         ]);
     }
 
@@ -47,15 +50,17 @@ class InovasiController extends Controller
     public function daerah(Request $request): Response
     {
         $user = $request->user();
+        $filters = $request->only(['search', 'tahapan']);
         $inovasi = $user->hasRole('inovator') && ! $user->hasAnyRole(['bapperida', 'tim_penilai', 'pimpinan', 'pendamping'])
-            ? $this->inovasiRepository->getByUser($user, true)
-            : $this->inovasiRepository->getAllInovasiDaerah();
+            ? $this->inovasiRepository->getByUserPaginated($user, true, 15, $filters)
+            : $this->inovasiRepository->getAllInovasiDaerahPaginated(15, $filters);
 
         $periode = $this->inovasiRepository->getAktifPeriode();
 
         return Inertia::render('inovasi/daerah', [
             'inovasi' => $inovasi,
             'periode' => $periode,
+            'filters' => $filters,
         ]);
     }
 
@@ -203,17 +208,13 @@ class InovasiController extends Controller
     /**
      * Ajukan kembali inovasi dari arsip ke periode lomba aktif.
      */
-    public function ajukanKembali(Request $request, Inovasi $inovasi): RedirectResponse
+    public function ajukanKembali(AjukanKembaliRequest $request, Inovasi $inovasi): RedirectResponse
     {
         $this->authorizeOwned($request, $inovasi);
 
-        $request->validate([
-            'penjelasan_pengembangan' => ['required', 'string', 'min:10', 'max:2000'],
-        ]);
-
         $newInovasi = $this->inovasiService->ajukanKembali(
             $inovasi,
-            (string) $request->input('penjelasan_pengembangan')
+            (string) $request->validated('penjelasan_pengembangan')
         );
 
         Inertia::flash('toast', [
