@@ -111,7 +111,7 @@ export function ParameterModal({
         const targetUrl =
             postUrl ||
             (pengajuanId
-                ? `/pengajuan-lomba/${pengajuanId}/indikator/${indikator.id}/parameter`
+                ? `/inovasi-daerah/${pengajuanId}/indikator/${indikator.id}/parameter`
                 : `/inovasi/${inovasiId}/indikator/${indikator.id}/parameter`);
 
         router.post(

@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     AlertCircle,
     ArrowLeft,
+    Award,
     CheckCircle2,
     Clock,
     Download,
@@ -9,8 +10,10 @@ import {
     FileText,
     FolderPlus,
     Info,
+    Lock,
     MessageSquare,
     Plus,
+    ShieldCheck,
     Trash2,
     UploadCloud,
     X,
@@ -98,6 +101,10 @@ type Props = {
         updated_at?: string | null;
         pendamping?: { name: string } | null;
     } | null;
+    isPendamping?: boolean;
+    isTimPenilai?: boolean;
+    isLocked?: boolean;
+    canUpload?: boolean;
 };
 
 function formatBytes(bytes: number): string {
@@ -130,6 +137,10 @@ export default function IndikatorDokumenPage({
     dokumenList,
     kelengkapan,
     skor,
+    isPendamping = false,
+    isTimPenilai = false,
+    isLocked: propIsLocked,
+    canUpload = false,
 }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -145,7 +156,24 @@ export default function IndikatorDokumenPage({
 
     const [deleteTarget, setDeleteTarget] = useState<DokumenItem | null>(null);
 
-    const isLocked = !['draft', 'dalam_pendampingan', 'revisi'].includes(pengajuan.status) || Boolean(pengajuan.is_arsip);
+    const statusLabelMap: Record<string, string> = {
+        draft: 'Draft',
+        dalam_pendampingan: 'Dalam Pendampingan',
+        diajukan: 'Diajukan',
+        divalidasi: 'Divalidasi',
+        revisi: 'Perlu Revisi',
+        disetujui: 'Disetujui',
+        disahkan_opd: 'Disahkan Kepala OPD',
+        review_internal: 'Review Internal Tim Penilai',
+        siap_kirim: 'Siap Kirim ke Kemendagri',
+        terkirim: 'Terkirim ke Kemendagri',
+    };
+
+    const isLocked = propIsLocked !== undefined
+        ? propIsLocked
+        : (!['draft', 'dalam_pendampingan', 'revisi'].includes(pengajuan.status) || Boolean(pengajuan.is_arsip));
+    const statusLabel = pengajuan.is_arsip ? 'Arsip Periode Lalu' : (statusLabelMap[pengajuan.status] ?? pengajuan.status);
+    const canUploadOrDelete = Boolean(canUpload) && !isPendamping && !isTimPenilai && !isLocked;
 
     const openUploadModal = () => {
         setSelectedFiles([]);
@@ -191,7 +219,7 @@ export default function IndikatorDokumenPage({
         if (tentang.trim()) formData.append('tentang', tentang.trim());
 
         router.post(
-            `/pengajuan-lomba/${pengajuan.id}/indikator/${indikator.id}/dokumen`,
+            `/inovasi-daerah/${pengajuan.id}/indikator/${indikator.id}/dokumen`,
             formData,
             {
                 forceFormData: true,
@@ -212,7 +240,7 @@ export default function IndikatorDokumenPage({
         if (!deleteTarget) return;
 
         router.delete(
-            `/pengajuan-lomba/${pengajuan.id}/indikator/dokumen/${deleteTarget.id}`,
+            `/inovasi-daerah/${pengajuan.id}/indikator/dokumen/${deleteTarget.id}`,
             {
                 onSuccess: () => setDeleteTarget(null),
             }
@@ -227,14 +255,34 @@ export default function IndikatorDokumenPage({
                 {/* Header Toolbar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-xs w-fit">
-                        <Link href={`/pengajuan-lomba/${pengajuan.id}/indikator`}>
+                        <Link href={`/inovasi-daerah/${pengajuan.id}/indikator`}>
                             <ArrowLeft className="h-3.5 w-3.5" />
                             <span>Kembali ke 20 Indikator SID</span>
                         </Link>
                     </Button>
 
                     <div className="flex items-center gap-2">
-                        {!isLocked && (
+                        {isTimPenilai ? (
+                            <div className="flex items-center gap-1.5 text-xs text-indigo-800 dark:text-indigo-200 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800 px-3 py-1.5 rounded-lg shadow-xs">
+                                <Eye className="h-3.5 w-3.5 text-indigo-600" />
+                                <span className="font-semibold">Mode Evaluator Tim Penilai (Read-Only Berkas)</span>
+                            </div>
+                        ) : isPendamping ? (
+                            <div className="flex items-center gap-1.5 text-xs text-teal-800 dark:text-teal-200 bg-teal-50 dark:bg-teal-950/40 border border-teal-300 dark:border-teal-800 px-3 py-1.5 rounded-lg shadow-xs">
+                                <Eye className="h-3.5 w-3.5 text-teal-600" />
+                                <span className="font-semibold">Mode Reviewer Pendamping (Read-Only)</span>
+                            </div>
+                        ) : isLocked && !canUpload ? (
+                            <Button
+                                size="sm"
+                                disabled
+                                className="h-8 gap-1.5 text-xs opacity-60 cursor-not-allowed bg-muted text-muted-foreground border border-border"
+                                title={`Pengunggahan bukti dukung dinonaktifkan karena inovasi berstatus ${statusLabel} (Read-Only).`}
+                            >
+                                <Lock className="h-3.5 w-3.5" />
+                                <span>Upload Dokumen Baru (Terkunci)</span>
+                            </Button>
+                        ) : canUpload ? (
                             <Button
                                 size="sm"
                                 onClick={openUploadModal}
@@ -243,7 +291,7 @@ export default function IndikatorDokumenPage({
                                 <Plus className="h-3.5 w-3.5" />
                                 <span>Upload Dokumen Baru</span>
                             </Button>
-                        )}
+                        ) : null}
                     </div>
                 </div>
 
@@ -253,6 +301,66 @@ export default function IndikatorDokumenPage({
                     subtitle={`Inovasi: ${pengajuan.nama_inovasi}. Unggah surat keputusan, regulasi, foto, atau dokumentasi teknis pendukung.`}
                     badgeText="Dokumen Pembuktian Mutu"
                 />
+
+                {/* Banner Mode Tim Penilai */}
+                {isTimPenilai && (
+                    <div className="rounded-xl border border-indigo-300/80 bg-indigo-50/80 p-4 text-indigo-900 shadow-xs dark:border-indigo-700/60 dark:bg-indigo-950/30 dark:text-indigo-200">
+                        <div className="flex items-start gap-3">
+                            <div className="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 shrink-0">
+                                <Award className="h-4 w-4" />
+                            </div>
+                            <div className="space-y-1 text-xs">
+                                <p className="font-bold text-sm text-indigo-950 dark:text-indigo-100 flex items-center gap-2 flex-wrap">
+                                    <span>Pemeriksaan Bukti Dukung (Tim Penilai / Evaluator)</span>
+                                </p>
+                                <p className="leading-relaxed text-indigo-800 dark:text-indigo-300/90">
+                                    Anda mengakses berkas indikator ini dalam kapasitas sebagai <strong>Tim Penilai</strong>. Anda dapat melihat dan mengunduh berkas bukti dukung untuk meneliti kesesuaian data dengan parameter mutu. Pengunggahan berkas bukti dukung menjadi wewenang Inovator.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Banner Mode Pendamping Reviewer */}
+                {isPendamping && (
+                    <div className="rounded-xl border border-teal-300/80 bg-teal-50/80 p-4 text-teal-900 shadow-xs dark:border-teal-700/60 dark:bg-teal-950/30 dark:text-teal-200">
+                        <div className="flex items-start gap-3">
+                            <div className="rounded-lg bg-teal-100 p-2 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300 shrink-0">
+                                <ShieldCheck className="h-4 w-4" />
+                            </div>
+                            <div className="space-y-1 text-xs">
+                                <p className="font-bold text-sm text-teal-950 dark:text-teal-100 flex items-center gap-2 flex-wrap">
+                                    <span>Pemeriksaan Berkas Bukti Dukung (Pendamping Inovasi)</span>
+                                </p>
+                                <p className="leading-relaxed text-teal-800 dark:text-teal-300/90">
+                                    Anda mengakses halaman ini dalam kapasitas sebagai <strong>Pendamping Inovasi</strong>. Anda dapat melihat, mengunduh, dan memeriksa keabsahan berkas bukti dukung yang telah diunggah oleh Inovator. Pengunggahan atau penghapusan file bukti dukung menjadi wewenang Inovator.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Banner Status Terkunci (Read-Only Mode) */}
+                {isLocked && (
+                    <div className="rounded-xl border border-amber-300/80 bg-amber-50/80 p-4 text-amber-900 shadow-xs dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-200">
+                        <div className="flex items-start gap-3">
+                            <div className="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 shrink-0">
+                                <Lock className="h-4 w-4" />
+                            </div>
+                            <div className="space-y-1 text-xs">
+                                <p className="font-bold text-sm text-amber-950 dark:text-amber-100 flex items-center gap-2 flex-wrap">
+                                    <span>Dokumen Bukti Dukung Berstatus Read-Only</span>
+                                    <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wider border-amber-400 text-amber-800 dark:border-amber-600 dark:text-amber-300 bg-amber-100/50 dark:bg-amber-900/40">
+                                        Status Inovasi: {statusLabel}
+                                    </Badge>
+                                </p>
+                                <p className="leading-relaxed text-amber-800 dark:text-amber-300/90">
+                                    Seluruh berkas bukti dukung pada inovasi ini telah dikunci untuk menjaga integritas dan validitas pelaporan data resmi ke sistem Kemendagri. Penambahan, pengubahan, atau penghapusan berkas bukti hanya dapat dilakukan saat inovasi berada pada tahap pembinaan (<strong>Draft</strong> atau <strong>Perlu Revisi</strong>).
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Info & Komentar Pendamping (Jika ada) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -350,7 +458,13 @@ export default function IndikatorDokumenPage({
                                         <div className="flex flex-col items-center justify-center gap-2">
                                             <FileText className="h-8 w-8 text-muted-foreground/50" />
                                             <span>Belum ada dokumen bukti yang diunggah untuk indikator ini.</span>
-                                            {!isLocked && (
+                                            {!canUploadOrDelete ? (
+                                                <span className="text-[11px] text-muted-foreground font-medium">
+                                                    {isTimPenilai || isPendamping
+                                                        ? "(Inovator belum mengunggah berkas bukti dukung untuk indikator ini)"
+                                                        : "(Pengunggahan bukti baru dinonaktifkan dalam mode Read-Only)"}
+                                                </span>
+                                            ) : (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -428,7 +542,7 @@ export default function IndikatorDokumenPage({
                                                     </a>
                                                 </Button>
 
-                                                {!isLocked && (
+                                                {canUploadOrDelete ? (
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
@@ -438,7 +552,17 @@ export default function IndikatorDokumenPage({
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />
                                                     </Button>
-                                                )}
+                                                ) : (!isPendamping && !isTimPenilai) ? (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        disabled
+                                                        className="h-7 px-2 text-xs opacity-40 cursor-not-allowed text-muted-foreground"
+                                                        title="Dokumen tidak dapat dihapus dalam status Read-Only"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                ) : null}
                                             </div>
                                         </TableCell>
                                     </TableRow>

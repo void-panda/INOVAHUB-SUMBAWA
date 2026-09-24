@@ -288,7 +288,7 @@ class InovasiControllerTest extends TestCase
 
         // Test /inovasi-daerah only returns inovasi daerah (count 1)
         $this->actingAs($inovator)
-            ->get(route('inovasi.daerah'))
+            ->get(route('inovasi-daerah.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('inovasi/daerah')
@@ -301,7 +301,7 @@ class InovasiControllerTest extends TestCase
         $penilai->assignRole('tim_penilai');
 
         $this->actingAs($penilai)
-            ->get(route('inovasi.daerah'))
+            ->get(route('inovasi-daerah.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('inovasi/daerah')

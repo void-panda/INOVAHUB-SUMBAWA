@@ -47,42 +47,95 @@ class ValidasiRepository
         $assignedOpdIds = $penugasan->pluck('opd_id')->filter()->all();
         $assignedInovatorIds = $penugasan->pluck('inovator_id')->filter()->all();
 
+        $lockedStatuses = [
+            StatusPengajuan::DisahkanOpd,
+            StatusPengajuan::ReviewInternal,
+            StatusPengajuan::SiapKirim,
+            StatusPengajuan::Terkirim,
+        ];
+
         $baseQuery = PengajuanLomba::query()
-            ->where('is_arsip', false);
+            ->where('is_arsip', false)
+            ->whereNotIn('status', $lockedStatuses);
 
         if ($periodeId) {
             $baseQuery->where('periode_lomba_id', $periodeId);
         }
 
         if (! empty($assignedInovasiIds) || ! empty($assignedOpdIds) || ! empty($assignedInovatorIds)) {
-            $allAssignedInovasiIds = PenugasanPendamping::when($periodeId, fn ($q) => $q->where('periode_lomba_id', $periodeId))
-                ->whereNotNull('inovasi_id')
-                ->pluck('inovasi_id')
-                ->all();
-
-            $baseQuery->where(function (Builder $query) use ($assignedInovasiIds, $assignedOpdIds, $assignedInovatorIds, $allAssignedInovasiIds) {
+            $baseQuery->where(function (Builder $query) use ($assignedInovasiIds, $assignedOpdIds, $assignedInovatorIds) {
+                $hasScope = false;
                 if (! empty($assignedInovasiIds)) {
                     $query->whereIn('inovasi_id', $assignedInovasiIds);
+                    $hasScope = true;
                 }
                 if (! empty($assignedOpdIds)) {
-                    $query->orWhereHas('inovasi', fn ($i) => $i->whereIn('opd_id', $assignedOpdIds));
+                    if ($hasScope) {
+                        $query->orWhereHas('inovasi', fn ($i) => $i->whereIn('opd_id', $assignedOpdIds));
+                    } else {
+                        $query->whereHas('inovasi', fn ($i) => $i->whereIn('opd_id', $assignedOpdIds));
+                        $hasScope = true;
+                    }
                 }
                 if (! empty($assignedInovatorIds)) {
-                    $query->orWhereIn('user_id', $assignedInovatorIds);
-                }
-                if (! empty($allAssignedInovasiIds)) {
-                    $query->orWhereNotIn('inovasi_id', $allAssignedInovasiIds);
+                    if ($hasScope) {
+                        $query->orWhereIn('user_id', $assignedInovatorIds);
+                    } else {
+                        $query->whereIn('user_id', $assignedInovatorIds);
+                        $hasScope = true;
+                    }
                 }
             });
+        } else {
+            $baseQuery->whereRaw('1 = 0');
+        }
+
+        // Hitung inovasi yang telah disahkan untuk informasi di kartu metrik
+        $disahkanQuery = PengajuanLomba::query()
+            ->where('is_arsip', false)
+            ->whereIn('status', $lockedStatuses);
+
+        if ($periodeId) {
+            $disahkanQuery->where('periode_lomba_id', $periodeId);
+        }
+
+        if (! empty($assignedInovasiIds) || ! empty($assignedOpdIds) || ! empty($assignedInovatorIds)) {
+            $disahkanQuery->where(function (Builder $query) use ($assignedInovasiIds, $assignedOpdIds, $assignedInovatorIds) {
+                $hasScope = false;
+                if (! empty($assignedInovasiIds)) {
+                    $query->whereIn('inovasi_id', $assignedInovasiIds);
+                    $hasScope = true;
+                }
+                if (! empty($assignedOpdIds)) {
+                    if ($hasScope) {
+                        $query->orWhereHas('inovasi', fn ($i) => $i->whereIn('opd_id', $assignedOpdIds));
+                    } else {
+                        $query->whereHas('inovasi', fn ($i) => $i->whereIn('opd_id', $assignedOpdIds));
+                        $hasScope = true;
+                    }
+                }
+                if (! empty($assignedInovatorIds)) {
+                    if ($hasScope) {
+                        $query->orWhereIn('user_id', $assignedInovatorIds);
+                    } else {
+                        $query->whereIn('user_id', $assignedInovatorIds);
+                        $hasScope = true;
+                    }
+                }
+            });
+        } else {
+            $disahkanQuery->whereRaw('1 = 0');
         }
 
         $counts = [
             'all' => (clone $baseQuery)->count(),
             'dalam_pendampingan' => (clone $baseQuery)->where('status', StatusPengajuan::DalamPendampingan)->count(),
-            'disahkan_opd' => (clone $baseQuery)->where('status', StatusPengajuan::DisahkanOpd)->count(),
-            'review_internal' => (clone $baseQuery)->where('status', StatusPengajuan::ReviewInternal)->count(),
-            'siap_kirim' => (clone $baseQuery)->where('status', StatusPengajuan::SiapKirim)->count(),
-            'terkirim' => (clone $baseQuery)->where('status', StatusPengajuan::Terkirim)->count(),
+            'disahkan_opd' => (clone $disahkanQuery)->count(),
+            'lanjutan' => (clone $disahkanQuery)->whereIn('status', [
+                StatusPengajuan::ReviewInternal,
+                StatusPengajuan::SiapKirim,
+                StatusPengajuan::Terkirim,
+            ])->count(),
         ];
 
         if ($filters->status && $filters->status !== 'all') {
@@ -98,11 +151,33 @@ class ValidasiRepository
             });
         }
 
-        $inovasiList = $baseQuery
+        $paginated = $baseQuery
             ->with(['inovasi.user', 'inovasi.opd', 'inovasi.dokumen', 'periodeLomba', 'skorPengajuan', 'kelengkapanIndikator'])
             ->orderByDesc('updated_at')
             ->paginate(15)
             ->withQueryString();
+
+        $inovasiList = $paginated->through(function (PengajuanLomba $item) {
+            $kelengkapan = $item->kelengkapanIndikator ?? collect();
+            $filledCount = $kelengkapan->whereNotNull('parameter')->count();
+
+            return [
+                'id' => $item->id,
+                'inovasi_id' => $item->inovasi_id,
+                'nama_inovasi' => $item->inovasi?->nama_inovasi ?? '-',
+                'nama_inisiator' => $item->inovasi?->nama_inisiator ?? '-',
+                'tahapan' => $item->inovasi?->tahapan ?? '-',
+                'urusan_utama' => $item->inovasi?->urusan_utama ?? '-',
+                'status' => $item->status instanceof StatusPengajuan ? $item->status->value : (string) $item->status,
+                'estimasi_skor_kematangan' => (float) ($item->estimasi_skor_kematangan ?? 0),
+                'filled_indikator' => $filledCount,
+                'total_indikator' => 20,
+                'opd_nama' => $item->inovasi?->opd?->nama ?? $item->inovasi?->user?->nama_pemda ?? 'Perangkat Daerah',
+                'inisiator_nama' => $item->inovasi?->user?->name ?? '-',
+                'created_at' => $item->created_at?->format('d/m/Y') ?? '-',
+                'periode_tahun' => $item->periodeLomba?->tahun ?? date('Y'),
+            ];
+        });
 
         return [
             'inovasiList' => $inovasiList,

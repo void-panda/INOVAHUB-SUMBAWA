@@ -39,7 +39,6 @@ import { Textarea } from '@/components/ui/textarea';
 import type { PengajuanLomba } from '@/types/models';
 import { BerkasLombaCard, type DokumenUmumItem } from './components/berkas-lomba-card';
 import { HasilPenilaianJuriCard, CatatanKualitatifJuriCard, type PenilaianItem } from './components/hasil-penilaian-juri-card';
-import { KematanganSidCard } from './components/kematangan-sid-card';
 
 type Props = {
     pengajuan: PengajuanLomba;
@@ -319,8 +318,6 @@ export default function PengajuanLombaShow({
                     nilaiRataRataJuri={nilaiRataRataJuri}
                 />
 
-                {/* Kematangan 20 Indikator SID (Posisi Sekunder untuk Pelaporan IGA Kemendagri) */}
-                <KematanganSidCard pengajuan={pengajuan} />
 
                 {/* Audit Trail / Validasi Log History */}
                 <Card className="border-border bg-card">

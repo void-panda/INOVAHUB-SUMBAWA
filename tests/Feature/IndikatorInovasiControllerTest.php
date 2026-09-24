@@ -65,7 +65,7 @@ class IndikatorInovasiControllerTest extends TestCase
     {
         [$user, $pengajuan] = $this->setupUserAndPengajuan();
 
-        $response = $this->actingAs($user)->get(route('pengajuan-lomba.indikator.index', $pengajuan));
+        $response = $this->actingAs($user)->get(route('inovasi-daerah.indikator.index', $pengajuan));
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
@@ -82,7 +82,7 @@ class IndikatorInovasiControllerTest extends TestCase
         $indikator = IndikatorSid::where('kode', 'SID-01')->first();
 
         $response = $this->actingAs($user)->post(
-            route('pengajuan-lomba.indikator.parameter.update', [$pengajuan, $indikator]),
+            route('inovasi-daerah.indikator.parameter.update', [$pengajuan, $indikator]),
             [
                 'parameter' => 'p2',
                 'catatan' => 'Ditetapkan dengan SK Bupati Sumbawa No. 123/2026',
@@ -114,7 +114,7 @@ class IndikatorInovasiControllerTest extends TestCase
 
         // Choose opt_sub_2
         $response = $this->actingAs($user)->post(
-            route('pengajuan-lomba.indikator.parameter.update', [$pengajuan, $indikator]),
+            route('inovasi-daerah.indikator.parameter.update', [$pengajuan, $indikator]),
             [
                 'parameter' => 'opt_sub_2',
                 'catatan' => 'Telah memenuhi unsur substansi lengkap.',
@@ -130,7 +130,7 @@ class IndikatorInovasiControllerTest extends TestCase
         ]);
 
         // Verify index calculation: pure points without multiplier
-        $indexResponse = $this->actingAs($user)->get(route('pengajuan-lomba.indikator.index', $pengajuan));
+        $indexResponse = $this->actingAs($user)->get(route('inovasi-daerah.indikator.index', $pengajuan));
         $indexResponse->assertOk();
         $expectedSkor = 2.5;
         $indexResponse->assertInertia(fn ($page) => $page
@@ -144,7 +144,7 @@ class IndikatorInovasiControllerTest extends TestCase
         $indikator = IndikatorSid::where('kode', 'SID-01')->first();
 
         $this->actingAs($pendamping)->post(
-            route('pengajuan-lomba.indikator.komentar.update', [$pengajuan, $indikator]),
+            route('inovasi-daerah.indikator.komentar.update', [$pengajuan, $indikator]),
             [
                 'komentar_pendamping' => 'Perlu lampirkan SK Bupati yang bertanda tangan lengkap.',
             ]
@@ -165,7 +165,7 @@ class IndikatorInovasiControllerTest extends TestCase
 
         // 1. Valid status
         $this->actingAs($pendamping)->post(
-            route('pengajuan-lomba.indikator.komentar.update', [$pengajuan, $indikator]),
+            route('inovasi-daerah.indikator.komentar.update', [$pengajuan, $indikator]),
             [
                 'status_validasi' => 'valid',
                 'komentar_pendamping' => 'Dokumen sudah sesuai dan terverifikasi.',
@@ -181,7 +181,7 @@ class IndikatorInovasiControllerTest extends TestCase
 
         // 2. Perlu revisi requires komentar
         $this->actingAs($pendamping)->post(
-            route('pengajuan-lomba.indikator.komentar.update', [$pengajuan, $indikator]),
+            route('inovasi-daerah.indikator.komentar.update', [$pengajuan, $indikator]),
             [
                 'status_validasi' => 'perlu_revisi',
                 'komentar_pendamping' => '',
@@ -190,7 +190,7 @@ class IndikatorInovasiControllerTest extends TestCase
 
         // 3. Perlu revisi with komentar succeeds
         $this->actingAs($pendamping)->post(
-            route('pengajuan-lomba.indikator.komentar.update', [$pengajuan, $indikator]),
+            route('inovasi-daerah.indikator.komentar.update', [$pengajuan, $indikator]),
             [
                 'status_validasi' => 'perlu_revisi',
                 'komentar_pendamping' => 'Mohon unggah dokumen SK yang bertanda tangan basah.',
@@ -211,7 +211,7 @@ class IndikatorInovasiControllerTest extends TestCase
         $indikator = IndikatorSid::where('kode', 'SID-01')->first();
 
         $response = $this->actingAs($user)->get(
-            route('pengajuan-lomba.indikator.dokumen.index', [$pengajuan, $indikator])
+            route('inovasi-daerah.indikator.dokumen.index', [$pengajuan, $indikator])
         );
 
         $response->assertOk();
@@ -231,7 +231,7 @@ class IndikatorInovasiControllerTest extends TestCase
         $file = UploadedFile::fake()->create('sk_bupati.pdf', 500, 'application/pdf');
 
         $response = $this->actingAs($user)->post(
-            route('pengajuan-lomba.indikator.dokumen.store', [$pengajuan, $indikator]),
+            route('inovasi-daerah.indikator.dokumen.store', [$pengajuan, $indikator]),
             [
                 'nomor_surat' => '050/01/2026',
                 'tanggal_surat' => '2026-01-15',
@@ -252,7 +252,7 @@ class IndikatorInovasiControllerTest extends TestCase
 
         // Hapus dokumen
         $deleteResponse = $this->actingAs($user)->delete(
-            route('pengajuan-lomba.indikator.dokumen.destroy', [$pengajuan, $dokumen])
+            route('inovasi-daerah.indikator.dokumen.destroy', [$pengajuan, $dokumen])
         );
 
         $deleteResponse->assertRedirect();
@@ -267,7 +267,7 @@ class IndikatorInovasiControllerTest extends TestCase
         $pengajuan->update(['status' => StatusPengajuan::DisahkanOpd]);
 
         $response = $this->actingAs($user)->post(
-            route('pengajuan-lomba.indikator.parameter.update', [$pengajuan, $indikator]),
+            route('inovasi-daerah.indikator.parameter.update', [$pengajuan, $indikator]),
             [
                 'parameter' => 'p3',
             ]
@@ -286,7 +286,7 @@ class IndikatorInovasiControllerTest extends TestCase
         $pendamping->assignRole('pendamping');
 
         $response = $this->actingAs($pendamping)->post(
-            route('pengajuan-lomba.indikator.kirim-notifikasi', $pengajuan)
+            route('inovasi-daerah.indikator.kirim-notifikasi', $pengajuan)
         );
 
         $response->assertRedirect();
@@ -312,10 +312,180 @@ class IndikatorInovasiControllerTest extends TestCase
         [$user, $pengajuan] = $this->setupUserAndPengajuan();
 
         $response = $this->actingAs($user)->post(
-            route('pengajuan-lomba.indikator.kirim-notifikasi', $pengajuan)
+            route('inovasi-daerah.indikator.kirim-notifikasi', $pengajuan)
         );
 
         $response->assertForbidden();
         Mail::assertNothingSent();
+    }
+
+    public function test_pendamping_cannot_upload_dokumen(): void
+    {
+        Storage::fake('local');
+        [$user, $pengajuan, $pendamping] = $this->setupUserAndPengajuan();
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        $file = UploadedFile::fake()->create('dokumen.pdf', 100, 'application/pdf');
+
+        $response = $this->actingAs($pendamping)->post(
+            route('inovasi-daerah.indikator.dokumen.store', [$pengajuan, $indikator]),
+            [
+                'dokumen' => [$file],
+                'jenis' => 'sk_bupati',
+            ]
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_pendamping_cannot_update_parameter(): void
+    {
+        [$user, $pengajuan, $pendamping] = $this->setupUserAndPengajuan();
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        $response = $this->actingAs($pendamping)->post(
+            route('inovasi-daerah.indikator.parameter.update', [$pengajuan, $indikator]),
+            [
+                'parameter' => 'p1',
+            ]
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_pendamping_cannot_delete_dokumen(): void
+    {
+        [$user, $pengajuan, $pendamping] = $this->setupUserAndPengajuan();
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        $dokumen = InovasiDokumen::create([
+            'inovasi_id' => $pengajuan->inovasi_id,
+            'pengajuan_lomba_id' => $pengajuan->id,
+            'indikator_sid_id' => $indikator->id,
+            'nama_asal' => 'dokumen_test.pdf',
+            'path' => 'dokumen_indikator/dokumen_test.pdf',
+            'mime' => 'application/pdf',
+            'ukuran' => 1024,
+            'jenis' => 'dokumen-dukung',
+        ]);
+
+        $response = $this->actingAs($pendamping)->delete(
+            route('inovasi-daerah.indikator.dokumen.destroy', [$pengajuan, $dokumen])
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_cannot_upload_dokumen_when_status_is_disahkan_opd(): void
+    {
+        Storage::fake('local');
+        [$user, $pengajuan] = $this->setupUserAndPengajuan();
+        $pengajuan->update(['status' => StatusPengajuan::DisahkanOpd]);
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        $file = UploadedFile::fake()->create('dokumen.pdf', 100, 'application/pdf');
+
+        $response = $this->actingAs($user)->post(
+            route('inovasi-daerah.indikator.dokumen.store', [$pengajuan, $indikator]),
+            [
+                'dokumen' => [$file],
+                'jenis' => 'sk_bupati',
+            ]
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_tim_penilai_cannot_upload_dokumen(): void
+    {
+        Storage::fake('local');
+        [$user, $pengajuan] = $this->setupUserAndPengajuan();
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        $timPenilai = User::factory()->create();
+        $timPenilai->assignRole('tim_penilai');
+
+        $file = UploadedFile::fake()->create('dokumen.pdf', 100, 'application/pdf');
+
+        $response = $this->actingAs($timPenilai)->post(
+            route('inovasi-daerah.indikator.dokumen.store', [$pengajuan, $indikator]),
+            [
+                'dokumen' => [$file],
+                'jenis' => 'sk_bupati',
+            ]
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_tim_penilai_cannot_delete_dokumen(): void
+    {
+        [$user, $pengajuan] = $this->setupUserAndPengajuan();
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        $timPenilai = User::factory()->create();
+        $timPenilai->assignRole('tim_penilai');
+
+        $dokumen = InovasiDokumen::create([
+            'inovasi_id' => $pengajuan->inovasi_id,
+            'pengajuan_lomba_id' => $pengajuan->id,
+            'indikator_sid_id' => $indikator->id,
+            'nama_asal' => 'dokumen_test.pdf',
+            'path' => 'dokumen_indikator/dokumen_test.pdf',
+            'mime' => 'application/pdf',
+            'ukuran' => 1024,
+            'jenis' => 'dokumen-dukung',
+        ]);
+
+        $response = $this->actingAs($timPenilai)->delete(
+            route('inovasi-daerah.indikator.dokumen.destroy', [$pengajuan, $dokumen])
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_tim_penilai_can_update_parameter_during_active_and_review_stages(): void
+    {
+        [$user, $pengajuan] = $this->setupUserAndPengajuan();
+        $pengajuan->update(['status' => StatusPengajuan::ReviewInternal]);
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        $timPenilai = User::factory()->create();
+        $timPenilai->assignRole('tim_penilai');
+
+        $response = $this->actingAs($timPenilai)->post(
+            route('inovasi-daerah.indikator.parameter.update', [$pengajuan, $indikator]),
+            [
+                'parameter' => 'p3',
+                'catatan' => 'Diselaraskan oleh Tim Penilai pada tahap review internal.',
+            ]
+        );
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('kelengkapan_indikator', [
+            'pengajuan_lomba_id' => $pengajuan->id,
+            'indikator_sid_id' => $indikator->id,
+            'parameter' => 'p3',
+            'catatan' => 'Diselaraskan oleh Tim Penilai pada tahap review internal.',
+        ]);
+    }
+
+    public function test_tim_penilai_cannot_update_parameter_when_siap_kirim(): void
+    {
+        [$user, $pengajuan] = $this->setupUserAndPengajuan();
+        $pengajuan->update(['status' => StatusPengajuan::SiapKirim]);
+        $indikator = IndikatorSid::where('kode', 'SID-01')->first();
+
+        $timPenilai = User::factory()->create();
+        $timPenilai->assignRole('tim_penilai');
+
+        $response = $this->actingAs($timPenilai)->post(
+            route('inovasi-daerah.indikator.parameter.update', [$pengajuan, $indikator]),
+            [
+                'parameter' => 'p3',
+            ]
+        );
+
+        $response->assertForbidden();
     }
 }

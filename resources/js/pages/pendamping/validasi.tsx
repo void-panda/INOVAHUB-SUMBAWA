@@ -207,7 +207,7 @@ export default function ValidasiShow({ pengajuan, inovasi, auth }: Props) {
                                 asChild
                                 className="bg-emerald-500/20 hover:bg-emerald-500/30 text-white border-emerald-400/30 rounded-xl h-9 text-xs font-semibold shadow-xs"
                             >
-                                <Link href={`/pengajuan-lomba/${targetPengajuanId}/indikator`}>
+                                <Link href={`/inovasi-daerah/${targetPengajuanId}/indikator`}>
                                     <FolderOpen className="h-3.5 w-3.5 mr-1 text-emerald-300" /> Lembar 20 Indikator SID
                                 </Link>
                             </Button>

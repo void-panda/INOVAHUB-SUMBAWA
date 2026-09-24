@@ -443,7 +443,7 @@ class InovasiController extends Controller
     {
         $pengajuan = $inovasi->pengajuanAktif;
         if ($pengajuan) {
-            return redirect()->route('pengajuan-lomba.indikator.index', $pengajuan);
+            return redirect()->route('inovasi-daerah.indikator.index', $pengajuan);
         }
 
         return redirect()->route('inovasi.index')->with('warning', 'Inovasi ini belum diajukan ke periode lomba aktif.');

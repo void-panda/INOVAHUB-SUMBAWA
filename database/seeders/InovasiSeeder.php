@@ -23,6 +23,7 @@ class InovasiSeeder extends Seeder
         $disdukcapilUser = User::where('email', 'inovator3@sumbawakab.go.id')->first();
         $disdikbudUser = User::where('email', 'inovator4@sumbawakab.go.id')->first();
         $masyarakatUser = User::where('email', 'inovator5@sumbawakab.go.id')->first();
+        $puprUser = User::where('email', 'inovator_pupr@sumbawakab.go.id')->first() ?? $kominfoUser;
 
         $kominfo = Opd::where('kode', 'DISKOMINFO')->first();
         $dinkes = Opd::where('kode', 'DINKES')->first();
@@ -151,11 +152,11 @@ class InovasiSeeder extends Seeder
             ]
         );
 
-        // 4. SIPALU SAMAWA (PUPR / Kominfo - Inovasi Daerah Arsip)
+        // 4. SIPALU SAMAWA (PUPR - Inovasi Daerah Arsip)
         $sipalu = Inovasi::updateOrCreate(
             ['nama_inovasi' => 'SIPALU SAMAWA (Sistem Informasi Pengawasan Tata Ruang & Kelayakan Bangunan)'],
             [
-                'user_id' => $kominfoUser->id,
+                'user_id' => $puprUser->id,
                 'opd_id' => $pupr->id,
                 'is_inovasi_daerah' => true,
                 'tahapan' => 'penerapan',
@@ -179,7 +180,7 @@ class InovasiSeeder extends Seeder
         $pengajuanSipalu2025 = PengajuanLomba::updateOrCreate(
             ['inovasi_id' => $sipalu->id, 'periode_lomba_id' => $periode2025->id],
             [
-                'user_id' => $kominfoUser->id,
+                'user_id' => $puprUser->id,
                 'is_inovasi_daerah' => true,
                 'status' => StatusPengajuan::Terkirim,
                 'is_arsip' => true,
@@ -188,11 +189,11 @@ class InovasiSeeder extends Seeder
             ]
         );
 
-        // 5. E-RETRIBUSI PASAR SEKETENG (Kominfo - Inovasi Daerah Arsip)
+        // 5. E-RETRIBUSI PASAR SEKETENG (Inovasi Komunitas Pasar - Inovasi Daerah Arsip)
         $eretribusi = Inovasi::updateOrCreate(
             ['nama_inovasi' => 'E-RETRIBUSI PASAR SEKETENG (Digitalisasi Retribusi Pedagang Pasar Tradisional)'],
             [
-                'user_id' => $kominfoUser->id,
+                'user_id' => $masyarakatUser->id,
                 'opd_id' => $kominfo->id,
                 'is_inovasi_daerah' => true,
                 'tahapan' => 'penerapan',
@@ -217,7 +218,7 @@ class InovasiSeeder extends Seeder
         $pengajuanEretribusi2025 = PengajuanLomba::updateOrCreate(
             ['inovasi_id' => $eretribusi->id, 'periode_lomba_id' => $periode2025->id],
             [
-                'user_id' => $kominfoUser->id,
+                'user_id' => $masyarakatUser->id,
                 'is_inovasi_daerah' => true,
                 'status' => StatusPengajuan::Terkirim,
                 'is_arsip' => true,
@@ -226,11 +227,11 @@ class InovasiSeeder extends Seeder
             ]
         );
 
-        // 6. SIM-RSUD SAMAWA CARE (Dinkes / Kominfo - Inovasi Daerah Arsip)
+        // 6. SIM-RSUD SAMAWA CARE (Dinkes / RSUD - Inovasi Daerah Arsip)
         $simrsud = Inovasi::updateOrCreate(
             ['nama_inovasi' => 'SIM-RSUD SAMAWA CARE (Sistem Manajemen Rujukan dan Antrean Rumah Sakit)'],
             [
-                'user_id' => $kominfoUser->id,
+                'user_id' => $dinkesUser->id,
                 'opd_id' => $dinkes->id,
                 'is_inovasi_daerah' => true,
                 'tahapan' => 'penerapan',
@@ -254,7 +255,7 @@ class InovasiSeeder extends Seeder
         $pengajuanSimrsud2025 = PengajuanLomba::updateOrCreate(
             ['inovasi_id' => $simrsud->id, 'periode_lomba_id' => $periode2025->id],
             [
-                'user_id' => $kominfoUser->id,
+                'user_id' => $dinkesUser->id,
                 'is_inovasi_daerah' => true,
                 'status' => StatusPengajuan::Terkirim,
                 'is_arsip' => true,
@@ -488,11 +489,11 @@ class InovasiSeeder extends Seeder
             ]
         );
 
-        // 13. SI-RABANG SAMAWA (Inovasi Daerah - Status: Review Internal Tim Penilai)
+        // 13. SI-RABANG SAMAWA (PUPR - Inovasi Daerah Aktif: Review Internal Tim Penilai)
         $sirabang = Inovasi::updateOrCreate(
             ['nama_inovasi' => 'SI-RABANG SAMAWA (Sistem Informasi Rekayasa & Pemeliharaan Jembatan)'],
             [
-                'user_id' => $kominfoUser->id,
+                'user_id' => $puprUser->id,
                 'opd_id' => $pupr->id,
                 'is_inovasi_daerah' => true,
                 'tahapan' => 'penerapan',
@@ -515,7 +516,7 @@ class InovasiSeeder extends Seeder
         $pengajuanSirabang2026 = PengajuanLomba::updateOrCreate(
             ['inovasi_id' => $sirabang->id, 'periode_lomba_id' => $periode2026->id],
             [
-                'user_id' => $kominfoUser->id,
+                'user_id' => $puprUser->id,
                 'is_inovasi_daerah' => true,
                 'status' => StatusPengajuan::ReviewInternal,
                 'is_arsip' => false,
@@ -591,10 +592,47 @@ class InovasiSeeder extends Seeder
             [
                 'user_id' => $kominfoUser->id,
                 'is_inovasi_daerah' => true,
-                'status' => StatusPengajuan::SiapKirim,
+                'status' => StatusPengajuan::DalamPendampingan,
                 'is_arsip' => false,
                 'penjelasan_pengembangan' => 'Pemasangan 1.200 unit smart meter di zona pelayanan Sumbawa Kota.',
-                'estimasi_skor_kematangan' => 132.00,
+                'estimasi_skor_kematangan' => 48.00,
+            ]
+        );
+
+        // 16. SAMAWA SMART GOV (Inovasi Daerah - Status: Draft Pembinaan)
+        $smartGov = Inovasi::updateOrCreate(
+            ['nama_inovasi' => 'SAMAWA INTEGRATED SMART GOV (Portal Satu Data & Layanan Publik Sumbawa)'],
+            [
+                'user_id' => $kominfoUser->id,
+                'opd_id' => $kominfo->id,
+                'is_inovasi_daerah' => true,
+                'tahapan' => 'penerapan',
+                'nama_inisiator' => 'Ahmad Fauzi, S.Kom',
+                'inisiator' => 'opd',
+                'bentuk_inovasi' => 'tata_kelola_pemerintahan',
+                'jenis_inovasi' => 'digital',
+                'klasifikasi' => 'tematik',
+                'tematik' => 'digitalisasi_pelayanan',
+                'koordinat' => '-8.4950, 117.4250',
+                'urusan_utama' => 'Komunikasi dan Informatika',
+                'urusan_wajib' => json_encode(['Komunikasi dan Informatika']),
+                'waktu_uji_coba' => '2025-05-01',
+                'waktu_penerapan' => '2025-10-01',
+                'waktu_pengembangan' => '2026-02-01',
+                'rancang_bangun' => 'Platform integrasi data statistik sektoral dan layanan perizinan terpadu Kabupaten Sumbawa.',
+                'tujuan' => 'Mewujudkan interoperabilitas data lintas perangkat daerah.',
+                'manfaat' => 'Penyusunan kebijakan daerah berbasis bukti (evidence-based policy).',
+            ]
+        );
+        $pengajuanSmartGov2026 = PengajuanLomba::updateOrCreate(
+            ['inovasi_id' => $smartGov->id, 'periode_lomba_id' => $periode2026->id],
+            [
+                'user_id' => $kominfoUser->id,
+                'is_inovasi_daerah' => true,
+                'status' => StatusPengajuan::Draft,
+                'is_arsip' => false,
+                'penjelasan_pengembangan' => 'Pengembangan konektor API satu data dengan BPS dan portal nasional.',
+                'estimasi_skor_kematangan' => 38.00,
             ]
         );
 

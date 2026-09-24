@@ -99,6 +99,12 @@ type Props = {
     skorEstimasi: number;
     skorMaks: number;
     canComment?: boolean;
+    isPendamping?: boolean;
+    isTimPenilai?: boolean;
+    isLocked?: boolean;
+    canManageParameter?: boolean;
+    canUpload?: boolean;
+    canEdit?: boolean;
 };
 
 function formatDateTime(dateStr?: string | null): string {
@@ -165,6 +171,12 @@ export default function IndikatorIndex({
     skorEstimasi,
     skorMaks,
     canComment = false,
+    isPendamping = false,
+    isTimPenilai = false,
+    isLocked: propIsLocked,
+    canManageParameter,
+    canUpload = false,
+    canEdit = false,
 }: Props) {
     const [paramModalOpen, setParamModalOpen] = useState(false);
     const [selectedIndikator, setSelectedIndikator] = useState<IndikatorSidItem | null>(null);
@@ -194,7 +206,12 @@ export default function IndikatorIndex({
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedInfo, setExpandedInfo] = useState<Record<number, boolean>>({});
 
-    const isLocked = !['draft', 'dalam_pendampingan', 'revisi'].includes(pengajuan.status) || Boolean(pengajuan.is_arsip);
+    const isLocked = propIsLocked !== undefined
+        ? propIsLocked
+        : (!['draft', 'dalam_pendampingan', 'revisi'].includes(pengajuan.status) || Boolean(pengajuan.is_arsip));
+    const isParamDisabled = canManageParameter !== undefined
+        ? !canManageParameter
+        : (isLocked || isPendamping);
 
     const openParamModal = (ind: IndikatorSidItem) => {
         setSelectedIndikator(ind);
@@ -223,7 +240,7 @@ export default function IndikatorIndex({
         setCommentError(null);
         setIsSavingComment(true);
         router.post(
-            `/pengajuan-lomba/${pengajuan.id}/indikator/${commentIndikator.id}/komentar`,
+            `/inovasi-daerah/${pengajuan.id}/indikator/${commentIndikator.id}/komentar`,
             {
                 status_validasi: commentStatus,
                 komentar_pendamping: commentText.trim() || null,
@@ -242,7 +259,7 @@ export default function IndikatorIndex({
     const handleKirimNotifikasi = () => {
         setIsSendingNotif(true);
         router.post(
-            `/pengajuan-lomba/${pengajuan.id}/indikator/kirim-notifikasi`,
+            `/inovasi-daerah/${pengajuan.id}/indikator/kirim-notifikasi`,
             {},
             {
                 preserveScroll: true,
@@ -297,9 +314,9 @@ export default function IndikatorIndex({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-xs">
-                            <Link href="/inovasi">
+                            <Link href="/inovasi-daerah">
                                 <ArrowLeft className="h-3.5 w-3.5" />
-                                <span>Kembali ke Inovasi</span>
+                                <span>Kembali ke Inovasi Daerah</span>
                             </Link>
                         </Button>
                         <Badge variant={st.variant} className={st.className}>
@@ -308,6 +325,11 @@ export default function IndikatorIndex({
                         {pengajuan.is_inovasi_daerah && (
                             <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-xs">
                                 Inovasi Daerah
+                            </Badge>
+                        )}
+                        {isTimPenilai && (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700 text-xs font-semibold">
+                                Mode Evaluator Tim Penilai (Koreksi Mutu Parameter Aktif)
                             </Badge>
                         )}
                     </div>
@@ -366,7 +388,11 @@ export default function IndikatorIndex({
                                 <div className="flex items-start gap-2">
                                     <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                                     <div className="text-xs text-muted-foreground">
-                                        {isLocked ? (
+                                        {isTimPenilai ? (
+                                            <span>
+                                                Sebagai <strong>Tim Penilai</strong>, Anda dapat meninjau bukti dukung dan mengoreksi opsi parameter mutu (P1/P2/P3) sebelum pengajuan dikirim ke Kemendagri. Berkas bukti bersifat read-only.
+                                            </span>
+                                        ) : isLocked ? (
                                             <span>
                                                 Lembar indikator berstatus <strong>read-only</strong> karena pengajuan telah
                                                 disahkan atau diarsipkan.
@@ -548,27 +574,41 @@ export default function IndikatorIndex({
                                                         <div className="text-[10px] text-muted-foreground">
                                                             Nilai: {paramInfo.skor}
                                                         </div>
-                                                        {!isLocked && (
+                                                        {!isParamDisabled ? (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => openParamModal(ind)}
-                                                                className="text-[11px] text-teal-600 hover:underline block mx-auto"
+                                                                className="text-[11px] text-teal-600 hover:underline block mx-auto cursor-pointer"
                                                             >
                                                                 Ubah
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openParamModal(ind)}
+                                                                className="text-[11px] text-muted-foreground hover:underline block mx-auto cursor-pointer"
+                                                                title="Lihat rincian opsi parameter"
+                                                            >
+                                                                Rincian
                                                             </button>
                                                         )}
                                                     </div>
                                                 ) : (
                                                     <div>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => openParamModal(ind)}
-                                                            disabled={isLocked}
-                                                            className="h-7 text-xs border-dashed text-muted-foreground hover:text-foreground hover:border-solid"
-                                                        >
-                                                            Pilih Parameter
-                                                        </Button>
+                                                        {isParamDisabled ? (
+                                                            <span className="text-xs text-muted-foreground italic">
+                                                                Belum Ditentukan
+                                                            </span>
+                                                        ) : (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => openParamModal(ind)}
+                                                                className="h-7 text-xs border-dashed text-muted-foreground hover:text-foreground hover:border-solid"
+                                                            >
+                                                                Pilih Parameter
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 )}
                                             </TableCell>
@@ -582,7 +622,7 @@ export default function IndikatorIndex({
                                                     className="h-8 text-xs gap-1.5"
                                                     title={`Kelola Dokumen ${ind.kode}`}
                                                 >
-                                                    <Link href={`/pengajuan-lomba/${pengajuan.id}/indikator/${ind.id}/dokumen`}>
+                                                    <Link href={`/inovasi-daerah/${pengajuan.id}/indikator/${ind.id}/dokumen`}>
                                                         <FolderOpen className="h-3.5 w-3.5 text-teal-600" />
                                                         <span>{dok.count} Berkas</span>
                                                     </Link>
@@ -719,7 +759,7 @@ export default function IndikatorIndex({
                 pengajuanId={pengajuan.id}
                 currentParameter={currentKelengkapan?.parameter ?? null}
                 currentCatatan={currentKelengkapan?.catatan ?? null}
-                disabled={isLocked}
+                disabled={isParamDisabled}
             />
 
             {/* Modal Input Catatan Pendamping */}

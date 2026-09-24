@@ -44,12 +44,31 @@ class IndikatorInovasiController extends Controller
         $dokumenInfo = $this->inovasiService->hitungDokumenInfo($dokumenList);
         $progress = $this->inovasiService->hitungSkorEstimasiDanProgres($indikatorList, $kelengkapan);
 
+        $user = $request->user();
+        $isBapperida = $user->hasRole('bapperida');
+        $isTimPenilai = $user->hasRole('tim_penilai') && ! $isBapperida;
+        $isPendamping = $user->hasRole('pendamping') && ! $isBapperida && ! $isTimPenilai;
+        $isOwner = ($pengajuan->user_id === $user->id) || ($inovasi->user_id === $user->id);
+        $statusVal = $pengajuan->status instanceof \App\Enums\StatusPengajuan ? $pengajuan->status->value : (string) $pengajuan->status;
+
+        $canManageParameter = false;
+        if ($isBapperida && $statusVal !== 'terkirim' && ! $pengajuan->is_arsip) {
+            $canManageParameter = true;
+        } elseif ($isTimPenilai && ! in_array($statusVal, ['siap_kirim', 'terkirim'], true) && ! $pengajuan->is_arsip) {
+            $canManageParameter = true;
+        } elseif ($isOwner && ! in_array($statusVal, ['disahkan_opd', 'review_internal', 'siap_kirim', 'terkirim'], true) && ! $pengajuan->is_arsip) {
+            $canManageParameter = true;
+        }
+
+        $isDokumenLocked = in_array($statusVal, ['disahkan_opd', 'review_internal', 'siap_kirim', 'terkirim'], true) || (bool) $pengajuan->is_arsip;
+        $canUpload = $isBapperida ? ($statusVal !== 'terkirim' && ! $pengajuan->is_arsip) : (! $isDokumenLocked && $isOwner);
+
         return Inertia::render('inovasi/indikator/index', [
             'pengajuan' => [
                 'id' => $pengajuan->id,
                 'inovasi_id' => $inovasi->id,
                 'nama_inovasi' => $inovasi->nama_inovasi,
-                'status' => $pengajuan->status instanceof \App\Enums\StatusPengajuan ? $pengajuan->status->value : (string) $pengajuan->status,
+                'status' => $statusVal,
                 'tahapan' => $inovasi->tahapan,
                 'is_arsip' => (bool) $pengajuan->is_arsip,
                 'is_inovasi_daerah' => (bool) $pengajuan->is_inovasi_daerah,
@@ -67,7 +86,12 @@ class IndikatorInovasiController extends Controller
             ],
             'skorEstimasi' => $progress['skorEstimasi'],
             'skorMaks' => 60.00, // 20 indikator × 3 poin maksimal
-            'canComment' => $request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
+            'canComment' => $user->hasRole('pendamping') || $user->hasAnyRole(['bapperida', 'tim_penilai']),
+            'isPendamping' => $isPendamping,
+            'isTimPenilai' => $isTimPenilai,
+            'isLocked' => $isDokumenLocked,
+            'canManageParameter' => $canManageParameter,
+            'canUpload' => $canUpload,
         ]);
     }
 
@@ -80,7 +104,7 @@ class IndikatorInovasiController extends Controller
         IndikatorSid $indikator
     ): RedirectResponse {
         $this->authorizeAccess($request, $pengajuan);
-        $this->abortIfLocked($pengajuan);
+        $this->abortIfCannotUpdateParameter($request, $pengajuan);
 
         $validated = $request->validated();
 
@@ -154,18 +178,32 @@ class IndikatorInovasiController extends Controller
             ->with('pendamping')
             ->first();
 
+        $user = $request->user();
+        $isBapperida = $user->hasRole('bapperida');
+        $isTimPenilai = $user->hasRole('tim_penilai') && ! $isBapperida;
+        $isPendamping = $user->hasRole('pendamping') && ! $isBapperida && ! $isTimPenilai;
+        $isOwner = ($pengajuan->user_id === $user->id) || ($inovasi->user_id === $user->id);
+        $statusVal = $pengajuan->status instanceof \App\Enums\StatusPengajuan ? $pengajuan->status->value : (string) $pengajuan->status;
+
+        $isDokumenLocked = in_array($statusVal, ['disahkan_opd', 'review_internal', 'siap_kirim', 'terkirim'], true) || (bool) $pengajuan->is_arsip;
+        $canUpload = $isBapperida ? ($statusVal !== 'terkirim' && ! $pengajuan->is_arsip) : (! $isDokumenLocked && $isOwner);
+
         return Inertia::render('inovasi/indikator/dokumen', [
             'pengajuan' => [
                 'id' => $pengajuan->id,
                 'inovasi_id' => $inovasi->id,
                 'nama_inovasi' => $inovasi->nama_inovasi,
-                'status' => $pengajuan->status instanceof \App\Enums\StatusPengajuan ? $pengajuan->status->value : (string) $pengajuan->status,
+                'status' => $statusVal,
                 'is_arsip' => (bool) $pengajuan->is_arsip,
             ],
             'indikator' => $indikator,
             'dokumenList' => $dokumenList,
             'kelengkapan' => $kelengkapan,
             'skor' => $skor,
+            'isPendamping' => $isPendamping,
+            'isTimPenilai' => $isTimPenilai,
+            'isLocked' => $isDokumenLocked,
+            'canUpload' => $canUpload,
         ]);
     }
 
@@ -178,7 +216,7 @@ class IndikatorInovasiController extends Controller
         IndikatorSid $indikator
     ): RedirectResponse {
         $this->authorizeAccess($request, $pengajuan);
-        $this->abortIfLocked($pengajuan);
+        $this->abortIfCannotUploadOrDelete($request, $pengajuan);
 
         $uploaded = $request->file('dokumen');
         /** @var \Illuminate\Http\UploadedFile[] $files */
@@ -213,7 +251,7 @@ class IndikatorInovasiController extends Controller
         InovasiDokumen $dokumen
     ): RedirectResponse {
         $this->authorizeAccess($request, $pengajuan);
-        $this->abortIfLocked($pengajuan);
+        $this->abortIfCannotUploadOrDelete($request, $pengajuan);
 
         $this->inovasiService->deleteDokumen($dokumen);
 
@@ -295,16 +333,104 @@ class IndikatorInovasiController extends Controller
         );
     }
 
-    private function abortIfLocked(PengajuanLomba $pengajuan): void
+    private function abortIfCannotUploadOrDelete(Request $request, PengajuanLomba $pengajuan): void
     {
+        $user = $request->user();
+        $isBapperida = $user->hasRole('bapperida');
+        $isOwner = ($pengajuan->user_id === $user->id) || ($pengajuan->inovasi?->user_id === $user->id);
+
+        // Tim Penilai & Pendamping DILARANG mengunggah atau menghapus berkas bukti dukung
+        abort_if(
+            $user->hasRole('tim_penilai') && ! $isBapperida,
+            403,
+            'Tim Penilai bertindak sebagai evaluator dan tidak diperkenankan mengunggah atau menghapus berkas bukti dukung indikator.'
+        );
+
+        abort_if(
+            $user->hasRole('pendamping') && ! $isBapperida,
+            403,
+            'Pendamping bertindak sebagai reviewer dan tidak diperkenankan mengunggah atau menghapus berkas bukti dukung indikator.'
+        );
+
+        // Hanya Inovator pemilik pengajuan atau Superadmin BAPPERIDA yang berhak upload/delete
+        abort_unless(
+            $isOwner || $isBapperida,
+            403,
+            'Hanya inovator pemilik inovasi yang berhak mengelola berkas bukti dukung indikator.'
+        );
+
+        // Pengecekan status kunci
         $statusVal = $pengajuan->status instanceof \App\Enums\StatusPengajuan
             ? $pengajuan->status->value
             : (string) $pengajuan->status;
 
-        abort_unless(
-            in_array($statusVal, ['draft', 'dalam_pendampingan', 'revisi'], true) && ! $pengajuan->is_arsip,
+        $lockedStatuses = [
+            'disahkan_opd',
+            'review_internal',
+            'siap_kirim',
+            'terkirim',
+        ];
+
+        if (! $isBapperida) {
+            abort_if(
+                in_array($statusVal, $lockedStatuses, true) || (bool) $pengajuan->is_arsip,
+                403,
+                'Berkas bukti dukung terkunci (read-only) karena pengajuan sudah disahkan OPD, masuk review internal, siap kirim, terkirim, atau diarsipkan.'
+            );
+        } else {
+            abort_if(
+                $statusVal === 'terkirim' || (bool) $pengajuan->is_arsip,
+                403,
+                'Berkas bukti dukung terkunci karena pengajuan telah terkirim ke Kemendagri atau diarsipkan.'
+            );
+        }
+    }
+
+    private function abortIfCannotUpdateParameter(Request $request, PengajuanLomba $pengajuan): void
+    {
+        $user = $request->user();
+        $isBapperida = $user->hasRole('bapperida');
+        $isTimPenilai = $user->hasRole('tim_penilai');
+        $isPendamping = $user->hasRole('pendamping') && ! $isBapperida && ! $isTimPenilai;
+        $isOwner = ($pengajuan->user_id === $user->id) || ($pengajuan->inovasi?->user_id === $user->id);
+
+        abort_if(
+            $isPendamping,
             403,
-            'Indikator tidak dapat diubah saat pengajuan sudah disahkan, siap kirim, atau diarsipkan.'
+            'Pendamping bertindak sebagai reviewer dan tidak diperkenankan mengubah parameter indikator.'
         );
+
+        $statusVal = $pengajuan->status instanceof \App\Enums\StatusPengajuan
+            ? $pengajuan->status->value
+            : (string) $pengajuan->status;
+
+        if ($isBapperida) {
+            abort_if(
+                $statusVal === 'terkirim' || (bool) $pengajuan->is_arsip,
+                403,
+                'Parameter terkunci karena pengajuan telah terkirim ke Kemendagri atau diarsipkan.'
+            );
+            return;
+        }
+
+        if ($isTimPenilai) {
+            abort_if(
+                in_array($statusVal, ['siap_kirim', 'terkirim'], true) || (bool) $pengajuan->is_arsip,
+                403,
+                'Tim Penilai hanya dapat mengoreksi parameter sebelum inovasi berstatus Siap Kirim atau Terkirim.'
+            );
+            return;
+        }
+
+        if ($isOwner) {
+            abort_if(
+                in_array($statusVal, ['disahkan_opd', 'review_internal', 'siap_kirim', 'terkirim'], true) || (bool) $pengajuan->is_arsip,
+                403,
+                'Inovator tidak dapat mengubah parameter setelah pengajuan disahkan Kepala OPD.'
+            );
+            return;
+        }
+
+        abort(403, 'Anda tidak memiliki hak akses untuk mengubah parameter indikator ini.');
     }
 }

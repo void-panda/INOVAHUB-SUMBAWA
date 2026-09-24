@@ -80,9 +80,11 @@ const statusBadgeMap: Record<
 type Props = {
     inovasi: Inovasi[] | PaginationData<Inovasi>;
     periode?: PeriodeLomba | null;
+    isPersonalScope?: boolean;
+    isPendampingScope?: boolean;
 };
 
-export default function InovasiDaerahPage({ inovasi, periode }: Props) {
+export default function InovasiDaerahPage({ inovasi, periode, isPersonalScope = false, isPendampingScope = false }: Props) {
     const isPaginated = Boolean(inovasi && typeof inovasi === 'object' && 'data' in inovasi);
     const inovasiList: Inovasi[] = isPaginated ? ((inovasi as PaginationData<Inovasi>).data ?? []) : (Array.isArray(inovasi) ? inovasi : []);
     const pagination = isPaginated ? (inovasi as PaginationData<Inovasi>) : undefined;
@@ -339,7 +341,7 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                                 className="h-8 px-3 text-xs gap-1.5 bg-teal-600 hover:bg-teal-700 text-white shadow-xs font-semibold"
                                 title="Buka lembar kerja 20 Indikator SID untuk melengkapi data & parameter"
                             >
-                                <Link href={`/pengajuan-lomba/${activePengajuan.id}/indikator`}>
+                                <Link href={`/inovasi-daerah/${activePengajuan.id}/indikator`}>
                                     <FolderOpen className="h-3.5 w-3.5" />
                                     <span>20 Indikator</span>
                                 </Link>
@@ -394,17 +396,35 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
         },
     ], []);
 
+    const heroTitle = isPersonalScope
+        ? "Inovasi Daerah Saya"
+        : isPendampingScope
+            ? "Inovasi Daerah OPD Binaan"
+            : "Inovasi Daerah Kabupaten Sumbawa";
+
+    const heroBadge = isPersonalScope
+        ? "Inovasi Daerah Milik Saya"
+        : isPendampingScope
+            ? "OPD Binaan Pendamping"
+            : "Penjaminan Mutu & Kompetisi IGA";
+
+    const heroDesc = isPersonalScope
+        ? "Portofolio inovasi milik Anda yang telah resmi ditetapkan sebagai Inovasi Daerah Kabupaten Sumbawa untuk pemenuhan 20 Indikator SID."
+        : isPendampingScope
+            ? "Portofolio inovasi daerah dari seluruh OPD binaan Anda. Anda dapat memantau inovasi yang sedang dalam pembinaan maupun yang telah selesai disahkan."
+            : "Portofolio resmi inovasi yang telah ditetapkan oleh Tim Penilai / BAPPERIDA untuk melengkapi 20 Indikator SID dan berpartisipasi pada Innovative Government Award.";
+
     return (
         <>
-            <Head title="Inovasi Daerah Kabupaten Sumbawa" />
+            <Head title={heroTitle} />
 
             <div className="flex flex-col space-y-6 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-16">
                 {/* Hero Banner INOVA-HUB */}
                 <HeroBanner
                     badgeIcon={Award}
-                    badgeText="Penjaminan Mutu & Kompetisi IGA"
-                    title="Inovasi Daerah Kabupaten Sumbawa"
-                    description="Portofolio resmi inovasi yang telah ditetapkan oleh Tim Penilai / BAPPERIDA untuk melengkapi 20 Indikator SID dan berpartisipasi pada Innovative Government Award."
+                    badgeText={heroBadge}
+                    title={heroTitle}
+                    description={heroDesc}
                     variant="teal"
                 >
                     <div className="flex items-center gap-2.5 flex-wrap">
@@ -449,7 +469,7 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                         <CardContent className="p-4 sm:p-5 flex items-center justify-between">
                             <div className="space-y-1">
                                 <span className="text-xs font-medium text-muted-foreground block">
-                                    Total Inovasi Daerah
+                                    {isPersonalScope ? "Total Inovasi Daerah Anda" : "Total Inovasi Daerah"}
                                 </span>
                                 <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                                     {totalDaerah}
@@ -465,7 +485,7 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                         <CardContent className="p-4 sm:p-5 flex items-center justify-between">
                             <div className="space-y-1">
                                 <span className="text-xs font-medium text-muted-foreground block">
-                                    Sedang Dilombakan ({periode?.tahun ?? '2026'})
+                                    {isPersonalScope ? "Inovasi Aktif Anda" : `Sedang Dilombakan (${periode?.tahun ?? '2026'})`}
                                 </span>
                                 <div className="text-2xl sm:text-3xl font-bold tracking-tight text-teal-600 dark:text-teal-400">
                                     {totalAktif}
@@ -563,11 +583,17 @@ export default function InovasiDaerahPage({ inovasi, periode }: Props) {
                         searchPlaceholder="Cari nama inovasi daerah, inisiator, atau urusan..."
                         pageSize={10}
                         emptyMessage={
-                            activeTab === 'aktif'
-                                ? 'Belum ada inovasi daerah yang sedang didaftarkan pada periode lomba aktif saat ini.'
-                                : activeTab === 'arsip'
-                                    ? 'Tidak ada arsip inovasi daerah dari periode sebelumnya.'
-                                    : 'Belum ada data inovasi yang ditetapkan sebagai Inovasi Daerah.'
+                            isPersonalScope
+                                ? activeTab === 'aktif'
+                                    ? 'Belum ada inovasi daerah milik Anda yang terdaftar pada periode lomba aktif saat ini.'
+                                    : activeTab === 'arsip'
+                                        ? 'Tidak ada arsip inovasi daerah milik Anda dari periode sebelumnya.'
+                                        : 'Belum ada inovasi milik Anda yang ditetapkan sebagai Inovasi Daerah.'
+                                : activeTab === 'aktif'
+                                    ? 'Belum ada inovasi daerah yang sedang didaftarkan pada periode lomba aktif saat ini.'
+                                    : activeTab === 'arsip'
+                                        ? 'Tidak ada arsip inovasi daerah dari periode sebelumnya.'
+                                        : 'Belum ada data inovasi yang ditetapkan sebagai Inovasi Daerah.'
                         }
                     />
                 </div>

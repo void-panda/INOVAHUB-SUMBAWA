@@ -89,6 +89,13 @@ class UserSeeder extends Seeder
                 'opd_id' => null,
                 'role' => 'inovator',
             ],
+            [
+                'name' => 'Ir. Hendra Kusuma, M.T. (Inovator PUPR)',
+                'nama_pemda' => 'Dinas Pekerjaan Umum dan Penataan Ruang',
+                'email' => 'inovator_pupr@sumbawakab.go.id',
+                'opd_id' => $pupr?->id,
+                'role' => 'inovator',
+            ],
         ];
 
         foreach ($users as $userData) {

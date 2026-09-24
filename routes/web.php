@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IndikatorInovasiController;
 use App\Http\Controllers\InovasiController;
+use App\Http\Controllers\InovasiDaerahController;
 use App\Http\Controllers\MasterIndikatorController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\PanduanController;
@@ -54,14 +55,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/inovasi/{inovasi}/indikator', [InovasiController::class, 'indikatorRedirect'])->name('inovasi.indikator.redirect');
 
-    // Inovasi Daerah Resmi (Kompetisi Lomba IGA)
+    // Inovasi Daerah Resmi (Kompetisi Lomba IGA) & 20 Indikator SID
     Route::middleware(['auth', 'verified'])
-        ->get('/inovasi-daerah', [InovasiController::class, 'daerah'])
-        ->name('inovasi.daerah');
+        ->prefix('inovasi-daerah')
+        ->name('inovasi-daerah.')
+        ->group(function () {
+            Route::get('/', [InovasiDaerahController::class, 'index'])->name('index');
+            Route::get('/print-rekap', [InovasiDaerahController::class, 'printRekap'])->name('print-rekap');
 
-    Route::middleware(['auth', 'verified'])
-        ->get('/inovasi-daerah/print-rekap', [InovasiController::class, 'printRekap'])
-        ->name('inovasi.daerah.print-rekap');
+            // Rute Kelengkapan 20 Indikator SID per Inovasi Daerah
+            Route::prefix('{pengajuan}/indikator')->name('indikator.')->group(function () {
+                Route::get('/', [IndikatorInovasiController::class, 'index'])->name('index');
+                Route::post('/kirim-notifikasi', [IndikatorInovasiController::class, 'kirimNotifikasiPemeriksaan'])->name('kirim-notifikasi');
+                Route::post('/{indikator}/parameter', [IndikatorInovasiController::class, 'updateParameter'])->name('parameter.update');
+                Route::post('/{indikator}/komentar', [IndikatorInovasiController::class, 'updateKomentar'])->name('komentar.update');
+                Route::get('/{indikator}/dokumen', [IndikatorInovasiController::class, 'dokumen'])->name('dokumen.index');
+                Route::post('/{indikator}/dokumen', [IndikatorInovasiController::class, 'uploadDokumen'])->name('dokumen.store');
+                Route::delete('/dokumen/{dokumen}', [IndikatorInovasiController::class, 'destroyDokumen'])->name('dokumen.destroy');
+            });
+        });
+
+    // Backward compatibility aliases
+    Route::get('/pengajuan-lomba/{pengajuan}/indikator', fn (\App\Models\PengajuanLomba $pengajuan) => redirect()->route('inovasi-daerah.indikator.index', $pengajuan))->name('pengajuan-lomba.indikator.index');
 
     // Data Peserta Lomba Inovasi Daerah (Admin BAPPERIDA)
     Route::middleware(['auth', 'verified', 'permission:manage-master-data'])
@@ -98,17 +113,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/{pengajuan}/review-internal', [ValidasiController::class, 'reviewInternal'])->name('review-internal');
             Route::post('/{pengajuan}/siap-kirim', [ValidasiController::class, 'siapKirim'])->name('siap-kirim');
             Route::post('/{pengajuan}/kirim', [ValidasiController::class, 'kirim'])->name('kirim');
-
-            // Rute Kelengkapan 20 Indikator SID per Pengajuan Lomba
-            Route::prefix('{pengajuan}/indikator')->name('indikator.')->group(function () {
-                Route::get('/', [IndikatorInovasiController::class, 'index'])->name('index');
-                Route::post('/kirim-notifikasi', [IndikatorInovasiController::class, 'kirimNotifikasiPemeriksaan'])->name('kirim-notifikasi');
-                Route::post('/{indikator}/parameter', [IndikatorInovasiController::class, 'updateParameter'])->name('parameter.update');
-                Route::post('/{indikator}/komentar', [IndikatorInovasiController::class, 'updateKomentar'])->name('komentar.update');
-                Route::get('/{indikator}/dokumen', [IndikatorInovasiController::class, 'dokumen'])->name('dokumen.index');
-                Route::post('/{indikator}/dokumen', [IndikatorInovasiController::class, 'uploadDokumen'])->name('dokumen.store');
-                Route::delete('/dokumen/{dokumen}', [IndikatorInovasiController::class, 'destroyDokumen'])->name('dokumen.destroy');
-            });
         });
 
     Route::middleware(['auth', 'verified', 'permission:manage-master-data'])
