@@ -62,6 +62,14 @@ class InovasiRepository
                 ->whereDoesntHave('pengajuanLomba', fn ($pl) => $pl->where('is_inovasi_daerah', true));
         }
 
+        if (! empty($filters['opd_id'])) {
+            $opdId = $filters['opd_id'];
+            $query->where(function ($q) use ($opdId) {
+                $q->where('opd_id', $opdId)
+                    ->orWhereHas('user', fn ($u) => $u->where('opd_id', $opdId));
+            });
+        }
+
         if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where('nama_inovasi', 'ilike', "%{$search}%");
@@ -103,16 +111,25 @@ class InovasiRepository
      */
     public function getAllInovasiDaerahPaginated(int $perPage = 15, array $filters = []): LengthAwarePaginator
     {
-        $query = Inovasi::where(function ($q) {
-                $q->where('is_inovasi_daerah', true)
-                    ->orWhereHas('pengajuanLomba', fn ($pl) => $pl->where('is_inovasi_daerah', true));
-            })
-            ->with([
+        $query = Inovasi::with([
                 'user.opd',
                 'opd',
                 'dokumen',
                 'pengajuanLomba' => fn ($q) => $q->with(['periodeLomba', 'kelengkapanIndikator', 'skorPengajuan'])->latest(),
             ]);
+
+        if (! empty($filters['opd_id'])) {
+            $opdId = $filters['opd_id'];
+            $query->where(function ($q) use ($opdId) {
+                $q->where('opd_id', $opdId)
+                    ->orWhereHas('user', fn ($u) => $u->where('opd_id', $opdId));
+            });
+        } else {
+            $query->where(function ($q) {
+                $q->where('is_inovasi_daerah', true)
+                    ->orWhereHas('pengajuanLomba', fn ($pl) => $pl->where('is_inovasi_daerah', true));
+            });
+        }
 
         if (! empty($filters['search'])) {
             $search = $filters['search'];
@@ -123,13 +140,18 @@ class InovasiRepository
             $query->where('tahapan', $filters['tahapan']);
         }
 
+        if (! empty($filters['status']) && $filters['status'] !== 'all') {
+            $status = $filters['status'];
+            $query->whereHas('pengajuanLomba', fn ($pl) => $pl->where('status', $status));
+        }
+
         return $query->orderByDesc('updated_at')->paginate($perPage)->withQueryString();
     }
 
     /**
      * Ambil Inovasi Daerah yang didampingi oleh pendamping tertentu secara berpaginasi (server-side).
      *
-     * @param  array{search?: string|null, tahapan?: string|null}  $filters
+     * @param  array{search?: string|null, tahapan?: string|null, opd_id?: int|string|null}  $filters
      * @return LengthAwarePaginator<int, Inovasi>
      */
     public function getInovasiDaerahByPendampingPaginated(User $user, int $perPage = 15, array $filters = []): LengthAwarePaginator
@@ -176,6 +198,14 @@ class InovasiRepository
                 'pengajuanLomba' => fn ($q) => $q->with(['periodeLomba', 'kelengkapanIndikator', 'skorPengajuan'])->latest(),
             ]);
 
+        if (! empty($filters['opd_id'])) {
+            $opdId = $filters['opd_id'];
+            $query->where(function ($q) use ($opdId) {
+                $q->where('opd_id', $opdId)
+                    ->orWhereHas('user', fn ($u) => $u->where('opd_id', $opdId));
+            });
+        }
+
         if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where('nama_inovasi', 'ilike', "%{$search}%");
@@ -183,6 +213,11 @@ class InovasiRepository
 
         if (! empty($filters['tahapan']) && $filters['tahapan'] !== 'all') {
             $query->where('tahapan', $filters['tahapan']);
+        }
+
+        if (! empty($filters['status']) && $filters['status'] !== 'all') {
+            $status = $filters['status'];
+            $query->whereHas('pengajuanLomba', fn ($pl) => $pl->where('status', $status));
         }
 
         return $query->orderByDesc('updated_at')->paginate($perPage)->withQueryString();

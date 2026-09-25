@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\Opd;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -122,9 +123,12 @@ class FortifyServiceProvider extends ServiceProvider
 
             $request->session()->put('captcha_answer', $answer);
 
+            $opdList = Opd::orderBy('nama')->get(['id', 'nama', 'kode']);
+
             return Inertia::render('auth/register', [
                 'passwordRules' => Password::defaults()->toPasswordRulesString(),
                 'captchaQuestion' => $question,
+                'opdList' => $opdList,
             ]);
         });
 

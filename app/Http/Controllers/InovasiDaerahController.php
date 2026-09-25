@@ -19,7 +19,7 @@ class InovasiDaerahController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $filters = $request->only(['search', 'tahapan']);
+        $filters = $request->only(['search', 'tahapan', 'opd_id', 'status']);
         $isPersonalScope = $user->hasRole('inovator') && ! $user->hasAnyRole(['bapperida', 'tim_penilai', 'pimpinan', 'pendamping']);
         $isPendampingScope = $user->hasRole('pendamping') && ! $user->hasAnyRole(['bapperida', 'tim_penilai', 'pimpinan']);
 
@@ -32,11 +32,24 @@ class InovasiDaerahController extends Controller
         }
 
         $periode = $this->inovasiRepository->getAktifPeriode();
+        $selectedOpd = ! empty($filters['opd_id'])
+            ? \App\Models\Opd::find($filters['opd_id'])
+            : null;
+
+        $opdList = ! $isPersonalScope
+            ? \App\Models\Opd::orderBy('nama')->get(['id', 'nama', 'kode'])
+            : [];
 
         return Inertia::render('inovasi/daerah', [
             'inovasi' => $inovasi,
             'periode' => $periode,
             'filters' => $filters,
+            'opdList' => $opdList,
+            'selectedOpd' => $selectedOpd ? [
+                'id' => $selectedOpd->id,
+                'nama' => $selectedOpd->nama,
+                'kode' => $selectedOpd->kode,
+            ] : null,
             'isPersonalScope' => $isPersonalScope,
             'isPendampingScope' => $isPendampingScope,
         ]);

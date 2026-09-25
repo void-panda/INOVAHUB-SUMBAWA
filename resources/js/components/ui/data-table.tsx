@@ -17,6 +17,7 @@ export interface Column<T> {
     header: string;
     accessorKey?: keyof T;
     cell?: (row: T) => React.ReactNode;
+    accessor?: (row: T) => React.ReactNode;
     sortable?: boolean;
     align?: 'left' | 'center' | 'right';
     className?: string;
@@ -38,7 +39,7 @@ export interface PaginationData<T = unknown> {
 }
 
 export interface DataTableProps<T> {
-    data: T[];
+    data: T[] | PaginationData<T> | null | undefined;
     columns: Column<T>[];
     searchPlaceholder?: string;
     searchKey?: (row: T) => string;
@@ -80,7 +81,29 @@ export function DataTable<T extends { id?: string | number }>({
     filterValue,
     onFilterChange,
 }: DataTableProps<T>) {
-    const isServerPaginated = Boolean(pagination);
+    // Safely extract the raw array from data or pagination (handles array, Laravel paginator object, null, or undefined)
+    const rawData = useMemo<T[]>(() => {
+        if (Array.isArray(data)) {
+            return data;
+        }
+        if (data && typeof data === 'object' && 'data' in data && Array.isArray((data as { data: T[] }).data)) {
+            return (data as { data: T[] }).data;
+        }
+        if (pagination && Array.isArray(pagination.data)) {
+            return pagination.data;
+        }
+        return [];
+    }, [data, pagination]);
+
+    const activePagination = useMemo<PaginationData<T> | undefined>(() => {
+        if (pagination) return pagination;
+        if (data && typeof data === 'object' && !Array.isArray(data) && 'links' in data) {
+            return data as PaginationData<T>;
+        }
+        return undefined;
+    }, [data, pagination]);
+
+    const isServerPaginated = Boolean(activePagination);
     const [searchTerm, setSearchTerm] = useState(searchValue ?? '');
     const [selectedFilter, setSelectedFilter] = useState(filterValue ?? 'all');
     const [sortColumnIndex, setSortColumnIndex] = useState<number | null>(null);
@@ -111,10 +134,10 @@ export function DataTable<T extends { id?: string | number }>({
     // 1. Filter data
     const filteredData = useMemo(() => {
         if (isServerPaginated && onSearchChange) {
-            return data;
+            return rawData;
         }
 
-        return data.filter((row) => {
+        return rawData.filter((row) => {
             // Search filter
             let matchesSearch = true;
             if (searchTerm.trim() !== '') {
@@ -136,7 +159,7 @@ export function DataTable<T extends { id?: string | number }>({
 
             return matchesSearch && matchesCategory;
         });
-    }, [data, searchTerm, selectedFilter, searchKey, filterKey, isServerPaginated, onSearchChange, onFilterChange]);
+    }, [rawData, searchTerm, selectedFilter, searchKey, filterKey, isServerPaginated, onSearchChange, onFilterChange]);
 
     // 2. Sort data
     const sortedData = useMemo(() => {
@@ -313,9 +336,11 @@ export function DataTable<T extends { id?: string | number }>({
                                             >
                                                 {col.cell
                                                     ? col.cell(row)
-                                                    : col.accessorKey
-                                                      ? (row[col.accessorKey] as React.ReactNode)
-                                                      : null}
+                                                    : col.accessor
+                                                      ? col.accessor(row)
+                                                      : col.accessorKey
+                                                        ? (row[col.accessorKey] as React.ReactNode)
+                                                        : null}
                                             </TableCell>
                                         ))}
                                     </TableRow>
@@ -326,17 +351,17 @@ export function DataTable<T extends { id?: string | number }>({
                 </div>
 
                 {/* Footer Controls */}
-                {isServerPaginated && pagination ? (
+                {isServerPaginated && activePagination ? (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t p-4 bg-muted/10 text-xs">
                         <div className="text-muted-foreground">
-                            Menampilkan <strong className="text-foreground">{pagination.from ?? 0}</strong> -{' '}
-                            <strong className="text-foreground">{pagination.to ?? 0}</strong>{' '}
-                            dari <strong className="text-foreground">{pagination.total}</strong> data
+                            Menampilkan <strong className="text-foreground">{activePagination.from ?? 0}</strong> -{' '}
+                            <strong className="text-foreground">{activePagination.to ?? 0}</strong>{' '}
+                            dari <strong className="text-foreground">{activePagination.total}</strong> data
                         </div>
 
-                        {pagination.links && pagination.links.length > 3 && (
+                        {activePagination.links && activePagination.links.length > 3 && (
                             <div className="flex flex-wrap items-center gap-1">
-                                {pagination.links.map((link, idx) => {
+                                {activePagination.links.map((link, idx) => {
                                     const label = link.label
                                         .replace(/&laquo;/g, '«')
                                         .replace(/&raquo;/g, '»')

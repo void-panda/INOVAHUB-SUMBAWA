@@ -6,6 +6,7 @@ use App\Http\Controllers\IndikatorInovasiController;
 use App\Http\Controllers\InovasiController;
 use App\Http\Controllers\InovasiDaerahController;
 use App\Http\Controllers\MasterIndikatorController;
+use App\Http\Controllers\MasterOpdController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\PengajuanLombaController;
@@ -173,6 +174,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/{user}', [AdminUserController::class, 'update'])->name('update');
             Route::delete('/{user}', [AdminUserController::class, 'destroy'])->name('destroy');
             Route::patch('/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('toggle-status');
+        });
+
+    Route::middleware(['auth', 'verified', 'permission:manage-master-data'])
+        ->prefix('penilai/opd')
+        ->name('penilai.opd.')
+        ->group(function () {
+            Route::get('/', [MasterOpdController::class, 'index'])->name('index');
+            Route::post('/', [MasterOpdController::class, 'store'])->name('store');
+            Route::put('/{opd}', [MasterOpdController::class, 'update'])->name('update');
+            Route::delete('/{opd}', [MasterOpdController::class, 'destroy'])->name('destroy');
         });
 });
 

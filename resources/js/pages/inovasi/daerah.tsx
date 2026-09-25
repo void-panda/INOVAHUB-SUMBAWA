@@ -1,19 +1,23 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     Award,
+    Building2,
     CheckCircle2,
     Clock,
     Eye,
     FileText,
+    Filter,
     FolderOpen,
     Info,
     Layers,
     Plus,
     Printer,
     RefreshCw,
+    RotateCcw,
     Send,
     Sparkles,
     Trophy,
+    X,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { HeroBanner } from '@/components/hero-banner';
@@ -32,6 +36,13 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { BreadcrumbItem } from '@/types';
 import type { Inovasi, PeriodeLomba } from '@/types/models';
@@ -77,19 +88,68 @@ const statusBadgeMap: Record<
     disetujui: { label: 'Disetujui', variant: 'outline' },
 };
 
+type OpdItem = {
+    id: number;
+    nama: string;
+    kode: string | null;
+};
+
 type Props = {
     inovasi: Inovasi[] | PaginationData<Inovasi>;
     periode?: PeriodeLomba | null;
+    filters?: {
+        search?: string;
+        tahapan?: string;
+        opd_id?: string | number;
+        status?: string;
+    };
+    opdList?: OpdItem[];
+    selectedOpd?: OpdItem | null;
     isPersonalScope?: boolean;
     isPendampingScope?: boolean;
 };
 
-export default function InovasiDaerahPage({ inovasi, periode, isPersonalScope = false, isPendampingScope = false }: Props) {
+export default function InovasiDaerahPage({
+    inovasi,
+    periode,
+    filters,
+    opdList = [],
+    selectedOpd,
+    isPersonalScope = false,
+    isPendampingScope = false,
+}: Props) {
     const isPaginated = Boolean(inovasi && typeof inovasi === 'object' && 'data' in inovasi);
     const inovasiList: Inovasi[] = isPaginated ? ((inovasi as PaginationData<Inovasi>).data ?? []) : (Array.isArray(inovasi) ? inovasi : []);
     const pagination = isPaginated ? (inovasi as PaginationData<Inovasi>) : undefined;
 
     const [activeTab, setActiveTab] = useState<'aktif' | 'arsip' | 'semua'>('aktif');
+
+    // Filter toolbar state untuk Bapperida & Tim Penilai
+    const [opdFilter, setOpdFilter] = useState<string>(filters?.opd_id ? String(filters.opd_id) : 'all');
+    const [tahapanFilter, setTahapanFilter] = useState<string>(filters?.tahapan || 'all');
+    const [statusFilter, setStatusFilter] = useState<string>(filters?.status || 'all');
+
+    const handleApplyFilters = (newOpd: string, newTahapan: string, newStatus: string) => {
+        router.get(
+            '/inovasi-daerah',
+            {
+                search: filters?.search || undefined,
+                opd_id: newOpd !== 'all' ? newOpd : undefined,
+                tahapan: newTahapan !== 'all' ? newTahapan : undefined,
+                status: newStatus !== 'all' ? newStatus : undefined,
+            },
+            { preserveState: true, replace: true }
+        );
+    };
+
+    const handleResetFilters = () => {
+        setOpdFilter('all');
+        setTahapanFilter('all');
+        setStatusFilter('all');
+        router.get('/inovasi-daerah', {}, { preserveState: true, replace: true });
+    };
+
+    const hasActiveFilters = opdFilter !== 'all' || tahapanFilter !== 'all' || statusFilter !== 'all';
 
     // State untuk Ajukan Kembali dari Arsip
     const [selectedArsipInovasi, setSelectedArsipInovasi] = useState<Inovasi | null>(null);
@@ -463,6 +523,41 @@ export default function InovasiDaerahPage({ inovasi, periode, isPersonalScope = 
                     </div>
                 </HeroBanner>
 
+                {/* Active OPD Filter Banner */}
+                {selectedOpd && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl text-teal-950 dark:text-teal-100 shadow-xs">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-teal-600/10 dark:bg-teal-400/10 rounded-xl text-teal-700 dark:text-teal-400 shrink-0">
+                                <Building2 className="size-5" />
+                            </div>
+                            <div className="space-y-0.5">
+                                <div className="text-xs text-muted-foreground font-medium">
+                                    Menampilkan Inovasi dari Perangkat Daerah:
+                                </div>
+                                <div className="text-sm sm:text-base font-bold flex flex-wrap items-center gap-2">
+                                    <span>{selectedOpd.nama}</span>
+                                    {selectedOpd.kode && (
+                                        <Badge variant="outline" className="font-mono text-xs font-semibold">
+                                            {selectedOpd.kode}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="text-xs font-semibold h-8 rounded-lg border-teal-300 dark:border-teal-700 text-teal-800 dark:text-teal-300 hover:bg-teal-100/50 dark:hover:bg-teal-900/40 shrink-0"
+                        >
+                            <Link href="/inovasi-daerah">
+                                <X className="size-3.5 mr-1" />
+                                Tampilkan Semua Inovasi
+                            </Link>
+                        </Button>
+                    </div>
+                )}
+
                 {/* 4 Metric Cards Inovasi Daerah */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <Card className="border shadow-xs bg-card">
@@ -582,6 +677,120 @@ export default function InovasiDaerahPage({ inovasi, periode, isPersonalScope = 
                         pagination={pagination}
                         searchPlaceholder="Cari nama inovasi daerah, inisiator, atau urusan..."
                         pageSize={10}
+                        toolbarRight={
+                            !isPersonalScope ? (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Filter Perangkat Daerah (OPD) */}
+                                    {opdList.length > 0 && (
+                                        <Select
+                                            value={opdFilter}
+                                            onValueChange={(val) => {
+                                                setOpdFilter(val);
+                                                handleApplyFilters(val, tahapanFilter, statusFilter);
+                                            }}
+                                        >
+                                            <SelectTrigger className="h-9 w-[160px] sm:w-[190px] text-xs bg-background">
+                                                <Building2 className="size-3.5 text-teal-600 dark:text-teal-400 mr-1.5 shrink-0" />
+                                                <SelectValue placeholder="Semua OPD" />
+                                            </SelectTrigger>
+                                            <SelectContent className="max-h-72">
+                                                <SelectItem value="all" className="text-xs font-semibold">
+                                                    Semua Perangkat Daerah
+                                                </SelectItem>
+                                                {opdList.map((opd) => (
+                                                    <SelectItem key={opd.id} value={String(opd.id)} className="text-xs">
+                                                        <div className="flex items-center justify-between gap-2 max-w-[240px]">
+                                                            <span className="truncate">{opd.nama}</span>
+                                                            {opd.kode && (
+                                                                <span className="text-[10px] text-muted-foreground font-mono">
+                                                                    [{opd.kode}]
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+
+                                    {/* Filter Tahapan */}
+                                    <Select
+                                        value={tahapanFilter}
+                                        onValueChange={(val) => {
+                                            setTahapanFilter(val);
+                                            handleApplyFilters(opdFilter, val, statusFilter);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-9 w-[125px] sm:w-[135px] text-xs bg-background">
+                                            <Layers className="size-3.5 text-muted-foreground mr-1.5 shrink-0" />
+                                            <SelectValue placeholder="Tahapan" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all" className="text-xs font-semibold">
+                                                Semua Tahapan
+                                            </SelectItem>
+                                            <SelectItem value="inisiatif" className="text-xs">
+                                                Inisiatif
+                                            </SelectItem>
+                                            <SelectItem value="ujicoba" className="text-xs">
+                                                Uji Coba
+                                            </SelectItem>
+                                            <SelectItem value="penerapan" className="text-xs">
+                                                Penerapan
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                    {/* Filter Status Validasi */}
+                                    <Select
+                                        value={statusFilter}
+                                        onValueChange={(val) => {
+                                            setStatusFilter(val);
+                                            handleApplyFilters(opdFilter, tahapanFilter, val);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-9 w-[135px] sm:w-[150px] text-xs bg-background">
+                                            <CheckCircle2 className="size-3.5 text-muted-foreground mr-1.5 shrink-0" />
+                                            <SelectValue placeholder="Status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all" className="text-xs font-semibold">
+                                                Semua Status
+                                            </SelectItem>
+                                            <SelectItem value="dalam_pendampingan" className="text-xs">
+                                                Dalam Pendampingan
+                                            </SelectItem>
+                                            <SelectItem value="disahkan_opd" className="text-xs">
+                                                Disahkan OPD
+                                            </SelectItem>
+                                            <SelectItem value="review_internal" className="text-xs">
+                                                Review Internal
+                                            </SelectItem>
+                                            <SelectItem value="siap_kirim" className="text-xs">
+                                                Siap Kirim
+                                            </SelectItem>
+                                            <SelectItem value="terkirim" className="text-xs">
+                                                Terkirim
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                    {/* Reset Filter Button */}
+                                    {hasActiveFilters && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleResetFilters}
+                                            className="h-9 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            title="Reset semua filter ke default"
+                                        >
+                                            <RotateCcw className="size-3.5 mr-1" />
+                                            Reset
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : undefined
+                        }
                         emptyMessage={
                             isPersonalScope
                                 ? activeTab === 'aktif'

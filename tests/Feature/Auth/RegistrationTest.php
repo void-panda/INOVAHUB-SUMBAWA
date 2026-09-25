@@ -94,4 +94,64 @@ class RegistrationTest extends TestCase
         $this->assertFalse($user->hasVerifiedEmail());
         Notification::assertSentTo($user, VerifyEmail::class);
     }
+
+    public function test_registration_as_masyarakat_inovator()
+    {
+        Notification::fake();
+        $this->seed(RolePermissionSeeder::class);
+
+        $response = $this->post(route('register.store'), [
+            'name' => 'Ahmad Rinjani',
+            'tipe_inovator' => 'masyarakat',
+            'nama_pemda' => 'Universitas Samawa',
+            'pekerjaan' => 'Mahasiswa / Peneliti',
+            'email' => 'ahmad.masyarakat@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $this->assertAuthenticated();
+        $user = User::where('email', 'ahmad.masyarakat@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('masyarakat', $user->tipe_inovator);
+        $this->assertNull($user->opd_id);
+        $this->assertEquals('Universitas Samawa', $user->nama_pemda);
+        $this->assertEquals('Mahasiswa / Peneliti', $user->pekerjaan);
+        $this->assertTrue($user->hasRole('inovator'));
+        $this->assertFalse($user->hasVerifiedEmail());
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_registration_as_dinas_inovator_with_opd()
+    {
+        Notification::fake();
+        $this->seed(RolePermissionSeeder::class);
+
+        $opd = \App\Models\Opd::firstOrCreate(
+            ['kode' => 'DINKES'],
+            ['nama' => 'Dinas Kesehatan Kabupaten Sumbawa']
+        );
+
+        $response = $this->post(route('register.store'), [
+            'name' => 'Budi Pratama',
+            'tipe_inovator' => 'dinas',
+            'opd_id' => $opd->id,
+            'nama_pemda' => $opd->nama,
+            'pekerjaan' => 'Kasubag Perencanaan',
+            'email' => 'budi.dinas@sumbawakab.go.id',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $this->assertAuthenticated();
+        $user = User::where('email', 'budi.dinas@sumbawakab.go.id')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('dinas', $user->tipe_inovator);
+        $this->assertEquals($opd->id, $user->opd_id);
+        $this->assertEquals('Dinas Kesehatan Kabupaten Sumbawa', $user->nama_pemda);
+        $this->assertEquals('Kasubag Perencanaan', $user->pekerjaan);
+        $this->assertTrue($user->hasRole('inovator'));
+        $this->assertFalse($user->hasVerifiedEmail());
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
 }

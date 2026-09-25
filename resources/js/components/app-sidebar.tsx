@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     Award,
     BookOpen,
+    Building2,
     Calculator,
     CalendarDays,
     LayoutGrid,
@@ -149,6 +150,11 @@ export function AppSidebar() {
                     title: 'Master Indikator',
                     href: '/penilai/indikator',
                     icon: Sliders,
+                },
+                {
+                    title: 'Master Perangkat Daerah',
+                    href: '/penilai/opd',
+                    icon: Building2,
                 },
                 {
                     title: 'Kelola Pengguna',

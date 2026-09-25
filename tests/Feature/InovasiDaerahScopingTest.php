@@ -219,4 +219,58 @@ class InovasiDaerahScopingTest extends TestCase
             ->where('inovasi.data.0.nama_inovasi', 'Inovasi Kominfo')
         );
     }
+
+    public function test_inovasi_daerah_can_be_filtered_by_opd_id()
+    {
+        $opdKominfo = \App\Models\Opd::create(['nama' => 'Dinas Komunikasi dan Informatika', 'kode' => 'DISKOMINFO']);
+        $opdDinkes = \App\Models\Opd::create(['nama' => 'Dinas Kesehatan', 'kode' => 'DINKES']);
+
+        $invKominfo = Inovasi::create([
+            'user_id' => $this->inovatorA->id,
+            'opd_id' => $opdKominfo->id,
+            'is_inovasi_daerah' => true,
+            'nama_inovasi' => 'Aplikasi Kominfo Satu',
+            'tahapan' => 'penerapan',
+            'inisiator' => 'opd',
+            'bentuk_inovasi' => 'pelayanan_publik',
+            'jenis_inovasi' => 'digital',
+            'klasifikasi' => 'tematik',
+            'nama_inisiator' => 'Inisiator Kominfo',
+            'koordinat' => '-8.5000, 117.4000',
+            'waktu_penerapan' => '2024-01-01',
+            'rancang_bangun' => 'Rancang bangun Kominfo.',
+            'tujuan' => 'Tujuan Kominfo.',
+            'manfaat' => 'Manfaat Kominfo.',
+        ]);
+
+        $invDinkes = Inovasi::create([
+            'user_id' => $this->inovatorB->id,
+            'opd_id' => $opdDinkes->id,
+            'is_inovasi_daerah' => true,
+            'nama_inovasi' => 'Aplikasi Dinkes Satu',
+            'tahapan' => 'penerapan',
+            'inisiator' => 'opd',
+            'bentuk_inovasi' => 'pelayanan_publik',
+            'jenis_inovasi' => 'digital',
+            'klasifikasi' => 'tematik',
+            'nama_inisiator' => 'Inisiator Dinkes',
+            'koordinat' => '-8.5000, 117.4000',
+            'waktu_penerapan' => '2024-01-01',
+            'rancang_bangun' => 'Rancang bangun Dinkes.',
+            'tujuan' => 'Tujuan Dinkes.',
+            'manfaat' => 'Manfaat Dinkes.',
+        ]);
+
+        $response = $this->actingAs($this->timPenilai)->get(route('inovasi-daerah.index', ['opd_id' => $opdDinkes->id]));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('inovasi/daerah')
+            ->where('selectedOpd.id', $opdDinkes->id)
+            ->where('selectedOpd.nama', 'Dinas Kesehatan')
+            ->has('inovasi.data', 1)
+            ->where('inovasi.data.0.id', $invDinkes->id)
+            ->where('inovasi.data.0.nama_inovasi', 'Aplikasi Dinkes Satu')
+        );
+    }
 }
