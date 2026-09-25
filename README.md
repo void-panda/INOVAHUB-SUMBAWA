@@ -24,7 +24,7 @@
 
 # **INOVA-HUB KABUPATEN SUMBAWA**
 ### *Platform Terpadu Pembinaan, Penilaian, dan Quality Assurance Inovasi Pelayanan Publik*
-**Pemerintah Kabupaten Sumbawa — Bappeda Litbang**
+**Pemerintah Kabupaten Sumbawa — BAPPERIDA (Badan Perencanaan Pembangunan, Riset dan Inovasi Daerah)**
 
 [![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![React](https://img.shields.io/badge/React-19.x-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
@@ -40,18 +40,23 @@
 ## 📑 Daftar Isi
 1. [Penjelasan & Konsep Sistem (Explanation)](#-penjelasan--konsep-sistem-explanation)
    - [Latar Belakang & Urgensi](#latar-belakang--urgensi)
-   - [Tujuan & Manfaat Strategis](#tujuan--manfaat-strategis)
    - [Arsitektur Quality Assurance (QA Layer)](#arsitektur-quality-assurance-qa-layer)
+   - [Alur Diagram Visual Sistem](#alur-diagram-visual-sistem)
 2. [Panduan Memulai Cepat (Tutorial / Quickstart)](#-panduan-memulai-cepat-tutorial--quickstart)
    - [Prasyarat Sistem](#prasyarat-sistem)
    - [Langkah Instalasi & Setup Lokal](#langkah-instalasi--setup-lokal)
    - [Menjalankan Server Aplikasi](#menjalankan-server-aplikasi)
+   - [Inisialisasi Superadmin via CLI (make:superadmin)](#inisialisasi-superadmin-via-cli-makesuperadmin)
    - [Kredensial Akun Bawaan (Demo Seeder)](#kredensial-akun-bawaan-demo-seeder)
+   - [Status Data Simulasi Inovasi Seeder](#status-data-simulasi-inovasi-seeder)
 3. [Panduan Operasional Pengguna (How-to Guides)](#-panduan-operasional-pengguna-how-to-guides)
+   - [Pendaftaran Akun Inovator Dwijalur (OPD vs Masyarakat)](#pendaftaran-akun-inovator-dwijalur)
+   - [Pemulihan & Reset Password Mandiri](#pemulihan--reset-password-mandiri)
    - [Panduan Peran Inovator (OPD & Masyarakat)](#1-panduan-peran-inovator-opd--masyarakat)
    - [Panduan Peran Pendamping / Verifikator](#2-panduan-peran-pendamping--verifikator)
-   - [Panduan Peran Tim Penilai & Admin Bappeda](#3-panduan-peran-tim-penilai--admin-bappeda)
-   - [Panduan Peran Pimpinan Daerah](#4-panduan-peran-pimpinan-daerah)
+   - [Panduan Peran Tim Penilai](#3-panduan-peran-tim-penilai)
+   - [Panduan Peran Administrator BAPPERIDA (Superadmin)](#4-panduan-peran-administrator-bapperida-superadmin)
+   - [Panduan Peran Pimpinan Daerah](#5-panduan-peran-pimpinan-daerah)
 4. [Referensi Teknis & Spesifikasi (Reference)](#-referensi-teknis--spesifikasi-reference)
    - [Matriks Hak Akses Peran (RBAC)](#matriks-hak-akses-peran-rbac)
    - [Alur Status Validasi 8 Langkah (State Machine)](#alur-status-validasi-8-langkah-state-machine)
@@ -77,37 +82,91 @@ Dalam proses pelaporan ke sistem pusat (*indeks.inovasi.bskdn.kemendagri.go.id*)
 - **Ketiadaan Riwayat Koreksi Berjenjang**: Masukan dari tim teknis dan pimpinan OPD sulit terdokumentasi rapi tanpa audit trail.
 - **Risiko Diskualifikasi Sistem Pusat**: Kesalahan input format atau berkas kadaluwarsa berpotensi menurunkan Indeks Inovasi Daerah (IID).
 
-**INOVA-HUB** hadir sebagai solusi komprehensif untuk menjembatani dan menyelesaikan permasalahan tersebut.
+**INOVA-HUB** hadir sebagai solusi komprehensif penjamin mutu (*Quality Assurance layer*) Kabupaten Sumbawa.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       EKOSISTEM INOVASI SUMBAWA                         │
-│                                                                         │
-│   [ OPD & Masyarakat ]  ───►  [ INOVA-HUB (QA Layer) ]  ───► [ KEMENDAGRI ]│
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          EKOSISTEM INOVASI SUMBAWA                          │
+│                                                                             │
+│   [ OPD & Masyarakat ]  ───►  [ INOVA-HUB (QA Layer) ]  ───► [ KEMENDAGRI ] │
 │    • Input Inovasi              • Verifikasi Pendamping        • Laporan IGA│
 │    • Upload 20 Indikator        • Skoring SID & SPD            • Indeks IID │
 │    • Perbaikan Berkas           • Pengesahan Kepala OPD        • Peringkat  │
-│                                 • Review Bappeda Litbang                    │
-└─────────────────────────────────────────────────────────────────────────┘
+│                                 • Review BAPPERIDA                          │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Tujuan & Manfaat Strategis
-1. **Sentralisasi Repositori**: Menghimpun seluruh data dan berkas inovasi daerah ke dalam satu basis data transaksional PostgreSQL yang aman.
-2. **Quality Assurance Pra-Pelaporan**: Memastikan seluruh berkas pendukung telah lolos kurasi sebelum batas waktu pelaporan nasional.
-3. **Simulasi Skoring Real-Time**: Memberikan proyeksi skor kematangan inovasi dan estimasi nilai IID Kabupaten Sumbawa secara akurat.
-4. **Siklus Hidup & Keberlanjutan (Arsip & Replikasi)**: Inovasi dari periode lomba sebelumnya diarsipkan secara read-only dan dapat diajukan kembali melalui skema pengembangan (*inovasi_versi*).
+### Alur Diagram Visual Sistem
+
+#### 1. Diagram Alur Pembuatan Superadmin via CLI & OTP Email (`make:superadmin`)
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│             ALUR CLI ARTISAN PEMBUATAN AKUN SUPERADMIN (OTP EMAIL)          │
+│                                                                             │
+│   [ Terminal CLI / SSH Server ]                    [ Layanan Email ]        │
+│   php artisan make:superadmin                                               │
+│         │                                                                   │
+│         ▼                                                                   │
+│   Input: Nama, Email, Password, WA                                          │
+│         │                                                                   │
+│         ├────────── Generate 6-Digit OTP ──────────┐                        │
+│         │           (Valid 10 Menit di Cache)      │                        │
+│         │                                          ▼                        │
+│         │                              Kirim Email SuperadminOtpMail        │
+│         │                              ke Kotak Masuk (Inbox/Spam)          │
+│         │                                          │                        │
+│         ▼                                          ▼                        │
+│   Prompt Input 6-Digit OTP  ◄─────────── Masukkan Kode dari Email           │
+│   (Maksimal 3 Kali Percobaan)                                               │
+│         │                                                                   │
+│   [ Verifikasi Valid ]                                                      │
+│         │                                                                   │
+│         ▼                                                                   │
+│   • Buat Akun di DB (Status Aktif & Terverifikasi)                          │
+│   • Tetapkan Role 'bapperida' (Superadmin Full Access)                      │
+│   • Tampilkan Tabel Ringkasan Akun Sukses di CLI                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 2. Diagram Alur Pendaftaran Akun Inovator Dwijalur (`/register`)
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                ALUR PENDAFTARAN AKUN INOVATOR DWIJALUR (/register)          │
+│                                                                             │
+│   Halaman Registrasi (/register)                                            │
+│   Pilih Tab Jalur Pendaftaran:                                              │
+│                                                                             │
+│      ┌──────────────────────────────┬──────────────────────────────┐        │
+│      │  TAB 1: INOVATOR OPD         │  TAB 2: INOVATOR MASYARAKAT  │        │
+│      ├──────────────────────────────┼──────────────────────────────┤        │
+│      │ • Pilih Perangkat Daerah     │ • Input Nama Komunitas /     │        │
+│      │   dari Daftar Resmi          │   Lembaga / Desa / Kampus    │        │
+│      │ • Tipe: 'dinas'              │ • Tipe: 'masyarakat'         │        │
+│      │ • opd_id terikat ke OPD      │ • opd_id = null              │        │
+│      └──────────────┬───────────────┴──────────────┬───────────────┘        │
+│                     │                              │                        │
+│                     └───────────────┬──────────────┘                        │
+│                                     ▼                                       │
+│                      • Nama Lengkap & Email Aktif                           │
+│                      • Nomor WhatsApp & Pekerjaan                           │
+│                      • Password & Konfirmasi Password                       │
+│                      • Tantangan CAPTCHA Keamanan                           │
+│                                     │                                       │
+│                                     ▼                                       │
+│                      Akun Dibuat (Role 'inovator')                          │
+│                      Kirim Email Verifikasi (Fortify)                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## ⚡ Panduan Memulai Cepat (Tutorial / Quickstart)
 
-Panduan ini ditujukan bagi pengembang (*developer*) dan penguji (*evaluator*) yang ingin menginstal dan menjalankan INOVA-HUB pada lingkungan lokal.
-
 ### Prasyarat Sistem
-Pastikan perangkat Anda memenuhi spesifikasi berikut:
+Pastikan perangkat server/komputer Anda memenuhi spesifikasi berikut:
 - **PHP** $\ge 8.3$ dengan ekstensi: `pdo_pgsql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `curl`, `fileinfo`, `gd`
 - **Composer** $\ge 2.7$
-- **Node.js** $\ge 20.x$ & **npm** $\ge 10.x$ (atau **pnpm**)
+- **Node.js** $\ge 20.x$ & **npm** $\ge 10.x$
 - **PostgreSQL Server** $\ge 15.x$ aktif di port `5432`
 
 ---
@@ -120,7 +179,7 @@ git clone https://github.com/pemkab-sumbawa/repo-inovasi-daerah.git
 cd repo-inovasi-daerah
 ```
 
-#### 2. Instalasi Dependensi PHP & Node.js
+#### 2. Instalasi Dependensi Backend & Frontend
 ```bash
 # Instal dependensi backend Laravel
 composer install
@@ -130,11 +189,11 @@ npm install
 ```
 
 #### 3. Konfigurasi Lingkungan (`.env`)
-Salin berkas konfigurasi template:
+Salin berkas template lingkungan:
 ```bash
 cp .env.example .env
 ```
-Buka berkas `.env` dan atur parameter PostgreSQL sesuai konfigurasi lokal Anda:
+Sesuaikan konfigurasi basis data PostgreSQL pada `.env`:
 ```ini
 APP_NAME="INOVA-HUB Kabupaten Sumbawa"
 APP_ENV=local
@@ -148,19 +207,24 @@ DB_PORT=5432
 DB_DATABASE=repo_inovasi_sumbawa
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
+
+# Konfigurasi Mailer (Ubah ke SMTP aktif jika ingin email langsung sampai)
+MAIL_MAILER=smtp
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=your_mailtrap_user
+MAIL_PASSWORD=your_mailtrap_password
+MAIL_FROM_ADDRESS="inovahub@sumbawakab.go.id"
+MAIL_FROM_NAME="INOVA-HUB Sumbawa"
 ```
 
-> [!IMPORTANT]
-> Pastikan database dengan nama `repo_inovasi_sumbawa` sudah dibuat di server PostgreSQL Anda sebelum menjalankan migrasi.
-
-#### 4. Generate Kunci Aplikasi & Tautan Berkas Storage
+#### 4. Kunci Aplikasi & Symlink Storage
 ```bash
 php artisan key:generate
 php artisan storage:link
 ```
 
 #### 5. Eksekusi Migrasi & Data Seeder
-Jalankan migrasi skema tabel beserta data awal (Role, Akun Pengguna, Master OPD Sumbawa, dan 20 Indikator SID):
 ```bash
 php artisan migrate:fresh --seed
 ```
@@ -169,127 +233,160 @@ php artisan migrate:fresh --seed
 
 ### Menjalankan Server Aplikasi
 
-Jalankan dua proses berikut pada terminal terpisah:
+Jalankan proses frontend dan backend:
 
-**Terminal 1 — Frontend Build Server (Vite HMR):**
+**Terminal 1 — Frontend Vite Dev Server:**
 ```bash
 npm run dev
 ```
 
-**Terminal 2 — Backend Application Server (Laravel):**
+**Terminal 2 — Backend Laravel Server:**
 ```bash
 php artisan serve
 ```
 
-Aplikasi siap diakses di peramban web: **`http://localhost:8000`**
+Aplikasi dapat langsung diakses di peramban web: **`http://localhost:8000`**
+
+---
+
+### Inisialisasi Superadmin via CLI (`make:superadmin`)
+
+Untuk membuat akun Superadmin baru (baik di lokal maupun server **production** via SSH), gunakan perintah resmi:
+
+```bash
+php artisan make:superadmin
+```
+
+Opsi flag yang tersedia:
+```bash
+php artisan make:superadmin --name="Admin BAPPERIDA" --email="admin@sumbawakab.go.id"
+```
+Perintah ini akan mengirimkan kode 6-digit OTP ke email yang diinputkan dan meminta verifikasi langsung di terminal sebelum akun diaktifkan.
 
 ---
 
 ### Kredensial Akun Bawaan (Demo Seeder)
 
-Semua akun pengujian berikut memiliki kata sandi bawaan: **`password`**
+Semua akun demo berikut telah di-hash dengan kata sandi bawaan: **`password`**
 
-| Peran (Role) | Nama Pengguna | Alamat Email | Unit Kerja / OPD |
+| Peran (Role) | Nama Pengguna | Alamat Email | Keterangan / OPD |
 |---|---|---|---|
-| **Pimpinan** | H. Mahmud Abdullah | `pimpinan@sumbawakab.go.id` | Pemerintah Kab. Sumbawa |
-| **Tim Penilai** | Dr. H. Iskandar, M.Si | `tim_penilai@sumbawakab.go.id` | Bappeda Litbang Kab. Sumbawa |
-| **Pendamping Utama** | Drs. Andi Wijaya, M.AP | `pendamping@sumbawakab.go.id` | Bappeda Litbang Kab. Sumbawa |
-| **Pendamping Layanan** | Rina Rahmawati, S.STP | `pendamping2@sumbawakab.go.id` | Bappeda Litbang Kab. Sumbawa |
-| **Inovator OPD 1** | Ahmad Fauzi, S.Kom | `inovator@sumbawakab.go.id` | Dinas Komunikasi dan Informatika |
-| **Inovator OPD 2** | dr. Siti Maryam | `inovator2@sumbawakab.go.id` | Dinas Kesehatan |
-| **Inovator OPD 3** | H. Suryadi, S.H. | `inovator3@sumbawakab.go.id` | Disdukcapil Kab. Sumbawa |
-| **Inovator OPD 4** | Budi Santoso, S.Pd | `inovator4@sumbawakab.go.id` | Dinas Pendidikan dan Kebudayaan |
-| **Inovator Masyarakat** | Fajar Saputra | `inovator5@sumbawakab.go.id` | Komunitas Sabalong Samawa |
+| **Superadmin (bapperida)** | Administrator BAPPERIDA | `bapperida@sumbawakab.go.id` | BAPPERIDA Kab. Sumbawa (Full Access) |
+| **Tim Penilai** | Dr. H. Iskandar, M.Si | `penilai@sumbawakab.go.id` | Tim Penilai Lomba Inovasi |
+| **Pendamping Utama** | Drs. Andi Wijaya, M.AP | `pendamping@sumbawakab.go.id` | Pendamping Inovasi BAPPERIDA |
+| **Pendamping Layanan** | Rina Rahmawati, S.STP | `pendamping2@sumbawakab.go.id` | Verifikator OPD BAPPERIDA |
+| **Inovator OPD Kominfo** | Ahmad Fauzi, S.Kom | `inovator@sumbawakab.go.id` | Dinas Komunikasi dan Informatika |
+| **Inovator OPD Dinkes** | dr. Siti Maryam | `inovator2@sumbawakab.go.id` | Dinas Kesehatan |
+| **Inovator OPD Disdukcapil** | H. Suryadi, S.H. | `inovator3@sumbawakab.go.id` | Disdukcapil Kab. Sumbawa |
+| **Inovator OPD Disdikbud** | Budi Santoso, S.Pd | `inovator4@sumbawakab.go.id` | Dinas Pendidikan dan Kebudayaan |
+| **Inovator OPD PUPR** | Ir. Hendra Kusuma, M.T. | `inovator_pupr@sumbawakab.go.id` | Dinas PUPR Kab. Sumbawa |
+| **Inovator Masyarakat** | Fajar Saputra | `inovator5@sumbawakab.go.id` | Komunitas Sabalong Samawa Inovatif |
+| **Pimpinan Daerah** | H. Mahmud Abdullah | `pimpinan@sumbawakab.go.id` | Pemerintah Kab. Sumbawa (Bupati) |
+
+---
+
+### Status Data Simulasi Inovasi Seeder
+
+Sesuai rancangan skenario simulasi mutu IGA 2026:
+- **Periode 2025 (Arsip Lomba)**: Tepat memuat **10 Data Inovasi Arsip** (7 Inovasi Daerah OPD + 3 Inovasi Masyarakat). Seluruhnya memiliki **20 Indikator SID lengkap (100% progres)**, estimasi skor kematangan terisi (**39.00 s/d 56.00 poin**), berkas proposal/SK/video, serta riwayat audit alur 8-langkah di `validasi_log`.
+- **Periode 2026 (Periode Aktif Berjalan)**: Bersih (*clean state*), siap digunakan untuk menguji pendaftaran inovasi baru maupun menguji fitur **"Ajukan Kembali dari Arsip"**.
 
 ---
 
 ## 🛠 Panduan Operasional Pengguna (How-to Guides)
 
+### Pendaftaran Akun Inovator Dwijalur
+1. Akses menu **Daftar Akun** di `/register`.
+2. Pilih jalur pendaftaran melalui tab di bagian atas:
+   - **Inovator Perangkat Daerah**: Pilih nama OPD Anda dari dropdown resmi.
+   - **Inovator Masyarakat**: Ketikkan nama lembaga, universitas, komunitas, atau desa Anda.
+3. Lengkapi Nama Lengkap, Email, Nomor WhatsApp, Pekerjaan, dan Password.
+4. Jawab pertanyaan **CAPTCHA Matematika** keamanan.
+5. Klik **"Daftar Sekarang"**. Surat verifikasi email akan otomatis dikirimkan ke kotak masuk Anda.
+
+### Pemulihan & Reset Password Mandiri
+1. Pada layar login (`/login`), klik tautan **"Lupa password?"**.
+2. Masukkan email akun Anda dan klik **"Kirim Tautan Reset Password"**.
+3. Buka email dan klik tautan verifikasi pemulihan sandi.
+4. Tentukan kata sandi baru (minimal 8 karakter) dan simpan. Fitur ini berlaku bagi seluruh role pengguna.
+
 ### 1. Panduan Peran Inovator (OPD & Masyarakat)
 
-#### A. Mendaftarkan Inovasi Baru
+#### A. Menginput Inovasi Baru
 1. Masuk (*login*) menggunakan akun Inovator.
-2. Buka menu **Inovasi Saya** (`/inovasi`) dan klik tombol **"Tambah Inovasi Baru"**.
-3. Lengkapi formulir profil:
-   - **Nama Inovasi**, **Tahapan** (Inisiatif/Uji Coba/Penerapan), **Bentuk Inovasi**, **Klasifikasi**, dan **Urusan Utama**.
-   - Unggah berkas dokumen pendukung umum langsung pada formulir:
-     - Berkas Proposal / Rancang Bangun (PDF)
-     - Berkas Piagam / Sertifikat Penghargaan (opsional)
-     - Tautan Video Dokumentasi YouTube (opsional)
-4. Klik **"Simpan Data Inovasi"**. Status awal inovasi adalah `draft`.
+2. Buka menu **Inovasi Saya** (`/inovasi`) &rarr; Klik **"Tambah Inovasi Baru"**.
+3. Lengkapi formulir 22 item indikator profil (Nama, Tahapan, Bentuk, Klasifikasi, Tematik, Koordinat, Urusan).
+4. Unggah berkas dokumen pendukung umum langsung pada form:
+   - Berkas Proposal / Rancang Bangun (PDF)
+   - Berkas SK / Piagam Penghargaan (PDF)
+   - Tautan Video Dokumentasi YouTube
+5. Klik **"Simpan Data Inovasi"** (status awal adalah `draft`).
 
-#### B. Mengisi Lembar Kerja 20 Indikator SID
-1. Pada tabel Inovasi Saya, klik ikon **Folder** pada kolom aksi atau buka halaman `/inovasi/{id}/indikator`.
-2. Halaman indikator menyajikan progres bar pengisian dan simulasi skor kematangan di bagian atas.
-3. Untuk setiap indikator (IND-01 s.d. IND-20):
-   - Klik tombol **"Pilih Parameter"** pada kolom *Parameter*.
-   - Pilih opsi parameter yang sesuai (P1, P2, P3, atau Tidak Dapat Diukur / 0) sesuai bukti dukung yang dimiliki.
-   - Klik ikon **Folder Data Pendukung** pada kolom *Data Pendukung*.
-   - Klik tombol **"Upload Dokumen Baru"** pada modal dialog untuk mengunggah berkas PDF bukti dukung resmi.
-4. Setelah seluruh 20 indikator terisi dan dokumen lengkap, klik tombol **"Ajukan Validasi"** untuk mengirim berkas ke Pendamping (status berubah menjadi `diajukan`).
+#### B. Melengkapi 20 Indikator SID
+1. Pada tabel Inovasi Saya, klik ikon **Folder** pada kolom aksi atau buka URL `/inovasi/{id}/indikator`.
+2. Amati progres bar pengisian dan skor kematangan di bagian atas.
+3. Pada tabel 7 kolom indikator:
+   - Klik **"Pilih Parameter"** pada kolom *Parameter* &rarr; Pilih P1, P2, P3, atau 0.
+   - Klik ikon **Folder Data Pendukung** &rarr; Klik **"Upload Dokumen Baru"** untuk mengunggah bukti dukung PDF sah.
+4. Setelah seluruh 20 indikator lengkap, klik **"Ajukan Validasi"** untuk mengirimkan ke Pendamping (status berganti ke `diajukan`).
 
 #### C. Melakukan Perbaikan Inovasi (Status `revisi`)
-1. Jika status inovasi berubah menjadi `revisi`, buka halaman indikator.
-2. Periksa badge catatan revisi berwarna merah/kuning pada indikator terkait.
-3. Klik tombol **"Upload Dokumen Baru"** untuk mengganti atau menambahkan berkas perbaikan.
-4. Klik tombol **"Kirim Ulang Revisi"** untuk mengajukan kembali ke pendamping.
+1. Jika status beralih ke `revisi`, buka lembar kerja 20 Indikator SID.
+2. Periksa catatan revisi spesifik yang diberikan oleh Pendamping pada indikator terkait.
+3. Unggah dokumen revisi pengganti dan klik **"Kirim Ulang Revisi"**.
 
 #### D. Mengajukan Replikasi Inovasi dari Periode Lalu (Arsip)
 1. Buka menu **Arsip Inovasi** (`/arsip`).
-2. Pilih inovasi periode sebelumnya dan klik tombol **"Ajukan Kembali (Replikasi / Pengembangan)"**.
-3. Isi kolom wajib **"Penjelasan Pengembangan / Pembaharuan"**.
-4. Sistem akan otomatis menduplikasi data inovasi ke periode aktif dan membentuk rantai silsilah versi pada tabel `inovasi_versi`.
+2. Pilih inovasi periode sebelumnya dan klik **"Ajukan Kembali"**.
+3. Masukkan narasi wajib pada kolom **"Penjelasan Pengembangan dari Versi Sebelumnya"**.
+4. Sistem akan otomatis menduplikasi data ke tahun aktif berjalan dan mencatat relasi silsilah versi di `inovasi_versi`.
 
 ---
 
 ### 2. Panduan Peran Pendamping / Verifikator
 
-#### A. Menelaah & Memverifikasi Berkas Inovasi
-1. Masuk menggunakan akun Pendamping dan buka menu **Verifikasi Inovasi** (`/verifikasi`).
-2. Klik inovasi berstatus `diajukan` untuk mulai memvalidasi (status otomatis berganti ke `divalidasi`).
-3. Periksa setiap parameter dan berkas dokumen pendukung yang diunggah inovator menggunakan tombol **"Preview File"**.
-
-#### B. Memberikan Hasil Verifikasi
-- **Jika Terdapat Kekurangan**: Klik tombol **"Minta Revisi"**, lalu masukkan catatan koreksi spesifik per-indikator. Status inovasi berubah menjadi `revisi`.
-- **Jika Berkas Sah & Lengkap**: Klik tombol **"Setujui Verifikasi"**. Status inovasi berubah menjadi `disetujui`.
-
-#### C. Menerbitkan Pengesahan Kepala OPD
-1. Pada inovasi berstatus `disetujui`, klik tombol **"Terbitkan Pengesahan OPD"**.
-2. Unggah Surat Pengesahan / Lembar Verifikasi Bertandatangan Kepala OPD.
-3. Klik simpan; status inovasi kini beralih menjadi `disahkan_opd`.
+1. Buka menu **Verifikasi Inovasi** (`/verifikasi`).
+2. Buka inovasi berstatus `diajukan` (status otomatis beralih ke `divalidasi`).
+3. Periksa kesesuaian dokumen bukti dukung menggunakan tombol **"Preview File"**.
+4. **Memberikan Hasil Verifikasi**:
+   - Jika belum sesuai: Klik **"Minta Revisi"** dan wajib mengisi catatan koreksi detail. Status menjadi `revisi`.
+   - Jika telah valid: Klik **"Setujui Verifikasi"**. Status menjadi `disetujui`.
+5. **Menerbitkan Pengesahan Kepala OPD**: Pada inovasi berstatus `disetujui`, klik **"Sahkan Inovasi (Disahkan OPD)"**. Status inovasi beralih ke `disahkan_opd`.
 
 ---
 
-### 3. Panduan Peran Tim Penilai & Admin Bappeda
+### 3. Panduan Peran Tim Penilai
 
-#### A. Review Internal & Sinkronisasi Skoring Akhir
-1. Buka menu **Penilaian Inovasi** (`/penilaian`).
+1. Buka menu **Penilaian & Review** (`/penilaian`).
 2. Pilih inovasi yang telah berstatus `disahkan_opd`.
-3. Periksa kesesuaian skor simulasi SID dan SPD.
-4. Klik tombol **"Mulai Review Internal"** (status menjadi `review_internal`).
-5. Jika telah memenuhi kriteria pelaporan IGA, klik **"Tetapkan Siap Kirim"** (status menjadi `siap_kirim`).
-
-#### B. Mencatat Histori Pengiriman ke Kemendagri
-1. Setelah data disalin ke portal resmi IGA Kemendagri, buka menu penilaian.
-2. Klik tombol **"Tandai Terkirim ke Kemendagri"**.
-3. Masukkan ID Registrasi Pusat dan tanggal kirim. Status inovasi menjadi `terkirim`.
-
-#### C. Pengelolaan Master Data Sistem
-Tim Penilai memiliki hak akses penuh ke menu **Master Data** (`/master/*`):
-- **Master Indikator**: Menyesuaikan bobot dan opsi parameter P1/P2/P3 tanpa perlu merubah kode (*zero-deployment*).
-- **Master OPD**: Mengelola daftar Organisasi Perangkat Daerah dan unit kerja Kabupaten Sumbawa.
-- **Master Linimasa & Periode Lomba**: Mengatur jadwal pembukaan, batas penginputan, batas validasi, dan penutupan periode kompetisi.
+3. Lakukan sinkronisasi skoring SPD dan 20 Indikator SID.
+4. Klik **"Mulai Review Internal"** (status menjadi `review_internal`).
+5. Jika memenuhi standar kelayakan pelaporan IGA, klik **"Tetapkan Siap Kirim"** (status menjadi `siap_kirim`).
+6. Setelah selesai disinkronkan ke sistem Kemendagri, klik **"Tandai Terkirim"** (status menjadi `terkirim`).
 
 ---
 
-### 4. Panduan Peran Pimpinan Daerah
+### 4. Panduan Peran Administrator BAPPERIDA (Superadmin)
 
-1. Masuk menggunakan akun Bupati / Wakil Bupati / Sekda.
+1. **Akses Penuh Seluruh Modul**: Memiliki kewenangan mengelola seluruh tahapan alur inovasi dari hulu hingga hilir.
+2. **Master Perangkat Daerah (`/penilai/opd`)**:
+   - Menambah, mengubah nama, dan memperbarui kode singkatan OPD resmi Kabupaten Sumbawa.
+   - Mengklik badge **Jumlah Inovasi** pada tabel OPD untuk langsung melakukan drill-down filter inovasi OPD tersebut pada halaman Inovasi Daerah.
+3. **Manajemen Pengguna (`/penilai/users`)**:
+   - Menambahkan pengguna baru, mengubah hak akses role, serta mengaktifkan/menonaktifkan akun.
+4. **Master Indikator & Periode Lomba**:
+   - Mengubah bobot indikator SPD/SID dan mengatur linimasa lomba tahunan.
+
+---
+
+### 5. Panduan Peran Pimpinan Daerah
+
+1. Masuk menggunakan akun Pimpinan (`pimpinan@sumbawakab.go.id`).
 2. Akses **Executive Dashboard** (`/dashboard`):
-   - Pantau capaian **Indeks Inovasi Daerah (IID)** Kabupaten Sumbawa.
-   - Amati distribusi inovasi berdasarkan kategori kematangan (*Sangat Inovatif*, *Inovatif*, *Kurang Inovatif*).
-   - Tinjau grafik sebaran inovasi per OPD dan urusan pemerintahan.
-   - Unduh ringkasan eksekutif laporan kematangan inovasi daerah.
+   - Memantau proyeksi capaian nilai **Indeks Inovasi Daerah (IID)** Kabupaten Sumbawa.
+   - Mengamati sebaran pemenuhan urusan wajib pelayanan dasar (yandas).
+   - Melihat daftar inovasi unggulan siap kirim ke Kemendagri.
+   - Mengunduh rekapitulasi data inovasi berformat PDF.
 
 ---
 
@@ -297,18 +394,21 @@ Tim Penilai memiliki hak akses penuh ke menu **Master Data** (`/master/*`):
 
 ### Matriks Hak Akses Peran (RBAC)
 
-| Modul / Kemampuan | Inovator | Pendamping | Tim Penilai | Pimpinan |
-|---|:---:|:---:|:---:|:---:|
-| Input Profil & Dokumen Umum Inovasi | ✅ | ❌ | ❌ | ❌ |
-| Input Parameter & Bukti Dukung 20 SID | ✅ | ❌ | ❌ | ❌ |
-| Submit Inovasi (`diajukan` / revisi) | ✅ | ❌ | ❌ | ❌ |
-| Replikasi Inovasi dari Periode Arsip | ✅ | ❌ | ❌ | ❌ |
-| Verifikasi Berkas & Catatan Revisi | ❌ | ✅ | ❌ | ❌ |
-| Pengesahan Kepala OPD (`disahkan_opd`) | ❌ | ✅ | ❌ | ❌ |
-| Review Internal Skoring Akhir | ❌ | ❌ | ✅ | ❌ |
-| Penetapan Status `siap_kirim` & `terkirim` | ❌ | ❌ | ✅ | ❌ |
-| Kelola Master Data (Bobot, OPD, Periode) | ❌ | ❌ | ✅ | ❌ |
-| Monitoring Dashboard & Statistik IID | ❌ | ❌ | ✅ | ✅ (Read-Only) |
+| Modul / Fitur | Inovator | Pendamping | Tim Penilai | BAPPERIDA (Superadmin) | Pimpinan |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Input Profil & Berkas Umum Inovasi | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Input Parameter & 20 Indikator SID | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Submit Inovasi (`diajukan` / `revisi`) | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Replikasi Inovasi dari Arsip | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Verifikasi Bukti Dukung & Revisi | ❌ | ✅ | ❌ | ✅ | ❌ |
+| Pengesahan Kepala OPD (`disahkan_opd`) | ❌ | ✅ | ❌ | ✅ | ❌ |
+| Review Internal Skoring SPD/SID | ❌ | ❌ | ✅ | ✅ | ❌ |
+| Penetapan `siap_kirim` & `terkirim` | ❌ | ❌ | ✅ | ✅ | ❌ |
+| Kelola Master OPD (`/penilai/opd`) | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Kelola Manajemen User (`/penilai/users`) | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Kelola Master Indikator & Periode | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Filter Toolbar Inovasi Daerah | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Dashboard Monitoring IID | ❌ | ❌ | ✅ | ✅ | ✅ (Read-Only) |
 
 ---
 
@@ -316,74 +416,21 @@ Tim Penilai memiliki hak akses penuh ke menu **Master Data** (`/master/*`):
 
 Transisi status bersifat ketat (*state-machine* berjenjang) dan seluruh riwayatnya dicatat secara otomatis pada tabel audit `validasi_log`.
 
-<div align="center">
-
-![Alur Kerja dan Validasi 8 Tahap Inovasi Daerah](docs/images/alur-validasi-inovasi.svg)
-
-</div>
-
-<details>
-<summary>🔍 <b>Klik untuk melihat Diagram Interaktif Mermaid & Skrip Alur</b></summary>
-
-```mermaid
-flowchart TD
-    %% Styling Classes
-    classDef lane fill:#f8fafc,stroke:#94a3b8,stroke-width:1.5px,stroke-dasharray: 4 4,font-weight:bold,color:#334155;
-    classDef startEnd fill:#0d9488,stroke:#0f766e,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef stepNode fill:#ffffff,stroke:#0d9488,stroke-width:1.8px,color:#0f766e,font-size:12px;
-    classDef stepBlue fill:#ffffff,stroke:#2563eb,stroke-width:1.8px,color:#1e40af,font-size:12px;
-    classDef stepPurple fill:#ffffff,stroke:#9333ea,stroke-width:1.8px,color:#6b21a8,font-size:12px;
-    classDef decision fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e,font-weight:bold;
-    classDef revision fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#b91c1c,font-weight:bold;
-    classDef approved fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#15803d,font-weight:bold;
-    classDef sent fill:#ecfdf5,stroke:#059669,stroke-width:2.5px,color:#065f46,font-weight:bold;
-
-    %% Subgraphs / Swimlanes per Actor
-    subgraph LANE1["🧑‍💼 1. INOVATOR (OPD & MASYARAKAT)"]
-        START(["● Mulai"]):::startEnd
-        S1["<b>1. DRAFT</b><br>📝 Input Profil & Dokumen Umum<br>📋 Isi 20 Indikator SID"]:::stepNode
-        S2["<b>2. DIAJUKAN</b><br>📤 Ajukan Validasi ke Pendamping"]:::stepNode
-        S4A["<b>4a. REVISI</b><br>⚠️ Perbaikan Sesuai Catatan Wajib"]:::revision
-    end
-
-    subgraph LANE2["🔍 2. PENDAMPING & VERIFIKATOR OPD"]
-        S3["<b>3. DIVALIDASI</b><br>🔍 Telaah Keabsahan Berkas & 20 SID"]:::stepBlue
-        DEC{"❓ Berkas Sesuai & Valid?"}:::decision
-        S4B["<b>4b. DISETUJUI</b><br>✅ Lolos Uji Validasi Berjenjang"]:::approved
-        S5["<b>5. DISAHKAN_OPD</b><br>📜 Terbitkan Lembar Pengesahan OPD"]:::stepBlue
-    end
-
-    subgraph LANE3["⚖️ 3. TIM PENILAI & BAPPEDA LITBANG"]
-        S6["<b>6. REVIEW_INTERNAL</b><br>📊 Sinkronisasi Skoring SID & SPD"]:::stepPurple
-        S7["<b>7. SIAP_KIRIM</b><br>📦 Finalisasi Dokumen Siap Lapor"]:::stepPurple
-    end
-
-    subgraph LANE4["🏛️ 4. SISTEM PUSAT (KEMENDAGRI)"]
-        S8["<b>8. TERKIRIM</b><br>🚀 Sinkronisasi ke Portal IGA BSKDN"]:::sent
-        FINISH(["🏁 Selesai"]):::startEnd
-    end
-
-    %% Flow Connections
-    START --> S1
-    S1 -->|"Inovator Submit"| S2
-    S2 -->|"Pendamping Mulai Review"| S3
-    S3 --> DEC
-    DEC -->|"❌ Tidak (Wajib Catatan)"| S4A
-    S4A -->|"Kirim Ulang Perbaikan"| S2
-    DEC -->|"✅ Ya (Lolos)"| S4B
-    S4B -->|"Pimpinan OPD Tandatangan"| S5
-    S5 -->|"Serahkan ke Tim Bappeda"| S6
-    S6 -->|"Review Tuntas"| S7
-    S7 -->|"Kirim ke Kemendagri"| S8
-    S8 --> FINISH
-
-    %% Assign Lane Classes
-    class LANE1,LANE2,LANE3,LANE4 lane;
+```
+draft → diajukan → divalidasi → revisi | disetujui → disahkan_opd → review_internal → siap_kirim → terkirim
 ```
 
-</details>
-
----
+| No | Status | Aktor Pelaksana | Deskripsi & Tindakan |
+|:---:|---|---|---|
+| **1** | `draft` | Inovator | Mengisi profil 22 item, mengunggah proposal & video. Inovasi masih privat. |
+| **2** | `diajukan` | Inovator | Klik "Ajukan Validasi" &rarr; Notifikasi otomatis ke Pendamping/Verifikator. |
+| **3** | `divalidasi` | Pendamping | Penelaahan kelengkapan bukti dukung mengacu 20 Indikator SID. |
+| **4a** | `revisi` | Pendamping &rarr; Inovator | Catatan koreksi per-indikator. Data kembali ke Inovator untuk diperbaiki. |
+| **4b** | `disetujui` | Pendamping | Penilaian awal bukti dukung memenuhi kriteria parameter minimal. |
+| **5** | `disahkan_opd` | Verifikator OPD | Pengesahan formal oleh Kepala Perangkat Daerah / Pimpinan Lembaga. |
+| **6** | `review_internal` | Tim Penilai | Uji petik lapangan, skoring SPD & SID terpadu, dan verifikasi urusan yandas. |
+| **7** | `siap_kirim` | BAPPERIDA / Penilai | Inovasi lolos Quality Assurance dan ditetapkan sebagai Inovasi Daerah. |
+| **8** | `terkirim` | BAPPERIDA | Data dan berkas disalin/disinkronkan ke sistem resmi IGA Kemendagri. |
 
 ---
 
@@ -391,28 +438,23 @@ flowchart TD
 
 Penilaian kematangan mengacu pada **Petunjuk Teknis IGA 2026 Kemendagri**:
 
-#### 1. Skor Satuan Pemda (SPD) — Bobot 30%
+#### 1. Skor Satuan Pemda (SPD) — Bobot 25,20%
 Mengukur kesiapan regulasi, kelembagaan, dan ekosistem inovasi pemerintah daerah:
-$$\text{Skor SPD} = \left( \frac{\text{Skor Variabel Pengungkit} + \text{Skor Variabel Hasil}}{\text{Skor Maksimum SPD}} \right) \times 100$$
+$$\text{SPD} = \sum_{i=1}^{15} (\text{Tier}_i \times \text{Bobot}_i) \quad [\text{Maksimum: } 63 \text{ poin}]$$
 
-#### 2. Skor Satuan Inovasi Daerah (SID) — Bobot 70%
-Mengukur kematangan teknis setiap inovasi berdasarkan 20 Indikator SID:
-$$\text{Skor SID} = \sum_{i=1}^{20} (\text{Bobot}_i \times \text{Nilai Parameter}_i)$$
+#### 2. Skor Satuan Inovasi Daerah (SID) — Bobot 74,80%
+Mengukur kematangan teknis setiap inovasi berdasarkan 20 Indikator SID ditambah skor kuantitas inovasi:
+$$\text{Skor Kematangan per Inovasi} = \sum_{j=1}^{20} (\text{Parameter}_j \times \text{Bobot}_j) \quad [\text{Maks: } 60 \text{ poin}]$$
+$$\text{SID} = \frac{\sum \text{Skor Inovasi}}{\max(12, n)} + \text{Skor Jumlah Inovasi} \quad [\text{Maks: } 187 \text{ poin}]$$
 
-*Keterangan Nilai Parameter:*
-- **P1** = Nilai 1 (Kesiapan dasar)
-- **P2** = Nilai 2 (Kesiapan menengah)
-- **P3** = Nilai 3 (Kesiapan paripurna / optimal)
-- **0** = Tidak Dapat Diukur / Bukti Tidak Sesuai
+#### 3. Indeks Inovasi Daerah (IID) Total
+$$\text{IID} = \left( \frac{\text{SPD} + \text{SID}}{250} \right) \times 100 \quad [\text{Skala: } 0 - 100]$$
 
-#### 3. Simulasi Indeks Inovasi Daerah (IID)
-$$\text{IID} = (0.30 \times \text{Skor SPD}) + \left(0.70 \times \frac{1}{N} \sum_{k=1}^{N} \text{Skor SID}_k\right)$$
-
-*Tingkat Kematangan Inovasi:*
-- **Sangat Inovatif**: Skor $\ge 80.00$
-- **Inovatif**: $60.00 \le \text{Skor} < 80.00$
-- **Kurang Inovatif**: $40.00 \le \text{Skor} < 60.00$
-- **Tidak Dapat Dinilai**: Skor $< 40.00$
+*Klasifikasi Predikat Daerah:*
+- **Sangat Inovatif**: Nilai IID $65.01 - 100.00$
+- **Inovatif**: Nilai IID $40.01 - 65.00$
+- **Kurang Inovatif**: Nilai IID $0.01 - 40.00$
+- **Tidak Dapat Dinilai**: Nilai IID $0.00$
 
 ---
 
@@ -420,26 +462,26 @@ $$\text{IID} = (0.30 \times \text{Skor SPD}) + \left(0.70 \times \frac{1}{N} \su
 
 | Kode | Nama Indikator | Bobot | Parameter P1 / P2 / P3 | Jenis Bukti Dukung yang Sah |
 |:---:|---|:---:|---|---|
-| **IND-01** | Regulasi Inovasi Daerah | 3% | SK Kepala OPD (P1) / Perbup (P2) / Perda (P3) | Dokumen PDF Lembaran Daerah / Salinan SK Resmi |
-| **IND-02** | Ketersediaan SDM Pengelola | 3% | Pengelola <3 Org (P1) / 3-5 Org (P2) / SK Tim Khusus + Bimtek (P3) | SK Tim Pelaksana / Sertifikat Pelatihan |
-| **IND-03** | Dukungan Anggaran | 4% | <10 Juta (P1) / 10-50 Juta (P2) / >50 Juta di DPA (P3) | RKA / DPA-OPD Lembar Anggaran Terkait |
-| **IND-04** | Penggunaan Infrastruktur TI | 5% | Manual-Digital (P1) / Semi-Otomatis (P2) / Full Web/App Cloud (P3) | Screenshot Sistem, URL Akses, Dokumen TI |
-| **IND-05** | Kemudahan Proses Bisnis (SOP) | 5% | Ada Draf (P1) / SOP Ditetapkan (P2) / SOP Terintegrasi ISO/SPBE (P3) | Dokumen Standar Operasional Prosedur (SOP) |
-| **IND-06** | Keterlibatan Aktor Inovasi | 5% | 1 Sektor (P1) / 2 Sektor (P2) / Pentahelix (P3) | Berita Acara Rapat, Foto Kegiatan, Notulensi |
-| **IND-07** | Kecepatan Inovasi (Respon Time) | 6% | Pengurangan Waktu <25% (P1) / 25-50% (P2) / >50% Lebih Cepat (P3) | Standar Pelayanan & Rekapitulasi Waktu Layanan |
-| **IND-08** | Kemanfaatan Inovasi | 7% | Manfaat Terbatas (P1) / Skala Kabupaten (P2) / Lintas Wilayah (P3) | Laporan Data Penerima Manfaat, Data Statistik |
-| **IND-09** | Kepuasan Pengguna (IKM) | 6% | SKM Cukup (P1) / SKM Baik (P2) / SKM Sangat Baik >85 (P3) | Laporan Hasil Survei Kepuasan Masyarakat (SKM) |
-| **IND-10** | Sosialisasi Inovasi | 4% | 1 Media (P1) / 2-3 Media (P2) / Media Cetak, Online & Lapangan (P3) | Kliping Berita, Foto Banner, Tautan Medsos |
-| **IND-11** | Pedoman Teknis / Juknis | 4% | Ringkasan Alur (P1) / Petunjuk Singkat (P2) / Buku Manual Lengkap (P3) | Buku Manual Pengoperasian / Panduan Pengguna |
-| **IND-12** | Kemudahan Akses Informasi | 4% | Informasi di Kantor (P1) / Website OPD (P2) / Portal Publik Terpadu (P3) | Link Publikasi / Tangkapan Layar Portal |
-| **IND-13** | Kerjasama Antar Lembaga | 4% | Surat Dukungan (P1) / Nota Kesepakatan (P2) / PKS Bersama Stakeholder (P3) | Dokumen MoU / Perjanjian Kerja Sama (PKS) |
-| **IND-14** | Replikasi Inovasi | 5% | Diminati (P1) / Proses Adopsi (P2) / Telah Direplikasi Pemda Lain (P3) | Surat Minat / Naskah Perjanjian Replikasi |
-| **IND-15** | Integrasi Sistem Informasi | 6% | Standalone (P1) / Ekspor-Impor Data (P2) / Web Service API Terhubung (P3) | Arsitektur Interoperabilitas / Dokumentasi API |
-| **IND-16** | Video Dokumentasi Inovasi | 6% | Durasi <2 Menit (P1) / 2-5 Menit (P2) / 2-5 Menit Standar Kemendagri (P3) | Tautan Video YouTube Publik Resolusi HD |
-| **IND-17** | Penghargaan Inovasi | 4% | Tingkat Kab (P1) / Tingkat Provinsi (P2) / Tingkat Nasional/Internasional (P3) | Piagam Penghargaan / Sertifikat Pemenang |
-| **IND-18** | Evaluasi Berkala | 5% | Tahunan (P1) / Semesteran (P2) / Triwulanan & Rekomendasi TL (P3) | Laporan Monitoring & Evaluasi Internal/Inspektorat |
-| **IND-19** | Keberlanjutan Inovasi | 5% | Tercantum Renja (P1) / Renstra OPD (P2) / Masuk RPJMD & Regulasi Daerah (P3) | Dokumen Perencanaan Daerah Terkait Inovasi |
-| **IND-20** | Kualitas Proposal Rancang Bangun | 5% | 5 Atribut Dasar (P1) / Lengkap 8 Atribut (P2) / Lengkap & Analisis Dampak (P3) | Naskah Proposal Rancang Bangun (Min 300 Kata) |
+| **SID-01** | Regulasi Inovasi Daerah | 3.00 | SK Kepala OPD (P1) / SK Bupati (P2) / Perbup atau Perda (P3) | Dokumen PDF SK Penetapan / Lembaran Daerah |
+| **SID-02** | Ketersediaan SDM Pengelola | 2.00 | SDM tanpa SK (P1) / SK Kepala OPD (P2) / SK Bupati (P3) | Dokumen SK Tim Pengelola Inovasi |
+| **SID-03** | Dukungan Anggaran | 2.00 | Swadaya (P1) / DPA OPD Tahun Berjalan (P2) / Multi-years DPA (P3) | Dokumen DPA-OPD Lembar Alokasi Anggaran |
+| **SID-04** | Penggunaan Infrastruktur TI | 3.00 | Manual (P1) / Semi-Digital (P2) / Full Web/App Cloud (P3) | Tangkapan Layar Sistem, URL Akses, Dokumen TI |
+| **SID-05** | SOP Inovasi | 2.00 | Draf SOP (P1) / SOP Ditetapkan OPD (P2) / SOP Terstandar ISO (P3) | Dokumen Standar Operasional Prosedur Resmi |
+| **SID-06** | Keterlibatan Aktor Inovasi | 2.00 | 1 Aktor (P1) / 2 Aktor (P2) / Kolaborasi Pentahelix (P3) | Dokumen Notulensi, SK Bersama, Foto Kegiatan |
+| **SID-07** | Kecepatan Waktu Pelayanan | 3.00 | Turun <25% (P1) / Turun 25-50% (P2) / Turun >50% (P3) | Matriks Komparasi Standar Waktu Layanan |
+| **SID-08** | Kemanfaatan Inovasi | 3.00 | Manfaat Terbatas (P1) / Skala Kabupaten (P2) / Nasional (P3) | Laporan Data Penerima Manfaat, Statistik Capaian |
+| **SID-09** | Kepuasan Pengguna (IKM) | 3.00 | IKM Cukup (P1) / IKM Baik (P2) / IKM Sangat Baik >85 (P3) | Laporan Hasil Survei Kepuasan Masyarakat (SKM) |
+| **SID-10** | Sosialisasi Inovasi | 2.00 | 1 Saluran (P1) / 2 Saluran (P2) / Multikanal Cetak & Digital (P3) | Kliping Media Massa, Tautan Publikasi, Foto |
+| **SID-11** | Pedoman Teknis / Juknis | 2.00 | Lembar Alur (P1) / Panduan Ringkas (P2) / Buku Juknis Lengkap (P3) | Buku Pedoman Teknis / Manual Operasional |
+| **SID-12** | Kemudahan Akses Informasi | 2.00 | Info di Kantor (P1) / Website Dinas (P2) / Portal Publik Terpadu (P3) | URL Publikasi Resmi / Tangkapan Layar |
+| **SID-13** | Kerja Sama Antar Lembaga | 2.00 | Surat Dukungan (P1) / Kesepakatan Bersama (P2) / PKS Sah (P3) | Naskah MoU / Perjanjian Kerja Sama (PKS) |
+| **SID-14** | Replikasi Inovasi | 3.00 | Diminati (P1) / Proses Adopsi (P2) / Direplikasi Daerah Lain (P3) | Surat Permohonan Replikasi / PKS Transfer Inovasi |
+| **SID-15** | Integrasi Sistem Informasi | 3.00 | Standalone (P1) / Integrasi Internal (P2) / Interoperabilitas API (P3) | Dokumentasi Arsitektur Web Service / API |
+| **SID-16** | Video Dokumentasi Inovasi | 3.00 | Durasi <2 Menit (P1) / 2-5 Menit (P2) / Standar Kemendagri HD (P3) | Tautan Video YouTube Publik Resolusi Minimal 720p |
+| **SID-17** | Piagam Penghargaan | 2.00 | Tingkat Kab (P1) / Tingkat Provinsi (P2) / Nasional/Internasional (P3) | Scan Piagam Penghargaan / Sertifikat Pemenang |
+| **SID-18** | Evaluasi Hasil Inovasi | 2.00 | Evaluasi Tahunan (P1) / Semesteran (P2) / Triwulanan & Rekomendasi (P3) | Dokumen Laporan Monitoring & Evaluasi Terinci |
+| **SID-19** | Keberlanjutan Inovasi | 3.00 | Masuk Renja (P1) / Masuk Renstra OPD (P2) / Masuk RPJMD & Perda (P3) | Dokumen Perencanaan Daerah Terkait Inovasi |
+| **SID-20** | Kualitas Proposal Rancang Bangun | 3.00 | 5 Poin Inti (P1) / 8 Poin Lengkap (P2) / Analisis Dampak & Kajian (P3) | Naskah Proposal Lengkap (Minimal 300 Kata) |
 
 ---
 
@@ -447,97 +489,100 @@ $$\text{IID} = (0.30 \times \text{Skor SPD}) + \left(0.70 \times \frac{1}{N} \su
 
 Aplikasi menggunakan skema relasional PostgreSQL dengan integritas referensial:
 
-<div align="center">
-
-![Diagram ERD Basis Data INOVA-HUB](docs/images/erd-database.svg)
-
-</div>
-
-<details>
-<summary>🔍 <b>Klik untuk melihat Skrip Relasi Mermaid ERD</b></summary>
-
-```mermaid
-erDiagram
-    OPD ||--o{ USER : memiliki
-    OPD ||--o{ INOVASI : memiliki
-    USER ||--o{ INOVASI : membuat
-    INOVASI ||--o{ INOVASI_DOKUMEN : melampirkan
-    INOVASI ||--o{ SKOR_INOVASI : dinilai
-    INOVASI ||--o{ VALIDASI_LOG : riwayat_status
-    INOVASI ||--o{ INOVASI_VERSI : rantai_silsilah
-    INDIKATOR_SID ||--o{ SKOR_INOVASI : menjadi_acuan
-    PERIODE_LOMBA ||--o{ INOVASI : terikat_tahun
 ```
-
-</details>
-
-- **`opd`**: Data Master Organisasi Perangkat Daerah Kabupaten Sumbawa.
-- **`users`**: Akun pengguna terhubung dengan tabel peran Spatie RBAC.
-- **`inovasi`**: Master data inovasi (tahapan, bentuk, urusan, nama, ringkasan, status 8-langkah).
-- **`inovasi_dokumen`**: Berkas unggahan (proposal, SK, SOP, video) yang tersimpan di disk lokal.
-- **`indikator_sid`**: 20 Indikator SID beserta bobot dan parameter P1/P2/P3.
-- **`skor_inovasi`**: Nilai parameter dan catatan revisi per indikator.
-- **`validasi_log`**: Log audit transisi status (user_id, status_asal, status_tujuan, komentar).
-- **`inovasi_versi`**: Hubungan silsilah versi inovasi antar-periode (inovasi_id_lama ➔ inovasi_id_baru).
-- **`periode_lomba`**: Master tahun lomba (status aktif vs arsip).
+  ┌──────────────┐          ┌──────────────────────┐
+  │     opd      │1       * │        users         │
+  │──────────────│──────────│──────────────────────│
+  │ id           │          │ id                   │
+  │ nama         │          │ email                │
+  │ kode         │          │ tipe_inovator        │
+  └──────┬───────┘          │ opd_id (nullable)    │
+         │1                 └──────────┬───────────┘
+         │                             │1
+         │*                            │*
+  ┌──────┴─────────────────────────────┴───────────┐
+  │                    inovasi                     │
+  │────────────────────────────────────────────────│
+  │ id, user_id, opd_id, nama_inovasi, tahapan     │
+  └──────────────────────┬─────────────────────────┘
+                         │1
+                         │*
+  ┌──────────────────────┴─────────────────────────┐
+  │                pengajuan_lomba                 │
+  │────────────────────────────────────────────────│
+  │ id, inovasi_id, periode_lomba_id, status       │
+  │ is_inovasi_daerah, estimasi_skor_kematangan    │
+  └──────┬──────────────────────┬──────────────────┘
+         │1                     │1
+         │*                     │*
+  ┌──────┴───────────────┐ ┌────┴──────────────────┐
+  │  inovasi_dokumen     │ │ kelengkapan_indikator │
+  │──────────────────────│ │───────────────────────│
+  │ jenis, path, ukuran  │ │ indikator_sid_id      │
+  └──────────────────────┘ │ parameter (p1/p2/p3)  │
+                           └───────────────────────┘
+```
 
 ---
 
 ### Katalog Rute Aplikasi (Route Map)
 
-| Jalur URL | Metode | Middleware Peran | Fungsi Antarmuka |
+| Jalur URL | Metode | Middleware Hak Akses | Fungsi & Modul Antarmuka |
 |---|:---:|---|---|
-| `/` | `GET` | Guest / Auth | Landing page & portal pencarian inovasi publik |
-| `/login` | `GET/POST` | Guest | Autentikasi sesi pengguna Fortify |
-| `/dashboard` | `GET` | Auth | Dashboard ringkasan sesuai peran |
-| `/inovasi` | `GET` | `role:inovator` | Indeks inovasi saya & tabel manajemen |
-| `/inovasi/create` | `GET/POST` | `role:inovator` | Form input inovasi baru beserta upload berkas umum |
+| `/` | `GET` | Guest / Auth | Beranda publik, statistik inovasi daerah & pencarian |
+| `/login` | `GET/POST` | Guest | Masuk sistem dengan email & password |
+| `/register` | `GET/POST` | Guest | Pendaftaran dwijalur (Inovator OPD vs Masyarakat) |
+| `/forgot-password` | `GET/POST` | Guest | Formulir permintaan tautan reset password mandiri |
+| `/reset-password/{token}` | `GET/POST` | Guest | Konfirmasi dan pembuatan kata sandi baru |
+| `/dashboard` | `GET` | `auth, verified` | Dashboard metrik & ringkasan sesuai role |
+| `/inovasi` | `GET` | `role:inovator` | Tabel Inovasi Saya (khusus data inovator login) |
+| `/inovasi/create` | `GET/POST` | `role:inovator` | Form pendaftaran inovasi baru & upload berkas umum |
 | `/inovasi/{id}/indikator` | `GET` | `role:inovator` | Lembar kerja 20 Indikator SID & simulasi skor |
-| `/inovasi/{id}/indikator/{indId}/dokumen` | `POST/DELETE` | `role:inovator` | Manajemen upload berkas bukti dukung indikator |
-| `/verifikasi` | `GET` | `role:pendamping` | Daftar antrean inovasi masuk untuk verifikasi |
-| `/verifikasi/{id}` | `GET/POST` | `role:pendamping` | Layar pemeriksaan berkas, revisi & persetujuan |
-| `/penilaian` | `GET` | `role:tim_penilai` | Modul skoring SPD/SID dan review internal |
-| `/penilaian/{id}/kirim` | `POST` | `role:tim_penilai` | Finalisasi `siap_kirim` dan pencatatan `terkirim` |
-| `/arsip` | `GET` | Auth | Galeri arsip inovasi periode sebelumnya |
-| `/arsip/{id}/ajukan-lagi` | `POST` | `role:inovator` | Replikasi inovasi arsip ke periode berjalan |
-| `/master/*` | `ANY` | `role:tim_penilai` | Pengelolaan Master Indikator, OPD, Linimasa, Periode |
+| `/inovasi/{id}/dokumen` | `POST/DELETE` | `role:inovator` | Unggah & kelola berkas dukung indikator |
+| `/inovasi-daerah` | `GET` | `auth, verified` | Tabel Inovasi Daerah Sumbawa + Toolbar Filter Terpadu |
+| `/inovasi-daerah/print-rekap` | `GET` | `auth, verified` | Cetak laporan rekapitulasi inovasi daerah berformat PDF |
+| `/verifikasi` | `GET` | `role:pendamping` | Antrean inovasi masuk untuk verifikasi pendampingan |
+| `/verifikasi/{id}` | `GET/POST` | `role:pendamping` | Layar telaah berkas, penerbitan revisi & persetujuan |
+| `/penilaian` | `GET` | `role:tim_penilai` | Modul skoring SPD/SID, review internal & siap kirim |
+| `/penilai/opd` | `GET/POST/PUT` | `role:bapperida` | Manajemen Master Perangkat Daerah (OPD) & drill-down |
+| `/penilai/users` | `GET/POST/PUT/DELETE` | `role:bapperida` | Manajemen pengguna sistem (aktivasi & role) |
+| `/arsip` | `GET` | `auth, verified` | Direktori galeri arsip inovasi periode lampau |
+| `/arsip/{id}/ajukan-lagi` | `POST` | `role:inovator` | Replikasi inovasi arsip menjadi draft periode aktif |
 
 ---
 
 ### Konfigurasi Environment (`.env` Reference)
 
-| Variabel | Tipe Data | Nilai Bawaan Lokal | Deskripsi |
-|---|---|---|---|
-| `APP_NAME` | String | `"INOVA-HUB Kabupaten Sumbawa"` | Nama aplikasi resmi |
-| `APP_ENV` | String | `local` | Lingkungan (`local`, `staging`, `production`) |
-| `APP_DEBUG` | Boolean | `true` | Debug bar & verbose error handling |
-| `APP_URL` | URL | `http://localhost:8000` | URL utama akses aplikasi |
-| `DB_CONNECTION` | String | `pgsql` | Driver database relasional |
-| `DB_HOST` | Host | `127.0.0.1` | Alamat host PostgreSQL |
-| `DB_PORT` | Integer | `5432` | Port layanan PostgreSQL |
-| `DB_DATABASE` | String | `repo_inovasi_sumbawa` | Nama basis data |
-| `DB_USERNAME` | String | `postgres` | Pengguna basis data |
-| `DB_PASSWORD` | String | `postgres` | Kata sandi basis data |
-| `FILESYSTEM_DISK` | String | `local` | Driver penyimpanan berkas (`local` / `public`) |
-| `SESSION_DRIVER` | String | `database` | Driver sesi autentikasi pengguna |
+| Variabel | Nilai Rekomendasi | Deskripsi Penggunaan |
+|---|---|---|
+| `APP_NAME` | `"INOVA-HUB Kabupaten Sumbawa"` | Nama identitas resmi aplikasi |
+| `APP_ENV` | `local` / `production` | Mode lingkungan aplikasi |
+| `APP_DEBUG` | `false` di production | Penanganan pesan kesalahan verbose |
+| `DB_CONNECTION` | `pgsql` | Koneksi database PostgreSQL |
+| `DB_DATABASE` | `repo_inovasi_sumbawa` | Nama database transaksional |
+| `MAIL_MAILER` | `smtp` | Driver pengiriman email OTP & verifikasi |
+| `MAIL_HOST` | Host SMTP aktif | Host server email (Gmail, Brevo, SES, Mailtrap) |
+| `MAIL_PORT` | `587` (TLS) / `465` (SSL) | Port layanan SMTP |
+| `MAIL_USERNAME` | Alamat email sender | Akun otentikasi SMTP |
+| `MAIL_PASSWORD` | App Password email | Kata sandi / token otentikasi SMTP |
 
 ---
 
 ## 🧪 Standar Pengembangan & Pengujian Mutu
 
-Repositori ini menerapkan standar rekayasa perangkat lunak modern untuk menjaga integritas kode:
+Repositori ini menerapkan standar rekayasa perangkat lunak modern untuk menjaga keandalan:
 
 ```bash
-# 1. Menjalankan rangkaian unit & feature test PHPUnit
+# 1. Menjalankan seluruh rangkaian automated unit & feature tests (128 test, 722 assertions)
 php artisan test
 
-# 2. Menjalankan linter & code style formatter (Laravel Pint)
+# 2. Menjalankan pengujian spesifik pembuatan Superadmin via OTP
+php artisan test --filter=MakeSuperadminCommandTest
+
+# 3. Menjalankan linter & code style formatter (Laravel Pint)
 ./vendor/bin/pint
 
-# 3. Memverifikasi integritas tipe TypeScript tanpa kompilasi
-npx tsc --noEmit
-
-# 4. Melakukan kompilasi bundle aset frontend untuk produksi
+# 4. Melakukan kompilasi bundle aset frontend produksi
 npm run build
 ```
 
@@ -545,43 +590,41 @@ npm run build
 
 ## ❓ Troubleshooting & Solusi Masalah Umum
 
-### 1. Pesan Galat: `SQLSTATE[08006] [7/000] connection to server on "127.0.0.1", port 5432 failed`
-- **Penyebab**: Server PostgreSQL lokal belum aktif atau port 5432 diblokir.
-- **Solusi**: Pastikan service PostgreSQL telah berjalan (jika menggunakan Laragon, jalankan `start-pg.bat`, atau mulai via Windows Services: `services.msc` ➔ `postgresql-x64`).
+### 1. Pesan Galat: `SQLSTATE[08006] connection to server failed`
+- **Penyebab**: Server PostgreSQL lokal belum aktif di port 5432.
+- **Solusi**: Mulai service PostgreSQL melalui `services.msc` atau jalankan daemon PostgreSQL.
 
-### 2. Pesan Galat: `Vite manifest not found at: public/build/manifest.json`
-- **Penyebab**: File build Vite belum dibuat atau Vite dev server belum dinyalakan.
-- **Solusi**: Jalankan `npm run dev` pada terminal pendamping, atau jalankan `npm run build` untuk menghasilkan bundle statis.
+### 2. Kode OTP Superadmin Tidak Diterima di Email Asli
+- **Penyebab**: Konfigurasi `MAIL_MAILER` di `.env` masih mengarah ke Mailtrap sandbox (`sandbox.smtp.mailtrap.io`).
+- **Solusi**: Email mendarat di dashboard Mailtrap virtual. Untuk pengiriman nyata ke Gmail, atur `MAIL_HOST=smtp.gmail.com` dengan *App Password* 16-digit.
 
-### 3. Berkas Dokumen yang Diunggah Tidak Dapat Diunduh / 404
-- **Penyebab**: Simbolis link penyimpanan Laravel belum dibuat.
-- **Solusi**: Eksekusi perintah `php artisan storage:link` di terminal.
+### 3. Berkas Dokumen Tidak Dapat Diunduh (Error 404)
+- **Penyebab**: Simbolis link penyimpanan storage belum terhubung.
+- **Solusi**: Jalankan perintah `php artisan storage:link`.
 
-### 4. Cache Konfigurasi Tidak Memperbarui Nilai `.env`
-- **Penyebab**: Laravel membaca konfigurasi yang di-cache.
-- **Solusi**: Bersihkan cache dengan `php artisan optimize:clear` atau `php artisan config:clear`.
+### 4. Modifikasi Kode Tidak Langsung Tampil di Peramban
+- **Penyebab**: Cache konfigurasi atau frontend bundle aktif.
+- **Solusi**: Bersihkan cache dengan `php artisan optimize:clear` dan pastikan `npm run dev` aktif.
 
 ---
 
 ## 📖 Dokumentasi Tambahan & Tautan Dokumen
 
-Tersedia dokumen spesifikasi teknis mendalam di direktori [`docs/`](file:///d:/CODE/repo-inovasi-daerah/docs):
-
-- 📄 [**Product Requirements Document (PRD)**](file:///d:/CODE/repo-inovasi-daerah/docs/PRD.md) — Kebutuhan fungsional dan batasan sistem.
-- 🏗 [**Arsitektur Sistem**](file:///d:/CODE/repo-inovasi-daerah/docs/architecture.md) — Desain komponen modul monolitik Laravel & Inertia.
-- 🧮 [**Model Penilaian & Domain Bisnis**](file:///d:/CODE/repo-inovasi-daerah/docs/domain.md) — Glosarium lengkap dan detail skoring IGA 2026.
-- 🗄 [**Skema Database & ERD**](file:///d:/CODE/repo-inovasi-daerah/docs/database.md) — Struktur tabel, indeks, dan relasi kunci asing.
-- 🎨 [**Panduan UI & Antarmuka**](file:///d:/CODE/repo-inovasi-daerah/docs/ui-design.md) — Desain layout, palet teal Kemang Satange, dan aturan shadcn/ui.
-- 📜 [**Term of Reference (TOR) Resmi**](file:///d:/CODE/repo-inovasi-daerah/TOR_DINOLA_Sumbawa.md) — Dokumen acuan TOR resmi Pemerintah Kabupaten Sumbawa.
+- 📄 [**Product Requirements Document (PRD)**](file:///d:/CODE/repo-inovasi-daerah/docs/PRD.md) — Kebutuhan fungsional dan batasan teknis.
+- 🏗 [**Arsitektur Sistem**](file:///d:/CODE/repo-inovasi-daerah/docs/architecture.md) — Arsitektur monolitik Laravel & Inertia.
+- 🗄 [**Skema Database & ERD**](file:///d:/CODE/repo-inovasi-daerah/docs/database.md) — Struktur tabel, tipe inovator, dan relasi master data.
+- 🎨 [**Panduan UI & Antarmuka**](file:///d:/CODE/repo-inovasi-daerah/docs/ui-design.md) — Spesifikasi layar registrasi, filter toolbar, dan 20 Indikator SID.
+- 📘 [**Buku Panduan Pengguna Lengkap**](file:///d:/CODE/repo-inovasi-daerah/docs/panduan-penggunaan-dinola.md) — Panduan bergambar langkah demi langkah seluruh role.
+- 📜 [**Term of Reference (TOR) Resmi**](file:///d:/CODE/repo-inovasi-daerah/TOR_DINOLA_Sumbawa.md) — Regulasi dan mandat resmi inovasi Kabupaten Sumbawa.
 
 ---
 
 ## 🏛 Lisensi & Identitas Resmi
 
 Hak Cipta &copy; 2026 **Pemerintah Kabupaten Sumbawa**.  
-Dikelola dan dikembangkan oleh **Badan Perencanaan Pembangunan, Penelitian dan Pengembangan Daerah (Bappeda Litbang) Kabupaten Sumbawa**.
+Dikelola dan dikembangkan oleh **Badan Perencanaan Pembangunan, Riset dan Inovasi Daerah (BAPPERIDA) Kabupaten Sumbawa**.
 
 - **Alamat Kantor**: Jl. Garuda No. 1, Sumbawa Besar, Nusa Tenggara Barat, Indonesia
-- **Email Resmi**: [bappeda@sumbawakab.go.id](mailto:bappeda@sumbawakab.go.id)
+- **Email Resmi**: [bapperida@sumbawakab.go.id](mailto:bapperida@sumbawakab.go.id)
 - **Portal Daerah**: [https://sumbawakab.go.id](https://sumbawakab.go.id)
 - **Motto Pembangunan**: *"Sabalong Samawa — Bersama Membangun Inovasi Daerah"*

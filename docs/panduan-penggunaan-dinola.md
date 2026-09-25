@@ -31,10 +31,11 @@ Sistem ini menerapkan alur verifikasi dan pembinaan berjenjang untuk memastikan 
 
 | Peran Pengguna (Role) | Cakupan Akses Utama | Tanggung Jawab |
 | --- | --- | --- |
-| Inovator (OPD & Masyarakat) | Dashboard Inovator, Kelola Inovasi, Formulir Profil, Unggah Dokumen, Ajukan Validasi, Cetak Profil | Mendaftarkan profil inovasi baru, melengkapi 22 indikator dokumen bukti, merevisi data jika diminta pendamping. |
-| Pendamping & Verifikator OPD | Dashboard Binaan, Antrean Verifikasi, Lembar Validasi Indikator, Pengesahan OPD | Melakukan pendampingan pengisian, memeriksa keabsahan bukti dukung, menerbitkan catatan revisi, dan memberikan pengesahan resmi OPD. |
-| Tim Penilai & Admin Bappeda | Dashboard IID Kabupaten, Manajemen Penugasan, Skoring SPD & SID, Simulasi What-If, Master Data, Ekspor Data | Melakukan penilaian kematangan indikator inovasi, simulasi skor indeks kabupaten, mengelola periode lomba, dan mengekspor data ke pusat. |
-| Pimpinan Daerah | Dashboard Eksekutif Pimpinan (Read-Only) | Memantau performa inovasi daerah secara real-time, sebaran urusan wajib pelayanan dasar, dan proyeksi predikat kematangan Sumbawa. |
+| **Superadmin (bapperida)** | Akses Seluruh Modul Sistem, Master Perangkat Daerah (OPD), Manajemen User, Master Indikator, Linimasa Periode, Bypass Validasi & Ekspor | Memegang kontrol operasional penuh aplikasi, mengelola akun seluruh instansi, menetapkan inovasi daerah resmi, dan inisialisasi via CLI `make:superadmin`. |
+| **Tim Penilai** | Dashboard IID Kabupaten, Review Internal Inovasi Daerah, Skoring SPD & 20 SID, Simulasi Indeks IGA, Cetak Rekapitulasi PDF | Menguji petik inovasi yang telah disahkan OPD, memvalidasi parameter kematangan, dan merekomendasikan inovasi siap lapor ke Kemendagri. |
+| **Pendamping & Verifikator OPD** | Dashboard Binaan, Antrean Verifikasi, Lembar Validasi 20 SID, Catatan Revisi per-Indikator, Pengesahan Resmi OPD | Melakukan pembinaan teknis dokumen, memeriksa keabsahan SK dan regulasi, memberikan koreksi detail, dan menerbitkan pengesahan Kepala OPD. |
+| **Inovator (OPD & Masyarakat)** | Dashboard Inovator, Inovasi Saya, Input Profil Inovasi, Lembar 20 Indikator SID, Dokumen Pendukung, Galeri Arsip & Ajukan Kembali | Mengunggah dokumen umum (proposal, SK, piagam, link video YouTube), menentukan parameter 20 SID, mengunggah bukti dukung, dan merevisi data. |
+| **Pimpinan Daerah** | Dashboard Eksekutif Pimpinan (Read-Only) | Memantau performa inovasi daerah secara real-time, sebaran urusan wajib pelayanan dasar, dan proyeksi nilai IID Kabupaten Sumbawa. |
 
 ### Bab 2: Masuk ke Akun (Login)
 
@@ -53,22 +54,41 @@ Halaman Masuk adalah gerbang utama bagi seluruh pengguna sistem INOVA-HUB. Siste
 > [!TIP]
 > Keamanan Sesi: Jangan mencentang opsi 'Ingat Saya' apabila Anda mengakses aplikasi dari komputer umum atau ruang rapat bersama.
 
-### Bab 3: Pendaftaran Akun Inovator Baru
+### Bab 3: Pendaftaran Akun Inovator Dwijalur (OPD vs Masyarakat)
 
 ![Formulir Pendaftaran Akun Inovator Baru](file:///D:/CODE/repo-inovasi-daerah/design/02-auth-register.png)
 
-*Formulir Pendaftaran Akun Inovator Baru*
+*Formulir Pendaftaran Akun Inovator Dwijalur*
 
-Bagi Inovator Perangkat Daerah baru, instansi vertikal, maupun masyarakat umum/akademisi yang belum memiliki akun, pendaftaran dapat dilakukan secara mandiri melalui menu registrasi.
+Bagi inovator baru (baik dari kalangan Perangkat Daerah, Kecamatan, Desa, maupun Masyarakat Mandiri / Komunitas), pendaftaran dilakukan secara mandiri melalui halaman `/register` dengan mekanisme **Dwijalur**:
 
-1. Pada halaman login, klik tautan 'Daftar Akun Baru' di bagian bawah kotak masuk.
-2. Isi 'Nama Lengkap' atau nama narahubung resmi inovator.
-3. Masukkan 'Alamat Email Aktif' yang akan digunakan untuk menerima pemberitahuan dan verifikasi akun.
-4. Pilih 'Kategori / Instansi': Tentukan apakah Anda perwakilan Perangkat Daerah (OPD) Kabupaten Sumbawa, Kecamatan, Desa, atau Inovator Masyarakat Mandiri.
-5. Buat 'Kata Sandi' yang kuat (minimal 8 karakter, kombinasi huruf besar, huruf kecil, angka, dan simbol).
-6. Ketik ulang kata sandi pada kolom 'Konfirmasi Kata Sandi'.
-7. Centang persetujuan syarat dan ketentuan penggunaan sistem INOVA-HUB.
-8. Klik tombol 'Daftar Sekarang'. Akun Anda akan dibuat dan Anda dapat langsung masuk ke dashboard.
+1. Pada halaman login, klik tautan **'Daftar Akun Baru'**.
+2. **Pilih Jalur Pendaftaran (Tab Navigasi)**:
+   - **Tab Inovator Perangkat Daerah**: Digunakan bagi ASN/staf perwakilan dinas/badan/kantor resmi. Pilih nama Perangkat Daerah dari daftar dropdown resmi Kabupaten Sumbawa.
+   - **Tab Inovator Masyarakat**: Digunakan bagi perseorangan, komunitas kreatif, pegiat UMKM, kampus, atau desa mandiri. Ketikkan nama lembaga/komunitas Anda secara bebas.
+3. Masukkan **Nama Lengkap** narahubung inovator.
+4. Masukkan **Alamat Email Aktif** (akan menerima surat verifikasi email).
+5. Masukkan **Nomor WhatsApp** aktif untuk keperluan koordinasi bimbingan teknis.
+6. Masukkan **Profesi / Pekerjaan**.
+7. Tentukan **Kata Sandi** (minimal 8 karakter) dan ketik ulang pada kolom **Konfirmasi Kata Sandi**.
+8. Jawab pertanyaan **Tantangan CAPTCHA Matematika** sederhana untuk memvalidasi pendaftaran manusia asli.
+9. Klik tombol **'Daftar Sekarang'**. Buka email Anda untuk memverifikasi akun sebelum login.
+
+### Bab 3.1: Inisialisasi Akun Superadmin via CLI (`make:superadmin`)
+
+Khusus untuk pembuatan akun **Administrator BAPPERIDA (Superadmin)** tingkat sistem, pendaftaran tidak dibuka pada formulir registrasi publik demi alasan keamanan tingkat tinggi (*zero-trust security*). Superadmin dibuat langsung melalui terminal server via Artisan CLI:
+
+```bash
+php artisan make:superadmin
+```
+
+Langkah-langkah di terminal:
+1. Masukkan Nama Lengkap calon Superadmin.
+2. Masukkan Alamat Email resmi kedinasan.
+3. Masukkan Kata Sandi (minimal 8 karakter) dan konfirmasikan.
+4. Sistem akan men-generate **Kode OTP 6-Digit** dan mengirimkannya secara instan ke kotak masuk (inbox/spam) email yang didaftarkan.
+5. Ketikkan 6-digit kode OTP tersebut pada terminal (tersedia 3 kali percobaan verifikasi).
+6. Setelah valid, akun Superadmin berstatus aktif, email otomatis terverifikasi, dan langsung memiliki hak akses penuh ke seluruh modul sistem INOVA-HUB.
 
 ### Bab 4: Pemulihan & Pengaturan Kata Sandi
 
@@ -127,20 +147,23 @@ Komponen utama pada Dashboard Inovator meliputi:
 - Tombol Aksi Cepat: Akses langsung menuju formulir 'Tambah Inovasi Baru' dan 'Unduh Panduan Teknis'.
 - Daftar Aktivitas Terbaru: Riwayat perubahan status atau komentar revisi terbaru yang diberikan oleh Pendamping Inovasi.
 
-### Bab 7: Menavigasi Tabel & Daftar Inovasi Daerah
+### Bab 7: Menavigasi Tabel Inovasi Daerah & Penggunaan Toolbar Filter
 
 ![Tabel Manajemen Inovasi Daerah Inovator](file:///D:/CODE/repo-inovasi-daerah/design/06-inovasi-index.png)
 
-*Tabel Manajemen Inovasi Daerah Inovator*
+*Tabel Manajemen Inovasi Daerah & Toolbar Filter Terpadu*
 
-Menu 'Kelola Inovasi' menyajikan tabel inventaris seluruh inovasi yang dimiliki oleh OPD atau akun inovator Anda.
+Menu 'Inovasi Daerah' (`/inovasi-daerah`) dan 'Inovasi Saya' (`/inovasi`) menyajikan inventaris inovasi dengan fitur pencarian dan penyaringan multi-parameter terpadu di samping bilah pencarian:
 
-Fitur dan elemen penting pada tabel inovasi:
-
-- Bilah Pencarian & Filter: Cari inovasi berdasarkan nama/kata kunci, saring berdasarkan Urusan Pemerintahan, Tahapan Inovasi, atau Status Validasi.
-- Badge Status 8 Langkah: Menunjukkan posisi tahapan inovasi secara visual dengan warna khas (Kuning untuk Draf, Biru untuk Diajukan, Oranye untuk Revisi, Hijau untuk Disetujui/Disahkan).
-- Estimasi Skor Kematangan: Indikator akumulasi skor kematangan yang dihitung berdasarkan kelengkapan parameter data dukung.
-- Menu Aksi (Tiga Titik): Berisi opsi untuk 'Lihat Detail', 'Edit Profil & Dokumen Dukung', 'Cetak Lembar Profil', dan 'Hapus Draf' (hanya berlaku untuk status draf).
+1. **Toolbar Filter Terpadu**:
+   - **Filter Perangkat Daerah (OPD)**: Dropdown untuk menyaring inovasi berdasarkan OPD pengusul resmi (tersedia bagi peran BAPPERIDA, Tim Penilai, Pimpinan, dan Pendamping).
+   - **Filter Tahapan Inovasi**: Dropdown untuk menyaring inovasi berdasarkan tingkat kesiapan (*Inisiatif*, *Uji Coba*, atau *Penerapan*).
+   - **Filter Status Validasi**: Dropdown untuk menyaring inovasi berdasarkan posisi alur (*Dalam Pendampingan*, *Disahkan OPD*, *Review Internal*, *Siap Kirim*, atau *Terkirim*).
+   - **Tombol Reset Filter**: Muncul otomatis dengan warna merah aksen saat ada filter yang aktif, memungkinkan Anda kembali ke tampilan default secara instan.
+2. **Kolom Progres 20 Indikator SID**: Menampilkan visualisasi progress bar (contoh: 20 / 20 SID - 100%) untuk memantau seberapa lengkap bukti dukung yang telah diunggah.
+3. **Badge Skor Kematangan**: Memberikan indikasi akumulasi nilai kematangan inovasi (maksimum 60 poin) dengan kode warna dinamis: Hijau untuk skor tinggi ($\ge 45$), Teal untuk skor baik ($30 - 44$), dan Kuning/Oranye untuk skor dasar ($< 30$).
+4. **Status Berkas Profil**: Badge hijau bertanda centang jika dokumen umum (proposal dan video) sudah diunggah lengkap.
+5. **Menu Aksi Cepat**: Ikon folder untuk membuka lembar kerja 20 Indikator SID, tombol edit profil, cetak rekapitulasi, dan opsi duplikasi inovasi arsip.
 
 ### Bab 8: Mendaftarkan Inovasi Baru (Formulir Inisiasi)
 
@@ -358,6 +381,17 @@ Untuk memastikan sistem selalu adaptif terhadap perubahan regulasi pusat tanpa p
 - Master Indikator & Bobot (SPD/SID): Kelola nama indikator, definisi operasional, persentase bobot penilaian, dan opsi pilihan parameter nilai (P1, P2, P3). Konfigurasi ini dapat disesuaikan sewaktu-waktu sesuai edaran juknis terbaru Kemendagri.
 - Master Periode Lomba: Buka periode lomba tahunan baru (misalnya IGA 2026), atur tanggal pembukaan input, tenggat pengajuan inovator, batas akhir verifikasi pendamping, dan tanggal cut-off ekspor.
 - Arsip Otomatis: Inovasi pada periode lomba sebelumnya akan otomatis beralih menjadi arsip (read-only), namun inovator dapat menggunakan fitur 'Ajukan Kembali' pada periode aktif baru dengan menyertakan penjelasan progres pengembangan.
+
+### Bab 21.1: Pengelolaan Master Perangkat Daerah (OPD) & Integrasi Drill-Down
+
+Khusus peran Administrator BAPPERIDA (Superadmin), modul **Master Perangkat Daerah** (`/penilai/opd`) disediakan untuk mengelola seluruh instansi dinas/badan/kecamatan/unit kerja resmi Kabupaten Sumbawa:
+
+1. **Akses Modul**: Masuk ke menu **Master OPD** pada sidebar navigasi kiri.
+2. **Tambah OPD Baru**: Klik tombol **"+ Tambah Perangkat Daerah"**, masukkan Nama Resmi (misal: *Dinas Tenaga Kerja dan Transmigrasi*) dan Kode Singkatan Resmi (misal: *DISNAKERTRANS*).
+3. **Penyuntingan & Penonaktifan**: Klik tombol Edit untuk memperbarui kode atau nama instansi.
+4. **Navigasi Drill-Down ke Inovasi Daerah**:
+   - Pada kolom *Jumlah Inovasi*, setiap OPD memiliki badge angka yang menunjukkan total inovasi yang telah didaftarkan.
+   - Klik badge tersebut &rarr; Sistem akan otomatis mengarahkan Anda ke halaman **Inovasi Daerah** (`/inovasi-daerah?opd_id={id}`) dengan filter OPD yang sudah otomatis terpasang sesuai instansi yang diklik.
 
 ### Bab 22: Ekspor & Sinkronisasi Data ke BSKDN Kemendagri
 

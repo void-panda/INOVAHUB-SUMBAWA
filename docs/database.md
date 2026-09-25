@@ -1,214 +1,149 @@
 # Database — INOVA-HUB Kabupaten Sumbawa
 
-Skema mengikuti **entitas TOR §7** + tabel RBAC **spatie/laravel-permission**.
-Nama tabel/kolom acuan = **`docs/database.md` ini** (turun dari entitas TOR §7).
-Jangan menambah tabel/kolom yang belum dipakai modul — tambahkan saat benar-benar
-dibutuhkan (YAGNI).
+Skema basis data mengikuti **entitas TOR §7**, regulasi IGA 2026 Kemendagri, serta tabel RBAC **spatie/laravel-permission** dan autentikasi **Laravel Fortify**.
 
-## Tabel
+---
+
+## 1. Entitas & Tabel Utama
 
 ### `users`
-Akun seluruh aktor.
+Akun seluruh aktor pengguna sistem.
 
-| kolom | tipe | keterangan |
+| Kolom | Tipe | Keterangan |
 | --- | --- | --- |
-| id | bigint PK | |
-| name | string | Nama Akun |
-| nama_pemda | string | Nama Pemda |
-| opd_id | FK → opd (nullable) | Perangkat Daerah asal |
-| email | string unique | |
-| password | string | |
-| status_aktif | boolean (default true) | penonaktifan akun |
-| timestamps | | |
+| `id` | bigint PK | Auto-increment primary key |
+| `name` | string(255) | Nama lengkap pengguna |
+| `email` | string(255) unique | Alamat email resmi (digunakan untuk login & OTP) |
+| `email_verified_at` | timestamp nullable | Waktu verifikasi email pendaftaran / OTP |
+| `password` | string(255) | Hash password pengguna |
+| `nama_pemda` | string(255) | Nama instansi / OPD / asal komunitas |
+| `tipe_inovator` | string(20) default `'dinas'` | Kategori inovator: `'dinas'` (OPD/Instansi) atau `'masyarakat'` (Mandiri/Komunitas) |
+| `opd_id` | FK &rarr; `opd.id` nullable | Relasi ke Perangkat Daerah asal (wajib jika `tipe_inovator = 'dinas'`) |
+| `no_whatsapp` | string(50) nullable | Nomor WhatsApp aktif untuk konfirmasi & notifikasi |
+| `pekerjaan` | string(255) nullable | Profesi / jabatan pengguna |
+| `status_aktif` | boolean default `true` | Status aktivasi akun (dapat dinonaktifkan BAPPERIDA) |
+| `two_factor_secret` | text nullable | Secret key 2FA Fortify |
+| `two_factor_recovery_codes` | text nullable | Kode pemulihan 2FA |
+| `two_factor_confirmed_at` | timestamp nullable | Waktu konfirmasi 2FA |
+| `remember_token` | string(100) nullable | Sesi remember me |
+| `created_at` / `updated_at` | timestamp | Waktu pembuatan & modifikasi |
 
-Role **tidak disimpan** di kolom ini — lewat spatie (`model_has_roles`).
+> **Catatan RBAC**: Role pengguna tidak disimpan dalam kolom tabel ini, melainkan melalui tabel pivot Spatie (`model_has_roles`). Terdapat 5 role standar: `bapperida` (Superadmin), `tim_penilai`, `pendamping`, `inovator`, dan `pimpinan`.
 
-### spatie RBAC
-`roles`, `permissions`, `role_has_permissions`, `model_has_roles`,
-`model_has_permissions` (paket `spatie/laravel-permission`). 4 role seed:
-`inovator`, `pendamping`, `tim_penilai`, `pimpinan` (lihat `docs/PRD.md`).
+---
 
 ### `opd`
-Master Perangkat Daerah.
+Master data Perangkat Daerah di lingkungan Pemerintah Kabupaten Sumbawa.
 
-| kolom | tipe | keterangan |
+| Kolom | Tipe | Keterangan |
 | --- | --- | --- |
-| id | bigint PK | |
-| nama | string | |
-| kode | string nullable | kode perangkat/urusan |
-| kontak | string nullable | |
-| timestamps | | |
+| `id` | bigint PK | Primary key |
+| `nama` | string(255) | Nama resmi Perangkat Daerah / Unit Kerja |
+| `kode` | string(50) nullable | Kode singkatan resmi (misal: `BAP`, `DISKOMINFO`, `DINKES`) |
+| `kontak` | string(255) nullable | Nomor telepon / narahubung dinas |
+| `created_at` / `updated_at` | timestamp | Audit timestamps |
 
-### `inovasi`
-Data inti profil inovasi (22 field sesuai Proposal Inovasi Daerah — rincian
-final saat form dibangun, mengacu TOR §9 + `docs/ui-design.md`).
-
-| kolom | tipe | keterangan |
-| --- | --- | --- |
-| id | bigint PK | |
-| user_id | FK → users | pemilik (Nama Akun) |
-| opd_id | FK → opd nullable | OPD pengusul |
-| periode_lomba_id | FK → periode_lomba | periode/tahun |
-| nama_inovasi | string | Nama Inovasi* |
-| tahapan | enum `inisiatif`/`ujicoba`/`penerapan` | Tahapan Inovasi* |
-| nama_inisiator | string | Nama Inisiator* |
-| koordinat | string `"lat,lng"` | Koordinat* |
-| urusan_utama | string | Urusan Pemerintahan Utama |
-| urusan_wajib | string nullable | urusan wajib yandas terwakili (untuk cek kepatuhan) |
-| waktu_uji_coba | date nullable | |
-| waktu_penerapan | date | Waktu Penerapan* |
-| waktu_pengembangan | date nullable | |
-| file_penghargaan | string nullable | path file — File Penghargaan (kolom grid lama) |
-| estimasi_skor_kematangan | float nullable | dihitung |
-| status | enum 8 langkah (TOR §5) | draft/diajukan/divalidasi/revisi/disetujui/disahkan_opd/review_internal/siap_kirim/terkirim |
-| is_arsip | bool default false | periode lama → true (read-only) |
-| penjelasan_pengembangan | text nullable | wajib saat "Ajukan Kembali" |
-| inovasi_asal_id | FK → inovasi nullable | rantai versi (alternatif/simpel `inovasi_versi`) |
-| timestamps | | |
-
-> Entitas TOR `inovasi_versi` tetap dibuat sbg tabel penaut eksplisit antar tahun
-> (idiom TOR); `inovasi_asal_id` di atas adalah penyederhanaan opsional — pilih
-> salah satu saat implementasi, jangan duplikasi (lihat gotcha `docs/database.md`).
-
-### `inovasi_dokumen`
-Berkas pendukung (anak dari inovasi).
-
-| kolom | tipe | keterangan |
-| --- | --- | --- |
-| id | bigint PK | |
-| inovasi_id | FK → inovasi | |
-| jenis | string | anggaran / profil-bisnis / haki / penghargaan / video / proposal / sk / piagam / dokumen-dukung |
-| path | string | lokasi file di disk lokal |
-| nama_asal | string | nama file asli |
-| mime | string | |
-| ukuran | int | bytes |
-| timestamps | | |
-
-### `indikator_spd` / `indikator_sid`
-Master indikator + bobot + parameter ambang (P1/P2/P3). **Data master, dapat
-diperbarui `tim_penilai` tiap tahun — jangan hardcode.**
-
-| kolom | tipe |
-| --- | --- |
-| id | bigint PK |
-| kode | string (SPD-01.. / SID-01..) |
-| nama | string |
-| variabel | string nullable |
-| bobot | decimal |
-| p1 | string nullable | parameter ambang P1 (data master) |
-| p2 | string nullable | parameter ambang P2 |
-| p3 | string nullable | parameter ambang P3 |
-| timestamps | |
-
-### `skor_inovasi`
-Hasil skoring per inovasi per indikator SID.
-
-| kolom | tipe | keterangan |
-| --- | --- | --- |
-| id | bigint PK | |
-| inovasi_id | FK → inovasi | |
-| indikator_id | FK → indikator_sid | |
-| tier | int (1–3) | parameter tercapai |
-| skor | decimal | tier × bobot |
-| catatan | text nullable | catatan validator |
-| timestamps | | |
-
-### `skor_spd`
-Hasil skoring indikator SPD tingkat kabupaten (diisi/di-review `tim_penilai`
-berdasar data OPD terkait).
-
-| kolom | tipe |
-| --- | --- |
-| id | bigint PK |
-| periode_lomba_id | FK → periode_lomba |
-| indikator_id | FK → indikator_spd |
-| tier | int (1–3) |
-| skor | decimal |
-| catatan | text nullable |
-| timestamps | |
-
-### `validasi_log`
-Audit trail semua transisi status (TOR §11).
-
-| kolom | tipe | keterangan |
-| --- | --- | --- |
-| id | bigint PK | |
-| inovasi_id | FK → inovasi | |
-| user_id | FK → users | siapa |
-| status_sebelum | string | |
-| status_sesudah | string | |
-| catatan | text nullable | komentar revisi (wajib saat revisi) |
-| created_at | timestamp | kapan |
-
-### `penugasan_pendamping`
-Relasi Pendamping ↔ OPD/Inovator binaan.
-
-| kolom | tipe |
-| --- | --- |
-| id | bigint PK |
-| pendamping_id | FK → users (role pendamping) |
-| opd_id | FK → opd nullable |
-| inovator_id | FK → users nullable |
-| periode_lomba_id | FK → periode_lomba |
-| timestamps | |
-
-### `notifikasi`
-Log notifikasi (in-app / email).
-
-| kolom | tipe | keterangan |
-| --- | --- | --- |
-| id | bigint PK | |
-| user_id | FK → users | penerima |
-| tipe | string | pengajuan-baru / revisi / disetujui / tenggat / pengumuman |
-| pesan | text | |
-| dibaca_at | timestamp nullable | |
-| timestamps | | |
-
-### `linimasa`
-Master tahapan & tenggat lomba IGA tahun berjalan.
-
-| kolom | tipe |
-| --- | --- |
-| id | bigint PK |
-| periode_lomba_id | FK → periode_lomba |
-| nama | string (Penjaringan, Validasi Lapangan, Presentasi, Sidang, Penghargaan, …) |
-| mulai | date |
-| selesai | date |
+---
 
 ### `periode_lomba`
-Master periode/tahun penilaian.
+Master linimasa dan tahun lomba IGA Kabupaten Sumbawa.
 
-| kolom | tipe | keterangan |
+| Kolom | Tipe | Keterangan |
 | --- | --- | --- |
-| id | bigint PK | |
-| tahun | int unique | 2025, 2026, … |
-| aktif | boolean | penanda periode berjalan (arsip = periode non-aktif) |
-| timestamps | | |
+| `id` | bigint PK | Primary key |
+| `tahun` | integer unique | Tahun pelaksanaan lomba (contoh: 2025, 2026) |
+| `aktif` | boolean default `false` | Menandai periode lomba berjalan (hanya 1 yang aktif) |
+| `tanggal_mulai` | date | Tanggal pembukaan pengajuan |
+| `tanggal_selesai` | date | Batas akhir pengajuan / penutupan |
+| `created_at` / `updated_at` | timestamp | Audit timestamps |
 
-### `inovasi_versi`
-Rantai riwayat versi satu inovasi antar tahun ("Ajukan Kembali").
+---
 
-| kolom | tipe |
-| --- | --- |
-| id | bigint PK |
-| inovasi_baru_id | FK → inovasi |
-| inovasi_asal_id | FK → inovasi |
-| tahun | int |
-| catatan_pengembangan | text (Penjelasan Pengembangan dari Versi Sebelumnya) |
-| timestamps | |
+### `inovasi`
+Profil induk entitas inovasi (berlaku lintas periode).
 
-## Tidak ada (dengan sengaja)
+| Kolom | Tipe | Keterangan |
+| --- | --- | --- |
+| `id` | bigint PK | Primary key |
+| `user_id` | FK &rarr; `users.id` | Akun inisiator/pemilik inovasi |
+| `opd_id` | FK &rarr; `opd.id` nullable | Perangkat Daerah pengusul (null jika inovasi masyarakat) |
+| `is_inovasi_daerah` | boolean default `false` | Penanda inovasi resmi terpilih Kabupaten Sumbawa |
+| `nama_inovasi` | string(255) | Nama judul inovasi |
+| `tahapan` | enum | `'inisiatif'`, `'ujicoba'`, atau `'penerapan'` |
+| `nama_inisiator` | string(255) | Nama perseorangan atau tim penggagas |
+| `inisiator` | enum | `'opd'`, `'masyarakat'`, `'pemerintah_desa'`, dll |
+| `bentuk_inovasi` | enum | `'pelayanan_publik'`, `'tata_kelola_pemerintahan'`, dll |
+| `jenis_inovasi` | enum | `'digital'` atau `'non_digital'` |
+| `klasifikasi` | enum | `'tematik'` atau `'non_tematik'` |
+| `tematik` | string(100) nullable | Isu strategis (stunting, kemiskinan, digitalisasi, dll) |
+| `koordinat` | string(100) | Titik lokasi koordinat latitude & longitude |
+| `urusan_utama` | string(255) | Urusan pemerintahan utama yang didukung |
+| `urusan_wajib` | json nullable | Daftar urusan wajib pelayanan dasar (yandas) yang dicakup |
+| `waktu_uji_coba` | date nullable | Tanggal dimulainya masa uji coba |
+| `waktu_penerapan` | date | Tanggal resmi diimplementasikan |
+| `waktu_pengembangan` | date nullable | Tanggal siklus pengembangan lanjutan |
+| `rancang_bangun` | text | Deskripsi dasar rancang bangun dan metodologi (min. 300 kata) |
+| `tujuan` | text | Tujuan spesifik diciptakannya inovasi |
+| `manfaat` | text | Manfaat terukur bagi masyarakat dan pemerintah daerah |
+| `hasil_inovasi` | text nullable | Capaian kuantitatif dan kualitatif implementasi |
+| `file_penghargaan` | string(255) nullable | Path piagam/sertifikat penghargaan yang pernah diraih |
+| `created_at` / `updated_at` | timestamp | Audit timestamps |
 
-- Tabel arsip terpisah — arsip = `is_arsip`/periode non-aktif (data tak pernah dihapus).
-- Soft-delete menyeluruh — cukup `validasi_log` + arsip.
-- UUID/audit berlebihan.
+---
 
-## Catatan pelaksanaan
+### `pengajuan_lomba`
+Relasi partisipasi inovasi pada suatu tahun lomba (mewadahi siklus hidup & arsip).
 
-- Pilih **satu** mekanisme rantai versi: tabel `inovasi_versi` (idiom TOR) **atau**
-  kolom `inovasi_asal_id` di `inovasi` — jangan keduanya.
-- `penilaian` (fase awal) → digantikan `skor_inovasi` + `skor_spd`; migrasi lama
-  dimigrasikan menyesuaikan TOR.
-- Kolom profil lanjutan (rancang bangun, tujuan, manfaat, hasil, Asta Cita, PKPN,
-  jenis/bentuk, dll) ditambah saat form 22 field dibangun (Phase 3) — daftar
-  field mengacu TOR §9 (22 item Proposal Inovasi Daerah).
+| Kolom | Tipe | Keterangan |
+| --- | --- | --- |
+| `id` | bigint PK | Primary key |
+| `inovasi_id` | FK &rarr; `inovasi.id` | Relasi ke profil induk inovasi |
+| `periode_lomba_id` | FK &rarr; `periode_lomba.id` | Periode lomba yang diikuti |
+| `user_id` | FK &rarr; `users.id` | Pendaftar / penanggung jawab |
+| `is_inovasi_daerah` | boolean default `false` | Status lolos penetapan Inovasi Daerah periode bersangkutan |
+| `status` | enum (8 status) | `'draft'`, `'dalam_pendampingan'`, `'disahkan_opd'`, `'review_internal'`, `'siap_kirim'`, `'terkirim'`, dll |
+| `is_arsip` | boolean default `false` | Menandai arsip lomba periode masa lalu (read-only) |
+| `penjelasan_pengembangan` | text nullable | Wajib diisi bila hasil "Ajukan Kembali" dari arsip |
+| `estimasi_skor_kematangan` | decimal(5,2) nullable | Simulasi skor kematangan 20 Indikator SID (maks 60 poin) |
+| `created_at` / `updated_at` | timestamp | Audit timestamps |
+
+---
+
+### `inovasi_dokumen`
+Berkas pendukung umum profil inovasi (proposal, SK, piagam penghargaan, tautan video).
+
+| Kolom | Tipe | Keterangan |
+| --- | --- | --- |
+| `id` | bigint PK | Primary key |
+| `inovasi_id` | FK &rarr; `inovasi.id` | Relasi ke inovasi |
+| `pengajuan_lomba_id` | FK &rarr; `pengajuan_lomba.id` | Terikat ke pengajuan lomba |
+| `jenis` | enum | `'proposal'`, `'sk'`, `'piagam'`, `'video'`, dll |
+| `nama_asal` | string(255) | Nama asli berkas saat diunggah |
+| `path` | string(500) | Lokasi berkas di storage lokal (`storage/app/...`) atau URL video |
+| `mime` | string(100) nullable | Tipe konten MIME |
+| `ukuran` | bigint default 0 | Ukuran berkas dalam bytes |
+| `created_at` / `updated_at` | timestamp | Audit timestamps |
+
+---
+
+### `indikator_sid` & `kelengkapan_indikator`
+Master 20 Indikator Satuan Inovasi Daerah (SID) dan isian lembar kerja per pengajuan.
+
+- **`indikator_sid`**: Kode (`SID-01` s/d `SID-20`), nama indikator, bobot, deskripsi parameter P1/P2/P3, dan petunjuk teknis bukti dukung.
+- **`kelengkapan_indikator`**: Relasi `pengajuan_lomba_id` dan `indikator_sid_id`, nilai parameter yang dipilih (`'p1'`, `'p2'`, `'p3'`), catatan dukung, serta berkas bukti dukung indikator.
+
+---
+
+### `validasi_log`
+Audit trail seluruh pergerakan status inovasi dalam alur 8-langkah.
+
+| Kolom | Tipe | Keterangan |
+| --- | --- | --- |
+| `id` | bigint PK | Primary key |
+| `inovasi_id` | FK &rarr; `inovasi.id` | Inovasi yang diproses |
+| `pengajuan_lomba_id` | FK &rarr; `pengajuan_lomba.id` | Pengajuan lomba bersangkutan |
+| `user_id` | FK &rarr; `users.id` | Aktor yang melakukan aksi |
+| `status_sebelum` | string(50) | Status awal sebelum transisi |
+| `status_sesudah` | string(50) | Status baru setelah transisi |
+| `catatan` | text nullable | Komentar / catatan penelaahan / alasan revisi |
+| `created_at` | timestamp | Waktu pencatatan log (immutable) |
