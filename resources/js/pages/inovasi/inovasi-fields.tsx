@@ -1758,7 +1758,7 @@ export function InovasiFields({
                             III. Linimasa Implementasi & Anggaran
                         </h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            Tentukan tanggal uji coba, penerapan resmi, estimasi perubahan anggaran, serta rekam jejak prestasi penghargaan.
+                            Tentukan tanggal uji coba, penerapan resmi, serta estimasi efisiensi dan perubahan anggaran.
                         </p>
                     </div>
 
@@ -1855,53 +1855,6 @@ export function InovasiFields({
                                 Biaya operasional tahunan setelah adanya efisiensi inovasi.
                             </p>
                         </div>
-                    </div>
-
-                    {/* Apakah Memperoleh Penghargaan? */}
-                    <div className="p-4 rounded-lg border bg-muted/10 space-y-3 pt-3">
-                        <div className="flex items-center justify-between">
-                            <Label className="font-semibold text-xs text-foreground">
-                                Apakah Inovasi Pernah Memperoleh Prestasi / Penghargaan?
-                            </Label>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={data.is_penghargaan ? 'default' : 'outline'}
-                                    onClick={() => setData('is_penghargaan', true)}
-                                    className="h-7 text-xs px-3"
-                                >
-                                    Ya
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={!data.is_penghargaan ? 'default' : 'outline'}
-                                    onClick={() => {
-                                        setData('is_penghargaan', false);
-                                        setData('nama_penghargaan', '');
-                                    }}
-                                    className="h-7 text-xs px-3"
-                                >
-                                    Tidak
-                                </Button>
-                            </div>
-                        </div>
-
-                        {data.is_penghargaan && (
-                            <div className="grid gap-1.5 pt-2 border-t">
-                                <Label htmlFor="nama_penghargaan" className="text-xs font-semibold">
-                                    Rincian Nama & Tahun Penghargaan yang Diperoleh
-                                </Label>
-                                <Input
-                                    id="nama_penghargaan"
-                                    value={data.nama_penghargaan}
-                                    onChange={(e) => setData('nama_penghargaan', e.target.value)}
-                                    placeholder="Contoh: Top 45 KIPP KemenPAN-RB Tahun 2024"
-                                    className="text-xs sm:text-sm"
-                                />
-                            </div>
-                        )}
                     </div>
                 </div>
             )}

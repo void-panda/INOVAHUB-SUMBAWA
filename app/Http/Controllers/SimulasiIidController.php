@@ -19,8 +19,10 @@ class SimulasiIidController extends Controller
     public function index(Request $request): Response
     {
         $simulasi = $this->simulasiService->getSimulasiData();
+        $isPimpinan = $request->user()?->hasRole('pimpinan') || str_starts_with($request->path(), 'pimpinan');
+        $view = $isPimpinan ? 'pimpinan/simulasi/index' : 'superadmin/simulasi/index';
 
-        return Inertia::render('simulasi/index', [
+        return Inertia::render($view, [
             'simulasi' => $simulasi,
         ]);
     }

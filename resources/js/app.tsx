@@ -17,8 +17,30 @@ void createInertiaApp({
             import.meta.glob('./pages/**/*.tsx')
         ).then((module: any) => {
             const page = module.default;
-            const isNoLayout = page.layout === null || page.layout === false || name === 'welcome' || name.includes('print');
-            const layoutProps = typeof page.layout === 'object' && page.layout !== null && !Array.isArray(page.layout) ? page.layout : {};
+            // Check if page explicitly provides its own layout function
+            if (typeof page?.layout === 'function') {
+                return module;
+            }
+
+            const standalonePages = [
+                'welcome',
+                'auth/login',
+                'auth/register',
+                'auth/forgot-password',
+                'auth/reset-password',
+                'auth/verify-email',
+            ];
+
+            const isNoLayout =
+                page.layout === null ||
+                page.layout === false ||
+                standalonePages.includes(name) ||
+                name.includes('print');
+
+            const layoutProps =
+                typeof page.layout === 'object' && page.layout !== null && !Array.isArray(page.layout)
+                    ? page.layout
+                    : {};
 
             if (isNoLayout) {
                 page.layout = (pageEl: React.ReactNode) => pageEl;
@@ -30,8 +52,6 @@ void createInertiaApp({
                         <SettingsLayout>{pageEl}</SettingsLayout>
                     </AppLayout>
                 );
-            } else if (typeof page.layout === 'function') {
-                // Keep custom layout function if explicitly defined as a function
             } else {
                 page.layout = (pageEl: React.ReactNode) => <AppLayout {...layoutProps}>{pageEl}</AppLayout>;
             }

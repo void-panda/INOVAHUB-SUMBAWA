@@ -63,7 +63,69 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
         urlToCheck: NonNullable<InertiaLinkProps['href']>,
         currentUrl?: string,
     ) => {
-        return isCurrentUrl(urlToCheck, currentUrl, true);
+        const urlToCompare = currentUrl ?? currentUrlPath;
+        const urlString = toUrl(urlToCheck);
+
+        let targetPath = urlString;
+        if (urlString.startsWith('http')) {
+            try {
+                targetPath = new URL(urlString).pathname;
+            } catch {
+                return false;
+            }
+        }
+
+        // 1. Exact match
+        if (urlToCompare === targetPath) {
+            return true;
+        }
+
+        // 2. Never match root '/' or empty string to everything
+        if (targetPath === '/' || targetPath === '') {
+            return urlToCompare === '/' || urlToCompare === '';
+        }
+
+        // 3. Segment boundary check: urlToCompare must start with targetPath + '/'
+        const targetWithSlash = targetPath.endsWith('/') ? targetPath : `${targetPath}/`;
+        if (urlToCompare.startsWith(targetWithSlash)) {
+            return true;
+        }
+
+        // 4. Special route mappings in INOVA-HUB:
+        // a. Inovasi Daerah:
+        // Sidebar item has href: `${domainPrefix}/inovasi-daerah` (/penilai/inovasi-daerah, /inovator/inovasi-daerah, etc.)
+        // But actual subroutes are `/inovasi-daerah/{pengajuan}/indikator/...` or `/inovasi-daerah/print-rekap`
+        if (
+            targetPath.endsWith('/inovasi-daerah') &&
+            (urlToCompare === '/inovasi-daerah' || urlToCompare.startsWith('/inovasi-daerah/'))
+        ) {
+            return true;
+        }
+
+        // b. Inovasi Saya:
+        // Sidebar item has href: `/inovator/inovasi`
+        // Direct alias routes: `/inovasi/{id}/edit`, `/inovasi/create`
+        if (
+            targetPath.endsWith('/inovasi') &&
+            !targetPath.endsWith('/inovasi-daerah') &&
+            (urlToCompare === '/inovasi' ||
+                urlToCompare === '/inovasi/create' ||
+                (urlToCompare.startsWith('/inovasi/') && !urlToCompare.startsWith('/inovasi-daerah/')))
+        ) {
+            return true;
+        }
+
+        // c. Usulan Lomba Masuk:
+        // Sidebar item has href: `/superadmin/pengajuan-lomba`
+        // Direct alias routes: `/pengajuan-lomba/{id}`
+        if (
+            targetPath.endsWith('/pengajuan-lomba') &&
+            (urlToCompare === '/pengajuan-lomba' || urlToCompare.startsWith('/pengajuan-lomba/'))
+        ) {
+            return true;
+        }
+
+        return false;
     };
 
     const whenCurrentUrl: WhenCurrentUrlFn = <TIfTrue, TIfFalse = null>(
@@ -71,7 +133,7 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
         ifTrue: TIfTrue,
         ifFalse: TIfFalse = null as TIfFalse,
     ): TIfTrue | TIfFalse => {
-        return isCurrentUrl(urlToCheck) ? ifTrue : ifFalse;
+        return isCurrentOrParentUrl(urlToCheck) ? ifTrue : ifFalse;
     };
 
     return {

@@ -8,6 +8,7 @@ import {
     Clock,
     Download,
     ExternalLink,
+    Eye,
     FileText,
     HelpCircle,
     MessageSquare,
@@ -78,6 +79,8 @@ interface Props {
     inovasi: InovasiDetail;
     penilaianSaya: { id: number; nilai: number; catatan: string | null } | null;
     daftarPenilaianJuri: PenilaianItem[];
+    canInputNilai?: boolean;
+    isBapperida?: boolean;
 }
 
 const statusBadge: Record<string, { label: string; className: string }> = {
@@ -90,12 +93,19 @@ const statusBadge: Record<string, { label: string; className: string }> = {
         className: 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-800',
     },
     sudah_dinilai: {
-        label: 'Sudah Anda Nilai',
+        label: 'Sudah Dinilai',
         className: 'bg-emerald-600 text-white border-emerald-700 dark:bg-emerald-700',
     },
 };
 
-export default function SkoringShow({ pengajuan, inovasi, penilaianSaya, daftarPenilaianJuri }: Props) {
+export default function SkoringShow({
+    pengajuan,
+    inovasi,
+    penilaianSaya,
+    daftarPenilaianJuri,
+    canInputNilai = true,
+    isBapperida = false,
+}: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Penilaian Lomba Inovasi', href: '/penilai/skoring' },
@@ -146,8 +156,8 @@ export default function SkoringShow({ pengajuan, inovasi, penilaianSaya, daftarP
 
                 {/* Hero Banner */}
                 <HeroBanner
-                    badgeIcon={Calculator}
-                    badgeText="Lembar Penilaian Juri Lomba"
+                    badgeIcon={isBapperida ? MessageSquare : Calculator}
+                    badgeText={isBapperida ? 'Rekapitulasi Penilaian Juri' : 'Lembar Penilaian Juri Lomba'}
                     title={inovasi.nama_inovasi}
                     description={`Pengusul: ${inovasi.user?.nama_pemda || inovasi.user?.name || '-'} • OPD: ${inovasi.opd?.nama || 'Masyarakat Umum'} • Periode: ${inovasi.periode_lomba?.tahun || 'Tahun Berjalan'}`}
                     variant="teal"
@@ -184,13 +194,20 @@ export default function SkoringShow({ pengajuan, inovasi, penilaianSaya, daftarP
                         </Badge>
                     </div>
 
-                    {penilaianSaya && (
+                    {!isBapperida && penilaianSaya && (
                         <div className="flex items-center gap-2 text-xs">
                             <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                             <span className="text-muted-foreground">Nilai Anda:</span>
                             <strong className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">
                                 {penilaianSaya.nilai}
                             </strong>
+                        </div>
+                    )}
+
+                    {isBapperida && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <MessageSquare className="h-4 w-4 text-teal-600" />
+                            <span>Peran BAPPERIDA: <strong className="text-foreground">Monitoring & Penyelenggara</strong></span>
                         </div>
                     )}
                 </div>
@@ -416,101 +433,119 @@ export default function SkoringShow({ pengajuan, inovasi, penilaianSaya, daftarP
                     </div>
                 </div>
 
-                {/* Seksi Form Penilaian Juri Anda */}
-                <Card className="border-teal-500/30 shadow-sm">
-                    <CardHeader className="pb-3 border-b bg-teal-50/40 dark:bg-teal-950/20">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div>
-                                <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
-                                    <UserCheck className="h-5 w-5 text-teal-600" />
-                                    Form Penilaian Anda (Sebagai Juri)
-                                </CardTitle>
-                                <CardDescription className="text-xs">
-                                    Berikan skor kematangan lomba dan catatan evaluasi kualitatif untuk inovasi ini.
-                                </CardDescription>
+                {/* Seksi Form Penilaian Juri (Khusus Juri / Tim Penilai) atau Info Monitoring Bapperida */}
+                {canInputNilai ? (
+                    <Card className="border-teal-500/30 shadow-sm">
+                        <CardHeader className="pb-3 border-b bg-teal-50/40 dark:bg-teal-950/20">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div>
+                                    <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
+                                        <UserCheck className="h-5 w-5 text-teal-600" />
+                                        Form Penilaian Anda (Sebagai Juri)
+                                    </CardTitle>
+                                    <CardDescription className="text-xs">
+                                        Berikan skor kematangan lomba dan catatan evaluasi kualitatif untuk inovasi ini.
+                                    </CardDescription>
+                                </div>
+                                {penilaianSaya && (
+                                    <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 self-start sm:self-auto">
+                                        Tersimpan: Nilai {penilaianSaya.nilai}
+                                    </Badge>
+                                )}
                             </div>
-                            {penilaianSaya && (
-                                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 self-start sm:self-auto">
-                                    Tersimpan: Nilai {penilaianSaya.nilai}
-                                </Badge>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            {isDraft ? (
+                                <div className="p-4 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200">
+                                    <strong>Pemberitahuan:</strong> Inovasi ini berstatus <em>Sedang melengkapi data</em> oleh Inovator.
+                                    Form penilaian akan aktif setelah Inovator resmi mengirimkan (submit) inovasinya ke lomba.
+                                </div>
+                            ) : (
+                                <form onSubmit={handleSubmitNilai} className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div className="sm:col-span-1">
+                                            <Label htmlFor="nilai" className="text-xs font-semibold">
+                                                Nilai dari Tim Penilai (0 - 100) <span className="text-destructive">*</span>
+                                            </Label>
+                                            <Input
+                                                id="nilai"
+                                                type="number"
+                                                step="0.1"
+                                                min="0"
+                                                max="100"
+                                                value={form.data.nilai}
+                                                onChange={(e) => form.setData('nilai', e.target.value)}
+                                                placeholder="Contoh: 85.5"
+                                                className="text-sm font-semibold mt-1"
+                                                required
+                                            />
+                                            <p className="text-[10px] text-muted-foreground mt-1">
+                                                Skala penilaian standar lomba: 0.0 s.d. 100.0.
+                                            </p>
+                                            {form.errors.nilai && (
+                                                <p className="text-xs text-destructive mt-1">{form.errors.nilai}</p>
+                                            )}
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                            <Label htmlFor="catatan" className="text-xs font-semibold">
+                                                Catatan Tim Penilai (Masukan / Saran Evaluasi)
+                                            </Label>
+                                            <Textarea
+                                                id="catatan"
+                                                rows={3}
+                                                value={form.data.catatan}
+                                                onChange={(e) => form.setData('catatan', e.target.value)}
+                                                placeholder="Tuliskan catatan, evaluasi rancang bangun, dan saran perbaikan untuk inovator..."
+                                                className="text-xs mt-1"
+                                            />
+                                            <p className="text-[10px] text-muted-foreground mt-1">
+                                                Catatan ini dapat dibaca oleh inovator dan sesama anggota tim penilai.
+                                            </p>
+                                            {form.errors.catatan && (
+                                                <p className="text-xs text-destructive mt-1">{form.errors.catatan}</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-end gap-3 pt-2 border-t">
+                                        <Button
+                                            type="submit"
+                                            disabled={form.processing}
+                                            className="gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs cursor-pointer shadow-xs"
+                                        >
+                                            {form.processing ? (
+                                                <>
+                                                    <Spinner className="h-3.5 w-3.5" /> Menyimpan...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="h-3.5 w-3.5" /> Simpan Penilaian & Catatan
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </form>
                             )}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                        {isDraft ? (
-                            <div className="p-4 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200">
-                                <strong>Pemberitahuan:</strong> Inovasi ini berstatus <em>Sedang melengkapi data</em> oleh Inovator.
-                                Form penilaian akan aktif setelah Inovator resmi mengirimkan (submit) inovasinya ke lomba.
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Card className="border-teal-500/20 bg-teal-50/20 dark:bg-teal-950/10">
+                        <CardContent className="p-4 sm:p-5 flex items-start gap-3 text-xs">
+                            <div className="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center shrink-0">
+                                <MessageSquare className="h-4 w-4" />
                             </div>
-                        ) : (
-                            <form onSubmit={handleSubmitNilai} className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div className="sm:col-span-1">
-                                        <Label htmlFor="nilai" className="text-xs font-semibold">
-                                            Nilai dari Tim Penilai (0 - 100) <span className="text-destructive">*</span>
-                                        </Label>
-                                        <Input
-                                            id="nilai"
-                                            type="number"
-                                            step="0.1"
-                                            min="0"
-                                            max="100"
-                                            value={form.data.nilai}
-                                            onChange={(e) => form.setData('nilai', e.target.value)}
-                                            placeholder="Contoh: 85.5"
-                                            className="text-sm font-semibold mt-1"
-                                            required
-                                        />
-                                        <p className="text-[10px] text-muted-foreground mt-1">
-                                            Skala penilaian standar lomba: 0.0 s.d. 100.0.
-                                        </p>
-                                        {form.errors.nilai && (
-                                            <p className="text-xs text-destructive mt-1">{form.errors.nilai}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="sm:col-span-2">
-                                        <Label htmlFor="catatan" className="text-xs font-semibold">
-                                            Catatan Tim Penilai (Masukan / Saran Evaluasi)
-                                        </Label>
-                                        <Textarea
-                                            id="catatan"
-                                            rows={3}
-                                            value={form.data.catatan}
-                                            onChange={(e) => form.setData('catatan', e.target.value)}
-                                            placeholder="Tuliskan catatan, evaluasi rancang bangun, dan saran perbaikan untuk inovator..."
-                                            className="text-xs mt-1"
-                                        />
-                                        <p className="text-[10px] text-muted-foreground mt-1">
-                                            Catatan ini dapat dibaca oleh inovator dan sesama anggota tim penilai.
-                                        </p>
-                                        {form.errors.catatan && (
-                                            <p className="text-xs text-destructive mt-1">{form.errors.catatan}</p>
-                                        )}
-                                    </div>
+                            <div className="space-y-1">
+                                <div className="font-semibold text-foreground">
+                                    Mode Monitoring Penyelenggara Lomba (BAPPERIDA)
                                 </div>
-
-                                <div className="flex items-center justify-end gap-3 pt-2 border-t">
-                                    <Button
-                                        type="submit"
-                                        disabled={form.processing}
-                                        className="gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs cursor-pointer shadow-xs"
-                                    >
-                                        {form.processing ? (
-                                            <>
-                                                <Spinner className="h-3.5 w-3.5" /> Menyimpan...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="h-3.5 w-3.5" /> Simpan Penilaian & Catatan
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </form>
-                        )}
-                    </CardContent>
-                </Card>
+                                <p className="text-muted-foreground leading-relaxed">
+                                    Sebagai penyelenggara lomba dan pembina inovasi daerah, BAPPERIDA bertindak independen sebagai pemantau dan tidak melakukan penginputan nilai juri. Rekapitulasi perolehan nilai dan evaluasi kualitatif juri di bawah ini diperbarui secara realtime saat para juri menilai.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Seksi Rekap Penilaian Seluruh Juri */}
                 <Card>
@@ -539,11 +574,10 @@ export default function SkoringShow({ pengajuan, inovasi, penilaianSaya, daftarP
                                 {daftarPenilaianJuri.map((item) => (
                                     <div
                                         key={item.id}
-                                        className={`p-3.5 rounded-lg border transition-all ${
-                                            item.is_saya
+                                        className={`p-3.5 rounded-lg border transition-all ${item.is_saya
                                                 ? 'bg-teal-50/40 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800'
                                                 : 'bg-card border-border'
-                                        }`}
+                                            }`}
                                     >
                                         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                                             <div className="flex items-center gap-2">

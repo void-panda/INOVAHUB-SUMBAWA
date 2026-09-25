@@ -5,8 +5,8 @@ import {
     Building2,
     Calculator,
     CalendarDays,
+    FileText,
     LayoutGrid,
-    ListChecks,
     ShieldCheck,
     Sliders,
     Trophy,
@@ -44,121 +44,149 @@ export function AppSidebar() {
     const isTimPenilai = roles.includes('tim_penilai');
     const isPendamping = roles.includes('pendamping');
     const isPimpinan = roles.includes('pimpinan');
+    const isInovator = roles.includes('inovator') || (!isBapperida && !isTimPenilai && !isPendamping && !isPimpinan);
 
-    const canAccessSimulasi =
-        isBapperida ||
-        isTimPenilai ||
-        isPimpinan ||
-        permissions.includes('view-scoring') ||
-        permissions.includes('manage-master-data');
+    // Tentukan prefix domain untuk menu Inovasi Daerah
+    const domainPrefix = isBapperida
+        ? '/superadmin'
+        : isTimPenilai
+          ? '/penilai'
+          : isPendamping
+            ? '/pendamping'
+            : isPimpinan
+              ? '/pimpinan'
+              : '/inovator';
+
+    // 1. Menu Utama (Dashboard & Inovasi Daerah untuk semua role, Simulasi IID khusus BAPPERIDA & Pimpinan)
+    const mainItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Inovasi Daerah',
+            href: `${domainPrefix}/inovasi-daerah`,
+            icon: Award,
+        },
+    ];
+
+    // Simulasi IID Eksklusif hanya untuk BAPPERIDA dan Pimpinan Daerah
+    if (isBapperida) {
+        mainItems.push({
+            title: 'Simulasi Indeks (IID)',
+            href: '/superadmin/simulasi',
+            icon: Calculator,
+        });
+    } else if (isPimpinan) {
+        mainItems.push({
+            title: 'Simulasi Indeks (IID)',
+            href: '/pimpinan/simulasi',
+            icon: Calculator,
+        });
+    }
 
     const navGroups: NavGroup[] = [
         {
             title: 'Menu Utama',
-            items: [
-                {
-                    title: 'Dashboard',
-                    href: dashboard(),
-                    icon: LayoutGrid,
-                },
-                {
-                    title: 'Inovasi Daerah',
-                    href: '/inovasi-daerah',
-                    icon: Award,
-                },
-                ...(canAccessSimulasi
-                    ? [
-                          {
-                              title: 'Simulasi Indeks (IID)',
-                              href: '/simulasi',
-                              icon: Calculator,
-                          },
-                      ]
-                    : []),
-            ],
+            items: mainItems,
         },
     ];
 
-    // Grup Partisipasi & Lomba (Khusus Role Inovator OPD & Masyarakat, disembunyikan dari Superadmin BAPPERIDA)
-    if (permissions.includes('input-inovasi') && !isBapperida && !isPimpinan) {
+    // 2. Grup Partisipasi & Lomba (Khusus Role Inovator OPD & Masyarakat)
+    if (isInovator) {
         navGroups.push({
             title: 'Partisipasi & Lomba',
             items: [
                 {
                     title: 'Inovasi Saya',
-                    href: '/inovasi',
+                    href: '/inovator/inovasi',
                     icon: Trophy,
                 },
             ],
         });
     }
 
-    // Grup Verifikasi & Penilaian (Pendamping & Tim Penilai / Bapperida)
-    const verifikasiItems: NavItem[] = [];
-
-    // Antrean Validasi khusus untuk Pendamping Inovasi lapangan
-    if (permissions.includes('validate-inovasi') && (isPendamping || (!isBapperida && !isTimPenilai))) {
-        verifikasiItems.push({
-            title: 'Antrean Validasi',
-            href: '/pendamping/inovasi',
-            icon: ShieldCheck,
-        });
-    }
-
-    if (permissions.includes('assign-pendamping')) {
-        verifikasiItems.push({
-            title: 'Penugasan Pendamping',
-            href: '/penugasan-pendamping',
-            icon: UserCheck,
-        });
-    }
-
-    if (permissions.includes('scoring-spd') || permissions.includes('scoring-sid')) {
-        verifikasiItems.push({
-            title: isTimPenilai ? 'Penilaian Lomba Inovasi' : 'Penilaian Inovasi (SID)',
-            href: '/penilai/skoring',
-            icon: Trophy,
-        });
-    }
-
-    if (permissions.includes('manage-master-data')) {
-        verifikasiItems.push({
-            title: 'Peserta Lomba',
-            href: '/penilai/peserta-lomba',
-            icon: Users,
-        });
-    }
-
-    if (verifikasiItems.length > 0) {
+    // 3. Grup Khusus BAPPERIDA (Penyelenggaraan Lomba & Pembinaan)
+    if (isBapperida) {
         navGroups.push({
-            title: isTimPenilai ? 'Penjurian Lomba' : 'Verifikasi & Penilaian',
-            items: verifikasiItems,
+            title: 'Penyelenggaraan Lomba & Pembinaan',
+            items: [
+                {
+                    title: 'Usulan Lomba Masuk',
+                    href: '/superadmin/pengajuan-lomba',
+                    icon: FileText,
+                },
+                {
+                    title: 'Direktori Peserta',
+                    href: '/superadmin/peserta-lomba',
+                    icon: Users,
+                },
+                {
+                    title: 'Rekapitulasi Hasil Juri',
+                    href: '/superadmin/rekapitulasi-nilai',
+                    icon: Trophy,
+                },
+                {
+                    title: 'Penugasan Pendamping',
+                    href: '/superadmin/penugasan-pendamping',
+                    icon: UserCheck,
+                },
+            ],
         });
     }
 
-    // Grup Administrasi Sistem & Master Data (Role Admin Bappeda / Superadmin)
-    if (permissions.includes('manage-master-data')) {
+    // 4. Grup Penjurian untuk Tim Penilai (Juri Independen)
+    if (isTimPenilai) {
         navGroups.push({
-            title: 'Administrasi',
+            title: 'Penjurian Lomba',
+            items: [
+                {
+                    title: 'Penilaian Lomba Inovasi',
+                    href: '/penilai/skoring',
+                    icon: Trophy,
+                },
+            ],
+        });
+    }
+
+    // 5. Grup Verifikasi & Pendampingan untuk Pendamping Inovasi
+    if (isPendamping) {
+        navGroups.push({
+            title: 'Verifikasi & Pendampingan',
+            items: [
+                {
+                    title: 'Antrean Validasi',
+                    href: '/pendamping/validasi',
+                    icon: ShieldCheck,
+                },
+            ],
+        });
+    }
+
+    // 6. Grup Administrasi Sistem & Master Data (Khusus Superadmin BAPPERIDA)
+    if (isBapperida || permissions.includes('manage-master-data')) {
+        navGroups.push({
+            title: 'Administrasi & Master Data',
             items: [
                 {
                     title: 'Periode Lomba',
-                    href: '/penilai/periode',
+                    href: '/superadmin/periode',
                     icon: CalendarDays,
                 },
                 {
                     title: 'Master Indikator',
-                    href: '/penilai/indikator',
+                    href: '/superadmin/indikator',
                     icon: Sliders,
                 },
                 {
                     title: 'Master Perangkat Daerah',
-                    href: '/penilai/opd',
+                    href: '/superadmin/opd',
                     icon: Building2,
                 },
                 {
                     title: 'Kelola Pengguna',
-                    href: '/penilai/users',
+                    href: '/superadmin/users',
                     icon: Users,
                 },
             ],

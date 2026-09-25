@@ -22,6 +22,9 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['inovasi_id', 'periode_lomba_id']);
+            $table->index(['periode_lomba_id', 'status'], 'idx_pengajuan_periode_status');
+            $table->index(['inovasi_id', 'is_arsip'], 'idx_pengajuan_inovasi_arsip');
+            $table->index(['user_id', 'periode_lomba_id'], 'idx_pengajuan_user_periode');
         });
     }
 

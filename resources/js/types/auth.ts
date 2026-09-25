@@ -7,9 +7,11 @@ export type User = {
     avatar?: string;
     opd_id?: number | null;
     nama_pemda?: string | null;
+    tipe_inovator?: 'dinas' | 'masyarakat' | string | null;
     opd?: Opd | null;
     no_whatsapp?: string | null;
     pekerjaan?: string | null;
+    nip?: string | null;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     created_at: string;

@@ -234,7 +234,7 @@ export default function Login({ status, canResetPassword, captchaQuestion }: Pro
                                     {/* Submit Button */}
                                     <Button
                                         type="submit"
-                                        className="w-full h-11 mt-1 bg-teal-600 hover:bg-teal-700 text-white font-medium shadow-md shadow-teal-700/20 rounded-xl transition-all cursor-pointer"
+                                        className="w-full h-11 mt-1"
                                         tabIndex={6}
                                         disabled={processing}
                                         data-test="login-button"
@@ -274,4 +274,4 @@ export default function Login({ status, canResetPassword, captchaQuestion }: Pro
     );
 }
 
-Login.layout = null;
+Login.layout = (page: React.ReactNode) => page;

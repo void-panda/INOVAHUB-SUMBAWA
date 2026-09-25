@@ -71,8 +71,9 @@ class PengajuanLombaService
         }
 
         return [
-            'tahapan_nama' => $tahapanNama,
+            'tahapan_nama' => $status === 'closed' ? 'Periode Pasca Lomba (Pembinaan 20 Indikator SID)' : $tahapanNama,
             'status' => $status,
+            'is_pasca_lomba' => $targetPeriode->isPascaLomba(),
             'target_date' => $targetDate,
             'mulai' => $mulaiDate->translatedFormat('d M Y'),
             'selesai' => $selesaiDate->translatedFormat('d M Y, 23:59') . ' WITA',

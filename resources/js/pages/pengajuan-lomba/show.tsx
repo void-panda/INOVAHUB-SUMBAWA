@@ -176,23 +176,21 @@ export default function PengajuanLombaShow({
                                 return (
                                     <div
                                         key={step.key}
-                                        className={`flex sm:flex-col items-center sm:items-start gap-3 p-3 rounded-lg border transition-all ${
-                                            isCurrent
+                                        className={`flex sm:flex-col items-center sm:items-start gap-3 p-3 rounded-lg border transition-all ${isCurrent
                                                 ? 'bg-teal-50/80 border-teal-500/50 dark:bg-teal-950/30 text-teal-800 dark:text-teal-200 shadow-xs'
                                                 : isPassed
-                                                ? 'bg-muted/40 border-border text-foreground'
-                                                : 'bg-muted/10 border-border/40 text-muted-foreground'
-                                        }`}
+                                                    ? 'bg-muted/40 border-border text-foreground'
+                                                    : 'bg-muted/10 border-border/40 text-muted-foreground'
+                                            }`}
                                     >
                                         <div className="flex items-center gap-2">
                                             <div
-                                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                                                    isCurrent
+                                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isCurrent
                                                         ? 'bg-teal-600 text-white'
                                                         : isPassed
-                                                        ? 'bg-primary/20 text-primary'
-                                                        : 'bg-muted text-muted-foreground'
-                                                }`}
+                                                            ? 'bg-primary/20 text-primary'
+                                                            : 'bg-muted text-muted-foreground'
+                                                    }`}
                                             >
                                                 {isPassed ? (
                                                     <CheckCircle2 className="h-4 w-4 text-teal-600" />
@@ -247,6 +245,21 @@ export default function PengajuanLombaShow({
                                     <Link href={`/penilai/skoring/${pengajuan.id}`}>
                                         <Calculator className="h-3.5 w-3.5" />
                                         <span>Buka Lembar Penilaian Juri</span>
+                                    </Link>
+                                </Button>
+                            )}
+
+                            {/* Lihat Rekap Nilai Juri (BAPPERIDA saat Disahkan OPD / Review Internal) */}
+                            {!canNilaiJuri && canManageInovasiDaerah && (pengajuan.status === 'disahkan_opd' || pengajuan.status === 'review_internal') && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                    className="h-8 text-xs border-teal-600 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 gap-1.5 cursor-pointer"
+                                >
+                                    <Link href={`/penilai/skoring/${pengajuan.id}`}>
+                                        <Eye className="h-3.5 w-3.5" />
+                                        <span>Lihat Rekap Penilaian Juri</span>
                                     </Link>
                                 </Button>
                             )}
@@ -375,8 +388,8 @@ export default function PengajuanLombaShow({
                                 {actionType === 'kirim'
                                     ? 'Finalisasi Terkirim ke Portal Kemendagri'
                                     : actionType === 'rekomendasikan'
-                                    ? 'Rekomendasikan ke Kepala OPD'
-                                    : 'Konfirmasi Transisi Status'}
+                                        ? 'Rekomendasikan ke Kepala OPD'
+                                        : 'Konfirmasi Transisi Status'}
                             </DialogTitle>
                             <DialogDescription className="text-xs text-muted-foreground">
                                 {actionType === 'kirim'
@@ -421,8 +434,8 @@ export default function PengajuanLombaShow({
                                 {isProcessing
                                     ? 'Memproses...'
                                     : actionType === 'kirim'
-                                    ? 'Konfirmasi Terkirim'
-                                    : 'Konfirmasi Transisi'}
+                                        ? 'Konfirmasi Terkirim'
+                                        : 'Konfirmasi Transisi'}
                             </Button>
                         </DialogFooter>
                     </form>

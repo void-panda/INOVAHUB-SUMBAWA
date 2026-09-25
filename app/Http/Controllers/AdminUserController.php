@@ -52,7 +52,7 @@ class AdminUserController extends Controller
         $roles = Role::orderBy('name')->pluck('name')->all();
         $opdList = Opd::orderBy('nama')->get(['id', 'nama', 'kode']);
 
-        return Inertia::render('penilai/users/index', [
+        return Inertia::render('superadmin/users/index', [
             'users' => $users,
             'roles' => $roles,
             'opdList' => $opdList,

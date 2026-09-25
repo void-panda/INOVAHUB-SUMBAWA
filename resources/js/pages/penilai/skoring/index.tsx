@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { Calculator } from 'lucide-react';
+import { Calculator, Eye, MessageSquare, ShieldCheck } from 'lucide-react';
 import { HeroBanner } from '@/components/hero-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,12 +29,9 @@ interface InovasiItem {
 interface Props {
     inovasi?: PaginationData<InovasiItem>;
     pengajuanList?: PaginationData<InovasiItem>;
+    canInputNilai?: boolean;
+    isBapperida?: boolean;
 }
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Penilaian Lomba Inovasi', href: '/penilai/skoring' },
-];
 
 const statusBadge: Record<string, { label: string; variant: 'default' | 'outline' | 'secondary'; className?: string }> = {
     sedang_melengkapi_data: {
@@ -54,9 +51,17 @@ const statusBadge: Record<string, { label: string; variant: 'default' | 'outline
     },
 };
 
-export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Penilaian & Rekapitulasi Juri', href: '/penilai/skoring' },
+];
+
+export default function SkoringIndex({ inovasi, pengajuanList, canInputNilai = true, isBapperida = false }: Props) {
     const pagination = inovasi ?? pengajuanList;
     const listData = pagination?.data ?? [];
+
+    const pageTitle = isBapperida ? 'Rekapitulasi Hasil Penilaian Juri' : 'Penilaian Lomba Inovasi Daerah';
+
     const columns: Column<InovasiItem>[] = useMemo(
         () => [
         {
@@ -82,7 +87,7 @@ export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
             ),
         },
         {
-            header: 'Status Penilaian',
+            header: isBapperida ? 'Status Lomba' : 'Status Penilaian',
             accessorKey: 'status_juri',
             sortable: true,
             cell: (row) => {
@@ -95,9 +100,14 @@ export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
                         <Badge variant={st.variant} className={`text-xs ${st.className || ''}`}>
                             {st.label}
                         </Badge>
-                        {row.nilai_saya !== null && row.nilai_saya !== undefined && (
+                        {!isBapperida && row.nilai_saya !== null && row.nilai_saya !== undefined && (
                             <span className="text-[10px] text-muted-foreground font-medium">
                                 Nilai Anda: <strong className="text-emerald-700 dark:text-emerald-400">{row.nilai_saya}</strong>
+                            </span>
+                        )}
+                        {isBapperida && (
+                            <span className="text-[10px] text-muted-foreground font-medium">
+                                Progres Juri: <strong className="text-foreground">{row.jumlah_juri_menilai} Juri</strong>
                             </span>
                         )}
                     </div>
@@ -105,7 +115,7 @@ export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
             },
         },
         {
-            header: 'Nilai Rata-rata',
+            header: 'Nilai Rata-rata Juri',
             accessorKey: 'nilai_rata_rata',
             sortable: true,
             align: 'center',
@@ -118,33 +128,44 @@ export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
                     </span>
                     <span className="text-[10px] text-muted-foreground">
                         {row.jumlah_juri_menilai > 0
-                            ? `${row.jumlah_juri_menilai} Juri`
-                            : 'Belum ada nilai'}
+                            ? `${row.jumlah_juri_menilai} Penilai`
+                            : 'Belum dinilai'}
                     </span>
                 </div>
             ),
         },
         {
-            header: 'Aksi Evaluasi',
+            header: isBapperida ? 'Rekapitulasi' : 'Aksi Evaluasi',
             align: 'right',
             cell: (row) => (
                 <Link href={`/penilai/skoring/${row.id}`}>
                     <Button
                         size="sm"
-                        variant={row.status_juri === 'sudah_dinilai' ? 'outline' : 'default'}
+                        variant={isBapperida ? 'outline' : (row.status_juri === 'sudah_dinilai' ? 'outline' : 'default')}
                         className="gap-1.5 h-8 text-xs cursor-pointer"
                     >
-                        <Calculator className="h-3.5 w-3.5" />
-                        {row.status_juri === 'sudah_dinilai'
-                            ? 'Ubah Nilai'
-                            : row.status_juri === 'sedang_melengkapi_data'
-                                ? 'Lihat Profil'
-                                : 'Beri Nilai'}
+                        {isBapperida ? (
+                            <>
+                                <Eye className="h-3.5 w-3.5" />
+                                <span>Lihat Rekap</span>
+                            </>
+                        ) : (
+                            <>
+                                <Calculator className="h-3.5 w-3.5" />
+                                <span>
+                                    {row.status_juri === 'sudah_dinilai'
+                                        ? 'Ubah Nilai'
+                                        : row.status_juri === 'sedang_melengkapi_data'
+                                            ? 'Lihat Profil'
+                                            : 'Beri Nilai'}
+                                </span>
+                            </>
+                        )}
                     </Button>
                 </Link>
             ),
         },
-    ], []);
+    ], [isBapperida, canInputNilai]);
 
     const filterOptions = [
         { label: 'Semua Peserta Lomba', value: 'all' },
@@ -155,15 +176,19 @@ export default function SkoringIndex({ inovasi, pengajuanList }: Props) {
 
     return (
         <>
-            <Head title="Penilaian Lomba Inovasi Daerah" />
+            <Head title={`${pageTitle} - INOVA-HUB`} />
 
             <div className="flex flex-col space-y-6 p-4 md:p-6 max-w-7xl mx-auto w-full">
                 {/* Header Hero Banner */}
                 <HeroBanner
-                    badgeIcon={Calculator}
-                    badgeText="Penjurian Lomba Inovasi"
-                    title="Penilaian Lomba Inovasi Daerah"
-                    description="Evaluasi profil inovasi, telaah berkas dukung lomba (PPT, video, proposal), dan input penilaian tim juri independen periode aktif."
+                    badgeIcon={isBapperida ? MessageSquare : Calculator}
+                    badgeText={isBapperida ? 'Monitoring Penjurian' : 'Penjurian Lomba Inovasi'}
+                    title={pageTitle}
+                    description={
+                        isBapperida
+                            ? 'Pantau perolehan skor, rekapitulasi nilai rata-rata, dan evaluasi kualitatif dari tim juri independen periode aktif.'
+                            : 'Evaluasi profil inovasi, telaah berkas dukung lomba (PPT, video, proposal), dan input penilaian tim juri independen periode aktif.'
+                    }
                     variant="teal"
                 />
 

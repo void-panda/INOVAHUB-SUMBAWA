@@ -29,6 +29,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $password
  * @property string|null $no_whatsapp
  * @property string|null $pekerjaan
+ * @property string|null $nip
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -36,9 +37,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'nama_pemda', 'tipe_inovator', 'opd_id', 'status_aktif', 'email', 'no_whatsapp', 'pekerjaan', 'password'])]
+#[Fillable(['name', 'nama_pemda', 'tipe_inovator', 'opd_id', 'status_aktif', 'email', 'no_whatsapp', 'pekerjaan', 'nip', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
+class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;

@@ -162,8 +162,11 @@ class PengajuanLombaController extends Controller
                 'ukuran' => $d->ukuran ?? 0,
             ]);
 
+        $isPascaLomba = $pengajuan->is_arsip || ($pengajuan->periodeLomba ? $pengajuan->periodeLomba->isPascaLomba() : false);
+
         return Inertia::render('pengajuan-lomba/show', [
             'pengajuan' => $pengajuan,
+            'isPascaLomba' => $isPascaLomba,
             'nilaiRataRataJuri' => $pengajuan->nilai_rata_rata_juri,
             'jumlahJuriMenilai' => $pengajuan->jumlah_juri_menilai,
             'daftarPenilaianJuri' => $daftarPenilaianJuri,

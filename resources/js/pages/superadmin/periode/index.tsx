@@ -9,6 +9,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { BreadcrumbItem } from '@/types';
 
 interface Periode {
     id: number;
@@ -29,12 +30,12 @@ interface Props {
     periodes: Periode[];
 }
 
-const breadcrumbs = [
+const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Manajemen Periode Lomba', href: '/penilai/periode' },
+    { title: 'Manajemen Periode Lomba', href: '/superadmin/periode' },
 ];
 
-export default function PeriodeLombaIndex({ periodes }: Props) {
+export default function SuperadminPeriodeIndex({ periodes }: Props) {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [selectedPeriode, setSelectedPeriode] = useState<Periode | null>(null);
@@ -80,7 +81,7 @@ export default function PeriodeLombaIndex({ periodes }: Props) {
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        createForm.post('/penilai/periode', {
+        createForm.post('/superadmin/periode', {
             onSuccess: () => setCreateDialogOpen(false),
         });
     };
@@ -88,7 +89,7 @@ export default function PeriodeLombaIndex({ periodes }: Props) {
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedPeriode) return;
-        editForm.put(`/penilai/periode/${selectedPeriode.id}`, {
+        editForm.put(`/superadmin/periode/${selectedPeriode.id}`, {
             onSuccess: () => setEditDialogOpen(false),
         });
     };
@@ -96,19 +97,19 @@ export default function PeriodeLombaIndex({ periodes }: Props) {
     const handleSetAktif = (periode: Periode) => {
         if (periode.aktif) return;
         if (confirm(`Apakah Anda yakin ingin mengaktifkan periode "${periode.nama}" (${periode.tahun}) sebagai Periode Berjalan?\n\nPeriode lama (${activeYear}) otomatis akan diarsipkan permanen.`)) {
-            router.patch(`/penilai/periode/${periode.id}/set-aktif`);
+            router.patch(`/superadmin/periode/${periode.id}/set-aktif`);
         }
     };
 
     const handleAkhiriLomba = (periode: Periode) => {
         if (confirm(`Apakah Anda yakin ingin MENGAKHIRI masa pendaftaran lomba untuk periode "${periode.nama}" (${periode.tahun})?\n\nSetelah diakhiri:\n1. Inovator tidak dapat lagi mendaftarkan inovasi baru untuk dilombakan.\n2. Sistem beralih ke Fase Pasca Lomba (Pengisian 20 Indikator SID dibuka).`)) {
-            router.patch(`/penilai/periode/${periode.id}/akhiri-lomba`);
+            router.patch(`/superadmin/periode/${periode.id}/akhiri-lomba`);
         }
     };
 
     const handleBukaLomba = (periode: Periode) => {
         if (confirm(`Apakah Anda yakin ingin MEMBUKA KEMBALI / MEMPERPANJANG masa pendaftaran lomba untuk periode "${periode.nama}" (${periode.tahun})?`)) {
-            router.patch(`/penilai/periode/${periode.id}/buka-lomba`);
+            router.patch(`/superadmin/periode/${periode.id}/buka-lomba`);
         }
     };
 
@@ -303,7 +304,7 @@ export default function PeriodeLombaIndex({ periodes }: Props) {
                                 className="h-8 px-2.5 text-xs gap-1.5 border-border text-foreground hover:bg-muted"
                                 title="Lihat daftar inovasi pada periode arsip ini"
                             >
-                                <Link href={`/pengajuan-lomba?periode_id=${row.id}`}>
+                                <Link href={`/superadmin/pengajuan-lomba?periode_id=${row.id}`}>
                                     <FolderOpen className="h-3.5 w-3.5 text-teal-600" />
                                     <span>Lihat Inovasi</span>
                                 </Link>
@@ -342,7 +343,7 @@ export default function PeriodeLombaIndex({ periodes }: Props) {
 
     return (
         <>
-            <Head title="Manajemen Periode Lomba" />
+            <Head title="Manajemen Periode Lomba — BAPPERIDA" />
 
             <div className="flex flex-col space-y-6 p-4 md:p-6 max-w-7xl mx-auto w-full">
                 <HeroBanner
@@ -549,6 +550,6 @@ export default function PeriodeLombaIndex({ periodes }: Props) {
     );
 }
 
-PeriodeLombaIndex.layout = {
+SuperadminPeriodeIndex.layout = {
     breadcrumbs,
 };

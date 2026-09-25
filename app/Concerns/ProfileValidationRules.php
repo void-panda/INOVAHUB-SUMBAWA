@@ -19,7 +19,10 @@ trait ProfileValidationRules
             'name' => $this->nameRules(),
             'email' => $this->emailRules($userId),
             'no_whatsapp' => ['nullable', 'string', 'max:25'],
-            'pekerjaan' => ['nullable', 'string', 'max:50', Rule::in(['Pelajar', 'Mahasiswa', 'Pegawai Swasta', 'ASN', 'Lainnya'])],
+            'pekerjaan' => ['nullable', 'string', 'max:50', Rule::in(['Pelajar', 'Mahasiswa', 'Pegawai Swasta', 'ASN', 'Wiraswasta', 'Peneliti / Akademisi', 'Lainnya'])],
+            'nip' => ['nullable', 'string', 'max:20'],
+            'nama_pemda' => ['nullable', 'string', 'max:255'],
+            'opd_id' => ['nullable', 'exists:opd,id'],
         ];
     }
 

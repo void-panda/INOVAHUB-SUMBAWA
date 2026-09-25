@@ -17,7 +17,7 @@ class MasterIndikatorController extends Controller
 
     public function index(): Response
     {
-        return Inertia::render('penilai/indikator/index', [
+        return Inertia::render('superadmin/indikator/index', [
             'spdList' => $this->masterIndikatorService->getSpdIndikatorList(),
             'sidList' => $this->masterIndikatorService->getSidIndikatorList(),
         ]);

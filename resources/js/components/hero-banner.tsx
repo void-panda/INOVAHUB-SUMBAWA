@@ -8,6 +8,7 @@ interface HeroBannerProps {
     description: string;
     variant?: string; // Maintained for API compatibility, all use uniform teal motif banner
     children?: React.ReactNode;
+    extraContent?: React.ReactNode;
 }
 
 const KemangSatangeMotif = () => (
@@ -56,6 +57,7 @@ export function HeroBanner({
     title,
     description,
     children,
+    extraContent,
 }: HeroBannerProps) {
     return (
         <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-r from-primary via-primary/95 to-primary/85 p-6 md:p-8 text-primary-foreground shadow-xs">
@@ -63,7 +65,7 @@ export function HeroBanner({
             <KemangSatangeMotif />
 
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-2 max-w-2xl">
+                <div className="space-y-3 max-w-3xl">
                     <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground border-none backdrop-blur-md text-xs font-semibold px-3 py-1 flex items-center gap-1.5">
                             {BadgeIcon && <BadgeIcon className="h-3.5 w-3.5 text-amber-300 shrink-0" />}
@@ -73,13 +75,18 @@ export function HeroBanner({
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-primary-foreground">
                         {title}
                     </h1>
-                    <p className="text-xs md:text-sm text-primary-foreground/80 leading-relaxed">
+                    <p className="text-xs md:text-sm text-primary-foreground/80 leading-relaxed max-w-2xl">
                         {description}
                     </p>
+                    {extraContent && (
+                        <div className="pt-1">
+                            {extraContent}
+                        </div>
+                    )}
                 </div>
 
                 {children && (
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0 flex-wrap">
                         {children}
                     </div>
                 )}

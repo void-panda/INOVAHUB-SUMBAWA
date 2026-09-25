@@ -70,7 +70,7 @@ class PesertaLombaController extends Controller
         $totalMasyarakat = (clone $baseUserQuery)->where('tipe_inovator', 'masyarakat')->whereNull('opd_id')->count();
         $totalInovasiDilombakan = \App\Models\Inovasi::whereHas('user.roles', fn ($q) => $q->where('name', 'inovator'))->count();
 
-        return Inertia::render('penilai/peserta/index', [
+        return Inertia::render('superadmin/peserta/index', [
             'peserta' => $peserta,
             'filters' => $filters,
             'periode' => $periodeAktif ? [

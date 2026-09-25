@@ -19,9 +19,12 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $opdList = \App\Models\Opd::orderBy('nama')->get(['id', 'nama', 'kode']);
+
         return Inertia::render('settings/profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'opdList' => $opdList,
         ]);
     }
 
@@ -30,7 +33,23 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $validated = $request->validated();
+
+        if (($validated['pekerjaan'] ?? null) === 'ASN') {
+            $validated['tipe_inovator'] = 'dinas';
+            if (! empty($validated['opd_id'])) {
+                $opd = \App\Models\Opd::find($validated['opd_id']);
+                if ($opd) {
+                    $validated['nama_pemda'] = $opd->nama;
+                }
+            }
+        } else {
+            $validated['tipe_inovator'] = 'masyarakat';
+            $validated['opd_id'] = null;
+            $validated['nip'] = null;
+        }
+
+        $request->user()->fill($validated);
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;

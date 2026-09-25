@@ -21,7 +21,7 @@ export function NavMain({
     items?: NavItem[];
     groups?: NavGroup[];
 }) {
-    const { isCurrentUrl } = useCurrentUrl();
+    const { isCurrentOrParentUrl } = useCurrentUrl();
 
     if (groups && groups.length > 0) {
         return (
@@ -41,7 +41,7 @@ export function NavMain({
                                     <SidebarMenuItem key={item.title}>
                                         <SidebarMenuButton
                                             asChild
-                                            isActive={isCurrentUrl(item.href)}
+                                            isActive={isCurrentOrParentUrl(item.href)}
                                             tooltip={{ children: item.title }}
                                         >
                                             <Link href={item.href} prefetch>
@@ -69,7 +69,7 @@ export function NavMain({
                     <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
                             asChild
-                            isActive={isCurrentUrl(item.href)}
+                            isActive={isCurrentOrParentUrl(item.href)}
                             tooltip={{ children: item.title }}
                         >
                             <Link href={item.href} prefetch>

@@ -88,9 +88,14 @@ class SkoringController extends Controller
             ];
         });
 
+        $canInputNilai = $user->hasRole('tim_penilai') || $user->can('scoring-spd') || $user->can('scoring-sid');
+        $isBapperida = $user->hasRole('bapperida') && ! $user->hasRole('tim_penilai');
+
         return Inertia::render('penilai/skoring/index', [
             'inovasi' => $formattedInovasi,
             'pengajuanList' => $pengajuanList,
+            'canInputNilai' => $canInputNilai,
+            'isBapperida' => $isBapperida,
             'periodeAktif' => $periodeAktif ? [
                 'id' => $periodeAktif->id,
                 'tahun' => $periodeAktif->tahun,
@@ -188,9 +193,14 @@ class SkoringController extends Controller
             'dokumen_umum' => $dokumenUmum,
         ];
 
+        $canInputNilai = $user->hasRole('tim_penilai') || $user->can('scoring-spd') || $user->can('scoring-sid');
+        $isBapperida = $user->hasRole('bapperida') && ! $user->hasRole('tim_penilai');
+
         return Inertia::render('penilai/skoring/show', [
             'pengajuan' => $pengajuan,
             'inovasi' => $inovasiDetail,
+            'canInputNilai' => $canInputNilai,
+            'isBapperida' => $isBapperida,
             'penilaianSaya' => $penilaianSaya ? [
                 'id' => $penilaianSaya->id,
                 'nilai' => $penilaianSaya->nilai,
@@ -202,6 +212,13 @@ class SkoringController extends Controller
 
     public function storeNilaiJuri(Request $request, PengajuanLomba $pengajuan): RedirectResponse
     {
+        $user = $request->user();
+        abort_if(
+            $user->hasRole('bapperida') && ! $user->hasRole('tim_penilai'),
+            403,
+            'BAPPERIDA bertindak sebagai penyelenggara/sekretariat dan tidak berwenang menginput nilai juri.'
+        );
+
         $validated = $request->validate([
             'nilai' => ['required', 'numeric', 'min:0', 'max:100'],
             'catatan' => ['nullable', 'string', 'max:5000'],

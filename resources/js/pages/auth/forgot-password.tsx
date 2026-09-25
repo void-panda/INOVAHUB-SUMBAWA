@@ -169,4 +169,4 @@ export default function ForgotPassword({ status }: { status?: string }) {
     );
 }
 
-ForgotPassword.layout = null;
+ForgotPassword.layout = (page: React.ReactNode) => page;

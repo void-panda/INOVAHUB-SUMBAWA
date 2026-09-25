@@ -49,9 +49,22 @@ class HandleInertiaRequests extends Middleware
             ];
         }
 
+        $periodeAktif = \App\Models\PeriodeLomba::where('aktif', true)->first();
+        $isPascaLomba = $periodeAktif ? $periodeAktif->isPascaLomba() : false;
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'periodeAktif' => $periodeAktif ? [
+                'id' => $periodeAktif->id,
+                'tahun' => $periodeAktif->tahun,
+                'nama' => $periodeAktif->nama,
+                'tanggal_mulai' => $periodeAktif->tanggal_mulai?->format('Y-m-d'),
+                'tanggal_selesai' => $periodeAktif->tanggal_selesai?->format('Y-m-d'),
+                'is_pasca_lomba' => $isPascaLomba,
+                'is_lomba_berjalan' => $periodeAktif->isLombaBerjalan(),
+            ] : null,
+            'isPascaLomba' => $isPascaLomba,
             'auth' => [
                 'user' => $user,
                 'roles' => $user?->getRoleNames(),

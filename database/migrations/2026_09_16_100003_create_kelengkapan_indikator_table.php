@@ -10,13 +10,13 @@ return new class extends Migration
     {
         Schema::create('kelengkapan_indikator', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('inovasi_id')->constrained('inovasi')->cascadeOnDelete();
+            $table->foreignId('pengajuan_lomba_id')->constrained('pengajuan_lomba')->cascadeOnDelete();
             $table->foreignId('indikator_sid_id')->constrained('indikator_sid')->cascadeOnDelete();
-            $table->string('parameter')->nullable(); // 'p1', 'p2', 'p3', null
+            $table->string('parameter')->nullable();
             $table->text('catatan')->nullable();
             $table->timestamps();
 
-            $table->unique(['inovasi_id', 'indikator_sid_id']);
+            $table->unique(['pengajuan_lomba_id', 'indikator_sid_id']);
         });
     }
 

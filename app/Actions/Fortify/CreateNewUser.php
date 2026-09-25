@@ -21,17 +21,9 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
-        $tipeInovator = $input['tipe_inovator'] ?? 'dinas';
-        if (! in_array($tipeInovator, ['dinas', 'masyarakat'], true)) {
-            $tipeInovator = 'dinas';
-        }
-
         $rules = [
-            ...$this->profileRules(),
-            'tipe_inovator' => ['nullable', 'string', 'in:dinas,masyarakat'],
-            'opd_id' => ['nullable', 'exists:opd,id'],
-            'nama_pemda' => ['required', 'string', 'max:255'],
-            'pekerjaan' => ['nullable', 'string', 'max:255'],
+            'name' => $this->nameRules(),
+            'email' => $this->emailRules(),
             'password' => $this->passwordRules(),
         ];
 
@@ -40,9 +32,10 @@ class CreateNewUser implements CreatesNewUsers
         }
 
         Validator::make($input, $rules, [
-            'nama_pemda.required' => $tipeInovator === 'dinas'
-                ? 'Nama Perangkat Daerah / Instansi wajib diisi.'
-                : 'Asal Lembaga / Komunitas / Kampus / Desa wajib diisi.',
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.email' => 'Format alamat email tidak valid.',
+            'email.unique' => 'Alamat email ini sudah terdaftar.',
             'captcha_input.required' => 'Jawaban CAPTCHA keamanan wajib diisi.',
             'captcha_input.numeric' => 'Jawaban CAPTCHA keamanan harus berupa angka.',
         ])->validate();
@@ -60,18 +53,15 @@ class CreateNewUser implements CreatesNewUsers
             session()->forget('captcha_answer');
         }
 
-        $opd = ! empty($input['opd_id']) ? Opd::find($input['opd_id']) : null;
-        $namaPemda = $opd?->nama ?? $input['nama_pemda'];
-        $opdId = $tipeInovator === 'dinas' ? ($opd?->id ?? null) : null;
-
         $user = User::create([
             'name' => $input['name'],
-            'nama_pemda' => $namaPemda,
-            'tipe_inovator' => $tipeInovator,
-            'opd_id' => $opdId,
-            'pekerjaan' => $input['pekerjaan'] ?? null,
             'email' => $input['email'],
             'password' => $input['password'],
+            'nama_pemda' => $input['nama_pemda'] ?? 'Inovator Sumbawa',
+            'tipe_inovator' => $input['tipe_inovator'] ?? 'masyarakat',
+            'opd_id' => ! empty($input['opd_id']) ? (int) $input['opd_id'] : null,
+            'pekerjaan' => $input['pekerjaan'] ?? null,
+            'no_whatsapp' => $input['no_whatsapp'] ?? null,
         ]);
 
         $user->assignRole('inovator');

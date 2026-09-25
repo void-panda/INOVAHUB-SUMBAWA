@@ -202,4 +202,4 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
     );
 }
 
-ResetPassword.layout = null;
+ResetPassword.layout = (page: React.ReactNode) => page;

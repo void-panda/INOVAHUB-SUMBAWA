@@ -20,6 +20,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { Column } from '@/components/ui/data-table';
 import { DataTable } from '@/components/ui/data-table';
 import { Progress } from '@/components/ui/progress';
+import type { BreadcrumbItem } from '@/types';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Antrean Validasi', href: '/pendamping/validasi' },
+];
 
 const statusLabelMap: Record<
     string,
@@ -217,7 +223,7 @@ export default function PendampingIndex({ inovasiList, counts, filters, penugasa
                         className="h-8 px-2 text-xs gap-1 text-foreground hover:bg-muted"
                         title="Lihat proposal profil inovasi & form pengesahan resmi OPD"
                     >
-                        <Link href={`/pendamping/inovasi/${row.id}`}>
+                        <Link href={`/pendamping/validasi/${row.id}`}>
                             <Eye className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">Detail & Sahkan</span>
                         </Link>
@@ -250,26 +256,40 @@ export default function PendampingIndex({ inovasiList, counts, filters, penugasa
                 {/* Hero Banner INOVA-HUB */}
                 <HeroBanner
                     badgeIcon={ShieldCheck}
-                    badgeText="Meja Kerja Pendamping Inovasi"
+                    badgeText={`Meja Kerja Pendamping Inovasi • Periode ${periode?.tahun || '2026'}`}
                     title="Antrean Validasi & Pembinaan Mutu Data"
                     description="Meja kerja utama Anda untuk memverifikasi dokumen bukti dukung 20 Indikator SID, memberi catatan bimbingan revisi, dan mengesahkan inovasi binaan sebelum disalin ke portal resmi Kemendagri."
                     variant="teal"
+                    extraContent={
+                        penugasan.length > 0 ? (
+                            <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
+                                <span className="text-white/80 font-medium">OPD Binaan Anda:</span>
+                                {penugasan.map((p, idx) => (
+                                    <Badge
+                                        key={idx}
+                                        variant="outline"
+                                        className="bg-white/15 hover:bg-white/20 text-white border-white/30 text-xs font-semibold backdrop-blur-xs"
+                                    >
+                                        <Building2 className="h-3 w-3 mr-1" />
+                                        {p.opd?.nama ?? 'Semua Perangkat Daerah'}
+                                    </Badge>
+                                ))}
+                            </div>
+                        ) : null
+                    }
                 >
-                    {penugasan.length > 0 && (
-                        <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
-                            <span className="text-white/80 font-medium">OPD Binaan Anda:</span>
-                            {penugasan.map((p, idx) => (
-                                <Badge
-                                    key={idx}
-                                    variant="outline"
-                                    className="bg-white/15 hover:bg-white/20 text-white border-white/30 text-xs font-semibold"
-                                >
-                                    <Building2 className="h-3 w-3 mr-1" />
-                                    {p.opd?.nama ?? 'Semua Perangkat Daerah'}
-                                </Badge>
-                            ))}
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="bg-white/10 hover:bg-white/20 text-white border-white/20 rounded-xl h-9 text-xs font-semibold shadow-xs"
+                        >
+                            <Link href="/pendamping/inovasi-daerah">
+                                <Award className="h-3.5 w-3.5 mr-1 text-emerald-300" /> Buka Inovasi Daerah
+                            </Link>
+                        </Button>
+                    </div>
                 </HeroBanner>
 
                 {/* 4 Kartu Metrik Kerja Riil */}
@@ -396,7 +416,8 @@ export default function PendampingIndex({ inovasiList, counts, filters, penugasa
                         data={inovasiList.data}
                         searchPlaceholder="Cari nama inovasi, nama inisiator, atau urusan..."
                         pageSize={15}
-                        emptyMessage={
+                        emptyTitle="Belum Ada Antrean Inovasi"
+                        emptyDescription={
                             activeStatus === 'dalam_pendampingan'
                                 ? 'Tidak ada inovasi yang saat ini membutuhkan tindakan pendampingan atau revisi. Seluruh data binaan Anda dalam kondisi beres.'
                                 : activeStatus === 'disahkan_opd'
@@ -411,7 +432,5 @@ export default function PendampingIndex({ inovasiList, counts, filters, penugasa
 }
 
 PendampingIndex.layout = {
-    breadcrumbs: [
-        { title: 'Antrean Validasi', href: '/pendamping/inovasi' },
-    ],
+    breadcrumbs,
 };

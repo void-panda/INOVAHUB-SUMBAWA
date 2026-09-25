@@ -50,13 +50,15 @@ class PeriodeLombaController extends Controller
                     'tanggal_selesai' => $item->tanggal_selesai ? Carbon::parse($item->tanggal_selesai)->format('Y-m-d') : null,
                     'rentang_waktu' => $rentangWaktu,
                     'status_waktu' => $statusWaktu,
+                    'is_pasca_lomba' => $item->isPascaLomba(),
+                    'is_lomba_aktif' => $item->isLombaBerjalan(),
                     'aktif' => (bool) $item->aktif,
                     'inovasi_count' => $item->inovasi_count,
                     'created_at' => $item->created_at?->format('d M Y') ?? '',
                 ];
             });
 
-        return Inertia::render('penilai/periode/index', [
+        return Inertia::render('superadmin/periode/index', [
             'periodes' => $periodes,
         ]);
     }
@@ -154,5 +156,47 @@ class PeriodeLombaController extends Controller
         });
 
         return redirect()->back()->with('success', "Periode {$periode->nama} ({$periode->tahun}) sekarang aktif.");
+    }
+
+    /**
+     * Akhiri masa pendaftaran lomba secara manual (menutup batas tanggal pendaftaran dan membuka fase 20 Indikator SID).
+     */
+    public function akhiriLomba(PeriodeLomba $periode): RedirectResponse
+    {
+        $penutupan = Carbon::yesterday()->format('Y-m-d');
+
+        DB::transaction(function () use ($periode, $penutupan) {
+            $periode->update(['tanggal_selesai' => $penutupan]);
+
+            Linimasa::where('periode_lomba_id', $periode->id)
+                ->where('nama', 'Pengumpulan & Input Profil Inovasi')
+                ->update(['selesai' => $penutupan]);
+        });
+
+        return redirect()->back()->with(
+            'success',
+            "Masa pendaftaran lomba untuk periode {$periode->nama} ({$periode->tahun}) telah diakhiri. Sistem kini berada pada Fase Pasca Lomba (Pengisian 20 Indikator SID dibuka)."
+        );
+    }
+
+    /**
+     * Buka kembali masa pendaftaran lomba (memperpanjang tanggal_selesai).
+     */
+    public function bukaLomba(PeriodeLomba $periode): RedirectResponse
+    {
+        $penutupanBaru = Carbon::now()->addDays(30)->format('Y-m-d');
+
+        DB::transaction(function () use ($periode, $penutupanBaru) {
+            $periode->update(['tanggal_selesai' => $penutupanBaru]);
+
+            Linimasa::where('periode_lomba_id', $periode->id)
+                ->where('nama', 'Pengumpulan & Input Profil Inovasi')
+                ->update(['selesai' => $penutupanBaru]);
+        });
+
+        return redirect()->back()->with(
+            'success',
+            "Periode {$periode->nama} ({$periode->tahun}) dibuka kembali hingga " . Carbon::parse($penutupanBaru)->translatedFormat('d F Y') . "."
+        );
     }
 }

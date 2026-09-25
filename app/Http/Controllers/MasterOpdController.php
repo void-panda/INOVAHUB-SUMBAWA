@@ -37,7 +37,7 @@ class MasterOpdController extends Controller
             'can_delete' => $opd->users_count === 0 && $opd->inovasi_count === 0,
         ]);
 
-        return Inertia::render('penilai/opd/index', [
+        return Inertia::render('superadmin/opd/index', [
             'opdList' => $opdList,
             'filters' => $request->only(['search']),
             'metrics' => [

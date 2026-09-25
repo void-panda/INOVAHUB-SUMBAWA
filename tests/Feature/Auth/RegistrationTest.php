@@ -28,14 +28,13 @@ class RegistrationTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_new_users_can_register_and_receive_verification_notification()
+    public function test_new_users_can_register_and_access_dashboard()
     {
         Notification::fake();
         $this->seed(RolePermissionSeeder::class);
 
         $response = $this->post(route('register.store'), [
             'name' => 'Test User',
-            'nama_pemda' => 'Dinas Contoh',
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -45,15 +44,10 @@ class RegistrationTest extends TestCase
         $user = User::where('email', 'test@example.com')->first();
         $this->assertNotNull($user);
         $this->assertTrue($user->hasRole('inovator'));
-        $this->assertFalse($user->hasVerifiedEmail());
-        $this->assertNull($user->email_verified_at);
 
-        // Verification email sent
-        Notification::assertSentTo($user, VerifyEmail::class);
-
-        // Unverified user attempting to access dashboard is redirected to verification notice
+        // Direct dashboard access without verification wall
         $dashboardResponse = $this->actingAs($user)->get(route('dashboard'));
-        $dashboardResponse->assertRedirect(route('verification.notice'));
+        $dashboardResponse->assertOk();
     }
 
     public function test_registration_fails_with_invalid_captcha()
@@ -91,8 +85,6 @@ class RegistrationTest extends TestCase
         $this->assertAuthenticated();
         $user = User::where('email', 'valid-captcha@example.com')->first();
         $this->assertNotNull($user);
-        $this->assertFalse($user->hasVerifiedEmail());
-        Notification::assertSentTo($user, VerifyEmail::class);
     }
 
     public function test_registration_as_masyarakat_inovator()
@@ -118,8 +110,6 @@ class RegistrationTest extends TestCase
         $this->assertEquals('Universitas Samawa', $user->nama_pemda);
         $this->assertEquals('Mahasiswa / Peneliti', $user->pekerjaan);
         $this->assertTrue($user->hasRole('inovator'));
-        $this->assertFalse($user->hasVerifiedEmail());
-        Notification::assertSentTo($user, VerifyEmail::class);
     }
 
     public function test_registration_as_dinas_inovator_with_opd()
@@ -151,7 +141,5 @@ class RegistrationTest extends TestCase
         $this->assertEquals('Dinas Kesehatan Kabupaten Sumbawa', $user->nama_pemda);
         $this->assertEquals('Kasubag Perencanaan', $user->pekerjaan);
         $this->assertTrue($user->hasRole('inovator'));
-        $this->assertFalse($user->hasVerifiedEmail());
-        Notification::assertSentTo($user, VerifyEmail::class);
     }
 }

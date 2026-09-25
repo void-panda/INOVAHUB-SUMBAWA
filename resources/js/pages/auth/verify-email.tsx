@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { home, logout } from '@/routes';
-import { send } from '@/routes/verification';
 
 export default function VerifyEmail({ status }: { status?: string }) {
     return (
@@ -79,7 +78,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                         </div>
 
                         {/* Action Buttons */}
-                        <Form {...send.form()} className="space-y-4 pt-2">
+                        <Form action="/email/verification-notification" method="post" className="space-y-4 pt-2">
                             {({ processing }) => (
                                 <>
                                     <Button
@@ -126,4 +125,4 @@ export default function VerifyEmail({ status }: { status?: string }) {
     );
 }
 
-VerifyEmail.layout = null;
+VerifyEmail.layout = (page: React.ReactNode) => page;

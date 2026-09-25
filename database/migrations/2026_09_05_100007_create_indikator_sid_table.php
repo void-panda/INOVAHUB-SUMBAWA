@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('kode');
             $table->string('nama');
             $table->string('variabel')->nullable();
+            $table->text('informasi')->nullable();
             $table->decimal('bobot', 4, 2);
             $table->string('p1')->nullable();
             $table->string('p2')->nullable();
