@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Form, Head, Link } from '@inertiajs/react';
-import { Building2, Lock, Mail, RotateCw, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
+import { Building2, Lock, Mail, RotateCw, ShieldCheck, UserCheck, UserPlus } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -257,7 +257,7 @@ export default function Register({ passwordRules, captchaQuestion }: Props) {
                                         <div className="sm:col-span-2 pt-2">
                                             <Button
                                                 type="submit"
-                                                className="w-full h-11 bg-teal-600 hover:bg-teal-700 text-white font-medium shadow-md shadow-teal-700/20 rounded-xl transition-all cursor-pointer"
+                                                className="w-full h-11"
                                                 tabIndex={7}
                                                 data-test="register-user-button"
                                                 disabled={processing}
@@ -269,7 +269,7 @@ export default function Register({ passwordRules, captchaQuestion }: Props) {
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center gap-2">
-                                                        <Sparkles className="size-4" />
+                                                        <UserPlus className="size-4" />
                                                         <span>Daftar Akun Inovator</span>
                                                     </div>
                                                 )}

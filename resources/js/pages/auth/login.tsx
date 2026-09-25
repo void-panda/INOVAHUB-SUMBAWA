@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Form, Head } from '@inertiajs/react';
-import { RotateCw } from 'lucide-react';
+import { CheckCircle2, RotateCw } from 'lucide-react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -42,6 +42,17 @@ export default function Login({ status, canResetPassword, captchaQuestion }: Pro
         <>
             <Head title="Log in" />
 
+            {status && (
+                <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs font-medium text-emerald-800 dark:text-emerald-300">
+                    <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>
+                        {status === 'passwords.reset' || status === 'Your password has been reset.'
+                            ? 'Kata sandi Anda telah berhasil diatur ulang. Silakan masuk menggunakan kata sandi baru Anda.'
+                            : status}
+                    </span>
+                </div>
+            )}
+
             <Form
                 {...store.form()}
                 resetOnSuccess={['password', 'captcha_input']}
@@ -74,7 +85,7 @@ export default function Login({ status, canResetPassword, captchaQuestion }: Pro
                                             className="ml-auto text-sm"
                                             tabIndex={6}
                                         >
-                                            Forgot your password?
+                                            Lupa kata sandi?
                                         </TextLink>
                                     )}
                                 </div>

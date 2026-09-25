@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -39,6 +40,7 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->configureAuthentication();
         $this->configureEmailVerification();
+        $this->configurePasswordReset();
     }
 
     /**
@@ -147,6 +149,31 @@ class FortifyServiceProvider extends ServiceProvider
                 ->action('Verifikasi Alamat Email', $url)
                 ->line('Tautan verifikasi ini berlaku selama 60 menit.')
                 ->line('Jika Anda tidak pernah merasa melakukan pendaftaran di INOVA-HUB Sumbawa, mohon abaikan email ini.')
+                ->salutation("Salam hormat,\nTim Pengelola Inovasi Daerah (BAPPERIDA) Kab. Sumbawa");
+        });
+    }
+
+    /**
+     * Configure password reset notification with official INOVA-HUB Sumbawa copy.
+     */
+    private function configurePasswordReset(): void
+    {
+        ResetPassword::toMailUsing(function ($notifiable, string $token) {
+            $url = url(route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+
+            $name = $notifiable->name ?? 'Pengguna';
+
+            return (new MailMessage)
+                ->subject('[INOVA-HUB Sumbawa] Permintaan Atur Ulang Kata Sandi Akun')
+                ->greeting("Yth. Bapak/Ibu {$name},")
+                ->line('Kami menerima permintaan untuk mengatur ulang kata sandi akun Sistem INOVA-HUB Kabupaten Sumbawa Anda.')
+                ->line('Silakan klik tombol di bawah ini untuk membuat kata sandi baru akun Anda:')
+                ->action('Atur Ulang Kata Sandi', $url)
+                ->line('Tautan atur ulang kata sandi ini berlaku selama 60 menit.')
+                ->line('Jika Anda tidak pernah meminta pengaturan ulang kata sandi, abaikan pesan ini dan kata sandi akun Anda tetap aman.')
                 ->salutation("Salam hormat,\nTim Pengelola Inovasi Daerah (BAPPERIDA) Kab. Sumbawa");
         });
     }
