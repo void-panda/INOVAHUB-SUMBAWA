@@ -5,8 +5,10 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -36,6 +38,7 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureViews();
         $this->configureRateLimiting();
         $this->configureAuthentication();
+        $this->configureEmailVerification();
     }
 
     /**
@@ -54,7 +57,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::authenticateUsing(function (Request $request) {
             // Check CAPTCHA (unless running automated test without captcha_input)
-            if (!app()->environment('testing') || $request->has('captcha_input')) {
+            if (! app()->environment('testing') || $request->has('captcha_input')) {
                 $expectedAnswer = $request->session()->get('captcha_answer');
                 $userAnswer = $request->input('captcha_input');
 
@@ -109,13 +112,43 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/register', [
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
-        ]));
+        Fortify::registerView(function (Request $request) {
+            $num1 = rand(1, 9);
+            $num2 = rand(1, 9);
+            $question = "Berapa {$num1} + {$num2}?";
+            $answer = $num1 + $num2;
+
+            $request->session()->put('captcha_answer', $answer);
+
+            return Inertia::render('auth/register', [
+                'passwordRules' => Password::defaults()->toPasswordRulesString(),
+                'captchaQuestion' => $question,
+            ]);
+        });
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+    }
+
+    /**
+     * Configure email verification notification with official INOVA-HUB Sumbawa copy.
+     */
+    private function configureEmailVerification(): void
+    {
+        VerifyEmail::toMailUsing(function ($notifiable, string $url) {
+            $name = $notifiable->name ?? 'Inovator';
+
+            return (new MailMessage)
+                ->subject('[INOVA-HUB Sumbawa] Verifikasi Alamat Email Pendaftaran')
+                ->greeting("Yth. Bapak/Ibu {$name},")
+                ->line('Terima kasih telah mendaftar sebagai Inovator di Sistem INOVA-HUB Kabupaten Sumbawa.')
+                ->line('Untuk mengaktifkan akun dan mulai mengelola inovasi daerah, silakan lakukan verifikasi alamat email Anda dengan menekan tombol di bawah ini:')
+                ->action('Verifikasi Alamat Email', $url)
+                ->line('Tautan verifikasi ini berlaku selama 60 menit.')
+                ->line('Jika Anda tidak pernah merasa melakukan pendaftaran di INOVA-HUB Sumbawa, mohon abaikan email ini.')
+                ->salutation("Salam hormat,\nTim Pengelola Inovasi Daerah (BAPPERIDA) Kab. Sumbawa");
+        });
     }
 
     /**
