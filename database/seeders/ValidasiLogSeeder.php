@@ -11,154 +11,79 @@ class ValidasiLogSeeder extends Seeder
 {
     public function run(): void
     {
-        $pengajuanSmartWater = PengajuanLomba::whereHas('inovasi', fn ($q) => $q->where('nama_inovasi', 'like', '%SMART WATER METER%'))
-            ->where('is_arsip', false)
-            ->first();
-
-        $pengajuanSipotek = PengajuanLomba::whereHas('inovasi', fn ($q) => $q->where('nama_inovasi', 'like', '%SI-POTEK%'))
-            ->where('is_arsip', false)
-            ->first();
-
-        $pengajuanSirabang = PengajuanLomba::whereHas('inovasi', fn ($q) => $q->where('nama_inovasi', 'like', '%SI-RABANG%'))
-            ->where('is_arsip', false)
-            ->first();
-
-        $pengajuanKampungIklim = PengajuanLomba::whereHas('inovasi', fn ($q) => $q->where('nama_inovasi', 'like', '%KAMPUNG IKLIM%'))
-            ->where('is_arsip', false)
-            ->first();
-
-        $pengajuanEtangkap = PengajuanLomba::whereHas('inovasi', fn ($q) => $q->where('nama_inovasi', 'like', '%E-TANGKAP%'))
-            ->where('is_arsip', false)
-            ->first();
+        ValidasiLog::query()->delete();
 
         $pendamping = User::where('email', 'pendamping@sumbawakab.go.id')->first();
-        $inovatorKominfo = User::where('email', 'inovator@sumbawakab.go.id')->first();
+        $pendamping2 = User::where('email', 'pendamping2@sumbawakab.go.id')->first();
         $timPenilai = User::where('email', 'penilai@sumbawakab.go.id')->first() ?? User::where('email', 'bapperida@sumbawakab.go.id')->first();
+        $superadmin = User::where('email', 'bapperida@sumbawakab.go.id')->first();
 
-        if (! $pendamping) {
+        if (! $pendamping || ! $timPenilai) {
             return;
         }
 
-        $logs = [];
+        $allPengajuan = PengajuanLomba::with('inovasi.user')->get();
 
-        // 1. Logs untuk SMART WATER METER (Status: siap_kirim)
-        if ($pengajuanSmartWater) {
-            $logs[] = [
-                'inovasi_id' => $pengajuanSmartWater->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanSmartWater->id,
-                'user_id' => $inovatorKominfo?->id ?? $pendamping->id,
+        foreach ($allPengajuan as $index => $pengajuan) {
+            $assignedPendamping = ($index % 2 === 0) ? $pendamping : $pendamping2;
+            $inovator = $pengajuan->inovasi->user ?? $superadmin;
+
+            // Step 1: Draft -> Dalam Pendampingan (Inovator mengajukan inovasi)
+            ValidasiLog::create([
+                'inovasi_id' => $pengajuan->inovasi_id,
+                'pengajuan_lomba_id' => $pengajuan->id,
+                'user_id' => $inovator->id,
                 'status_sebelum' => 'draft',
                 'status_sesudah' => 'dalam_pendampingan',
-                'catatan' => 'Inovasi diajukan ke periode lomba 2026 dan masuk tahap pendampingan.',
-            ];
-            $logs[] = [
-                'inovasi_id' => $pengajuanSmartWater->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanSmartWater->id,
-                'user_id' => $pendamping->id,
+                'catatan' => 'Profil inovasi dan berkas umum diajukan untuk proses pendampingan dan asistensi teknis.',
+                'created_at' => now()->subMonths(10),
+            ]);
+
+            // Step 2: Dalam Pendampingan -> Disahkan OPD (Pendamping menyetujui & verifikasi kelengkapan)
+            ValidasiLog::create([
+                'inovasi_id' => $pengajuan->inovasi_id,
+                'pengajuan_lomba_id' => $pengajuan->id,
+                'user_id' => $assignedPendamping->id,
                 'status_sebelum' => 'dalam_pendampingan',
                 'status_sesudah' => 'disahkan_opd',
-                'catatan' => 'Seluruh bukti dukung 20 Indikator SID telah lengkap dan direkomendasikan untuk pengesahan Kepala OPD.',
-            ];
-            $logs[] = [
-                'inovasi_id' => $pengajuanSmartWater->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanSmartWater->id,
-                'user_id' => $pendamping->id,
+                'catatan' => '20 Indikator SID telah diperiksa. Bukti dukung telah memenuhi standar kelayakan dan disahkan oleh Kepala Perangkat Daerah / Pimpinan Lembaga.',
+                'created_at' => now()->subMonths(9),
+            ]);
+
+            // Step 3: Disahkan OPD -> Review Internal (Tim Penilai Internal melakukan skoring & review)
+            ValidasiLog::create([
+                'inovasi_id' => $pengajuan->inovasi_id,
+                'pengajuan_lomba_id' => $pengajuan->id,
+                'user_id' => $timPenilai->id,
                 'status_sebelum' => 'disahkan_opd',
                 'status_sesudah' => 'review_internal',
-                'catatan' => 'Kepala OPD telah menandatangani SPTJM. Pengajuan masuk review skoring internal Tim Penilai.',
-            ];
-            $logs[] = [
-                'inovasi_id' => $pengajuanSmartWater->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanSmartWater->id,
-                'user_id' => $timPenilai?->id ?? $pendamping->id,
+                'catatan' => 'Tim Penilai Internal melakukan verifikasi lapangan dan simulasi skoring kematangan SPD/SID.',
+                'created_at' => now()->subMonths(8),
+            ]);
+
+            // Step 4: Review Internal -> Siap Kirim
+            ValidasiLog::create([
+                'inovasi_id' => $pengajuan->inovasi_id,
+                'pengajuan_lomba_id' => $pengajuan->id,
+                'user_id' => $superadmin?->id ?? $timPenilai->id,
                 'status_sebelum' => 'review_internal',
                 'status_sesudah' => 'siap_kirim',
-                'catatan' => 'Tim Penilai memfinalisasi skor kematangan (132.00). Status Siap Kirim ke BSKDN Kemendagri.',
-            ];
-        }
+                'catatan' => 'Inovasi dinyatakan lolos quality assurance BAPPERIDA dan siap disinkronkan ke sistem IGA Kemendagri.',
+                'created_at' => now()->subMonths(7),
+            ]);
 
-        // 2. Logs untuk SI-RABANG (Status: review_internal)
-        if ($pengajuanSirabang) {
-            $logs[] = [
-                'inovasi_id' => $pengajuanSirabang->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanSirabang->id,
-                'user_id' => $inovatorKominfo?->id ?? $pendamping->id,
-                'status_sebelum' => 'draft',
-                'status_sesudah' => 'dalam_pendampingan',
-                'catatan' => 'Inovasi diajukan ke periode lomba 2026.',
-            ];
-            $logs[] = [
-                'inovasi_id' => $pengajuanSirabang->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanSirabang->id,
-                'user_id' => $pendamping->id,
-                'status_sebelum' => 'dalam_pendampingan',
-                'status_sesudah' => 'disahkan_opd',
-                'catatan' => 'Verifikasi dokumen teknis selesai. Diteruskan untuk pengesahan Kepala Dinas.',
-            ];
-            $logs[] = [
-                'inovasi_id' => $pengajuanSirabang->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanSirabang->id,
-                'user_id' => $pendamping->id,
-                'status_sebelum' => 'disahkan_opd',
-                'status_sesudah' => 'review_internal',
-                'catatan' => 'Disahkan oleh Kepala Dinas PUPR. Masuk proses review internal Tim Penilai.',
-            ];
-        }
-
-        // 3. Logs untuk SI-POTEK (Status: disahkan_opd)
-        if ($pengajuanSipotek) {
-            $logs[] = [
-                'inovasi_id' => $pengajuanSipotek->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanSipotek->id,
-                'user_id' => $pengajuanSipotek->user_id,
-                'status_sebelum' => 'draft',
-                'status_sesudah' => 'dalam_pendampingan',
-                'catatan' => 'Diajukan ke tahapan pendampingan OPD.',
-            ];
-            $logs[] = [
-                'inovasi_id' => $pengajuanSipotek->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanSipotek->id,
-                'user_id' => $pendamping->id,
-                'status_sebelum' => 'dalam_pendampingan',
-                'status_sesudah' => 'disahkan_opd',
-                'catatan' => 'Verifikasi dan pendampingan 20 Indikator tuntas. Disahkan oleh Kepala Dinas Kesehatan.',
-            ];
-        }
-
-        // 4. Logs untuk KAMPUNG IKLIM (Status: revisi)
-        if ($pengajuanKampungIklim) {
-            $logs[] = [
-                'inovasi_id' => $pengajuanKampungIklim->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanKampungIklim->id,
-                'user_id' => $inovatorKominfo?->id ?? $pendamping->id,
-                'status_sebelum' => 'draft',
-                'status_sesudah' => 'dalam_pendampingan',
-                'catatan' => 'Pengajuan masuk antrean pendampingan.',
-            ];
-            $logs[] = [
-                'inovasi_id' => $pengajuanKampungIklim->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanKampungIklim->id,
-                'user_id' => $pendamping->id,
-                'status_sebelum' => 'dalam_pendampingan',
-                'status_sesudah' => 'revisi',
-                'catatan' => 'Mohon lengkapi Surat Keputusan (SK) Kelompok Kader Lingkungan Desa dan Dokumentasi Foto Titik Biopori pada Indikator SID-02 dan SID-08.',
-            ];
-        }
-
-        // 5. Logs untuk E-TANGKAP (Status: dalam_pendampingan)
-        if ($pengajuanEtangkap) {
-            $logs[] = [
-                'inovasi_id' => $pengajuanEtangkap->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuanEtangkap->id,
-                'user_id' => $inovatorKominfo?->id ?? $pendamping->id,
-                'status_sebelum' => 'draft',
-                'status_sesudah' => 'dalam_pendampingan',
-                'catatan' => 'Diajukan ke periode lomba 2026. Menunggu jadwal desk pendampingan inovasi daerah.',
-            ];
-        }
-
-        foreach ($logs as $log) {
-            ValidasiLog::create($log);
+            // Step 5: Siap Kirim -> Terkirim (Khusus yang status akhirnya terkirim)
+            if ($pengajuan->status->value === 'terkirim') {
+                ValidasiLog::create([
+                    'inovasi_id' => $pengajuan->inovasi_id,
+                    'pengajuan_lomba_id' => $pengajuan->id,
+                    'user_id' => $superadmin?->id ?? $timPenilai->id,
+                    'status_sebelum' => 'siap_kirim',
+                    'status_sesudah' => 'terkirim',
+                    'catatan' => 'Data inovasi, bukti dukung, dan skor telah berhasil dikirimkan ke sistem resmi IGA Kemendagri.',
+                    'created_at' => now()->subMonths(6),
+                ]);
+            }
         }
     }
 }

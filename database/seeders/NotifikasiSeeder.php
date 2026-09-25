@@ -12,6 +12,8 @@ class NotifikasiSeeder extends Seeder
 {
     public function run(): void
     {
+        Notifikasi::query()->delete();
+
         $users = User::all();
         if ($users->isEmpty()) {
             return;
@@ -23,59 +25,51 @@ class NotifikasiSeeder extends Seeder
         $timPenilai = User::where('email', 'penilai@sumbawakab.go.id')->first() ?? User::where('email', 'bapperida@sumbawakab.go.id')->first();
         $pimpinan = User::where('email', 'pimpinan@sumbawakab.go.id')->first();
 
-        $kampungIklim = Inovasi::where('nama_inovasi', 'like', '%KAMPUNG IKLIM%')->first();
-        $sipotek = Inovasi::where('nama_inovasi', 'like', '%SI-POTEK%')->first();
-        $sirabangPengajuan = PengajuanLomba::whereHas('inovasi', fn ($q) => $q->where('nama_inovasi', 'like', '%SI-RABANG%'))->first();
-        $smartWaterPengajuan = PengajuanLomba::whereHas('inovasi', fn ($q) => $q->where('nama_inovasi', 'like', '%SMART WATER%'))->first();
+        $sabalong = Inovasi::where('nama_inovasi', 'like', '%SI-SABALONG%')->first();
+        $pelita = Inovasi::where('nama_inovasi', 'like', '%PELITA KEMANG%')->first();
+        $sambatPengajuan = PengajuanLomba::whereHas('inovasi', fn ($q) => $q->where('nama_inovasi', 'like', '%E-SAMAWA SAMBAT%'))->first();
         $etangkapPengajuan = PengajuanLomba::whereHas('inovasi', fn ($q) => $q->where('nama_inovasi', 'like', '%E-TANGKAP%'))->first();
 
         $notifications = [
             [
+                'user_id' => $inovatorDinkes?->id ?? $users->first()->id,
+                'tipe' => 'disetujui',
+                'pesan' => 'Inovasi PELITA KEMANG telah disetujui dan disahkan oleh Kepala OPD untuk periode lomba.',
+                'link' => '/inovasi-daerah',
+                'dibaca_at' => now()->subHours(4),
+            ],
+            [
                 'user_id' => $inovatorKominfo?->id ?? $users->first()->id,
-                'tipe' => 'revisi',
-                'pesan' => 'Inovasi GERAKAN KAMPUNG IKLIM memerlukan revisi pada bukti dukung SK dan dokumentasi.',
-                'link' => $kampungIklim ? "/inovasi/{$kampungIklim->id}/edit" : '/inovasi',
+                'tipe' => 'pengajuan',
+                'pesan' => 'Inovasi SI-SABALONG telah berhasil dikirimkan ke sistem IGA Kemendagri.',
+                'link' => $sabalong ? "/inovasi/{$sabalong->id}" : '/inovasi',
                 'dibaca_at' => null,
             ],
             [
-                'user_id' => $inovatorDinkes?->id ?? $users->first()->id,
-                'tipe' => 'disetujui',
-                'pesan' => 'Selamat! Inovasi SI-POTEK SAMAWA telah disetujui dan disahkan oleh Kepala OPD.',
-                'link' => '/inovasi-daerah',
-                'dibaca_at' => now()->subHours(2),
-            ],
-            [
                 'user_id' => $pendamping?->id ?? $users->first()->id,
-                'tipe' => 'pengajuan',
-                'pesan' => 'Ada pengajuan proposal inovasi baru E-TANGKAP SAMAWA yang memerlukan pendampingan.',
-                'link' => $etangkapPengajuan ? "/pendamping/inovasi/{$etangkapPengajuan->id}" : '/pendamping/inovasi',
+                'tipe' => 'pendampingan',
+                'pesan' => 'Asistensi bukti dukung 20 Indikator SID untuk E-TANGKAP SAMAWA telah selesai.',
+                'link' => $etangkapPengajuan ? "/inovasi/{$etangkapPengajuan->inovasi_id}/indikator" : '/inovasi-daerah',
                 'dibaca_at' => now()->subDay(),
             ],
             [
                 'user_id' => $timPenilai?->id ?? $users->first()->id,
                 'tipe' => 'review',
-                'pesan' => 'Inovasi SI-RABANG telah disahkan OPD dan memasuki tahap Review Internal Tim Penilai.',
-                'link' => $sirabangPengajuan ? "/penilai/skoring/{$sirabangPengajuan->id}" : '/penilai/skoring',
+                'pesan' => 'Inovasi E-SAMAWA SAMBAT telah disahkan OPD dan telah melalui proses Review Internal.',
+                'link' => $sambatPengajuan ? "/inovasi-daerah" : '/inovasi-daerah',
                 'dibaca_at' => null,
-            ],
-            [
-                'user_id' => $inovatorKominfo?->id ?? $users->first()->id,
-                'tipe' => 'pengesahan',
-                'pesan' => 'Inovasi SMART WATER METER telah disahkan dan berstatus Siap Kirim ke BSKDN Kemendagri.',
-                'link' => $smartWaterPengajuan ? "/pengajuan-lomba/{$smartWaterPengajuan->id}" : '/inovasi-daerah',
-                'dibaca_at' => now()->subDays(3),
             ],
             [
                 'user_id' => $pimpinan?->id ?? $users->first()->id,
                 'tipe' => 'info',
-                'pesan' => 'Laporan Rekapitulasi Indeks Inovasi Daerah (IID) Kabupaten Sumbawa Periode 2026 telah diperbarui.',
+                'pesan' => 'Rekapitulasi 10 Inovasi Daerah Kabupaten Sumbawa siap dipantau pada Dashboard Eksekutif.',
                 'link' => '/dashboard',
                 'dibaca_at' => null,
             ],
         ];
 
-        foreach ($notifications as $notif) {
-            Notifikasi::create($notif);
+        foreach ($notifications as $n) {
+            Notifikasi::create($n);
         }
     }
 }
