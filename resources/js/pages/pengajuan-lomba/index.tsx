@@ -84,7 +84,7 @@ export default function PengajuanLombaIndex({
     const handlePeriodeChange = (periodeId: string) => {
         setSelectedPeriode(periodeId);
         router.get(
-            '/pengajuan-lomba',
+            '/superadmin/pengajuan-lomba',
             periodeId ? { periode_id: periodeId } : {},
             { preserveState: true, replace: true }
         );
@@ -172,7 +172,7 @@ export default function PengajuanLombaIndex({
                         className="h-7 px-3 text-xs gap-1.5 font-medium shadow-2xs hover:bg-accent"
                         title="Lihat Lembar Pengajuan Lomba"
                     >
-                        <Link href={`/pengajuan-lomba/${row.id}`}>
+                        <Link href={`/superadmin/pengajuan-lomba/${row.id}`}>
                             <Eye className="h-3.5 w-3.5" />
                             <span>Detail</span>
                         </Link>

@@ -114,7 +114,7 @@ class PengajuanLombaController extends Controller
             'message' => __("Inovasi ':nama' berhasil didaftarkan ke periode lomba!", ['nama' => $inovasi->nama_inovasi]),
         ]);
 
-        return to_route('inovasi.index');
+        return to_route('inovator.inovasi.index');
     }
 
     /**
@@ -139,7 +139,6 @@ class PengajuanLombaController extends Controller
             'skorPengajuan.indikator',
             'skorPengajuan.pendamping',
             'kelengkapanIndikator.indikatorSid',
-            'validasiLogs.user',
             'pengajuanAsal.periodeLomba',
             'penilaianJuri.juri',
         ]);
@@ -218,7 +217,11 @@ class PengajuanLombaController extends Controller
             'message' => __('Inovasi berhasil diajukan kembali untuk periode lomba aktif dengan data indikator tersinkronisasi.'),
         ]);
 
-        return to_route('pengajuan-lomba.show', $newPengajuan);
+        if ($request->user()->hasRole('inovator') && ! $request->user()->hasAnyRole(['bapperida', 'tim_penilai', 'pimpinan', 'pendamping'])) {
+            return to_route('inovator.pengajuan-lomba.show', $newPengajuan);
+        }
+
+        return to_route('superadmin.pengajuan.show', $newPengajuan);
     }
 
     /**

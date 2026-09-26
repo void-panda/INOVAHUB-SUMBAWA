@@ -7,7 +7,6 @@ use App\Enums\StatusPengajuan;
 use App\Models\Notifikasi;
 use App\Models\PengajuanLomba;
 use App\Models\User;
-use App\Models\ValidasiLog;
 use App\Repositories\IndikatorRepository;
 use App\Repositories\SkorRepository;
 use Illuminate\Support\Facades\DB;
@@ -68,17 +67,6 @@ class SkoringService
             $pengajuan->update([
                 'estimasi_skor_kematangan' => $skorFinal,
                 'status' => $targetStatus,
-            ]);
-
-            ValidasiLog::create([
-                'inovasi_id' => $pengajuan->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuan->id,
-                'user_id' => $penilai->id,
-                'status_sebelum' => $statusSebelum,
-                'status_sesudah' => $targetStatus->value,
-                'catatan' => $data->isFinal
-                    ? 'Tim Penilai telah memfinalisasi skor penilaian inovasi (20 Indikator SID).'
-                    : 'Tim Penilai menyimpan draft skor penilaian.',
             ]);
 
             if ($data->isFinal) {

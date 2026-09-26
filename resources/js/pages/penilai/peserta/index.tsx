@@ -533,7 +533,7 @@ export default function PesertaLombaIndex({ peserta, periode, summary }: Props) 
                                                     <div className="flex items-center gap-1.5 shrink-0">
                                                         {inv.pengajuan_id && (
                                                             <Button asChild size="sm" variant="outline" className="h-7 text-[11px] gap-1">
-                                                                <Link href={`/pengajuan-lomba/${inv.pengajuan_id}/indikator`}>
+                                                                <Link href={`/inovasi-daerah/${inv.pengajuan_id}/indikator`}>
                                                                     <FolderOpen className="h-3 w-3 text-primary" />
                                                                     20 Indikator
                                                                 </Link>

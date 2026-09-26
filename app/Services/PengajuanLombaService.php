@@ -12,7 +12,6 @@ use App\Models\PenugasanPendamping;
 use App\Models\PeriodeLomba;
 use App\Models\SkorPengajuan;
 use App\Models\User;
-use App\Models\ValidasiLog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -128,15 +127,6 @@ class PengajuanLombaService
                 'is_arsip' => false,
             ]);
 
-            ValidasiLog::create([
-                'inovasi_id' => $inovasi->id,
-                'pengajuan_lomba_id' => $pengajuan->id,
-                'user_id' => $user->id,
-                'status_sebelum' => 'draft',
-                'status_sesudah' => StatusPengajuan::DalamPendampingan->value,
-                'catatan' => "Inovasi diajukan ke Lomba Inovasi Daerah Periode {$periode->tahun}.",
-            ]);
-
             // Beri notifikasi ke pendamping terkait
             $penugasan = PenugasanPendamping::where('periode_lomba_id', $periode->id)
                 ->where(function (Builder $query) use ($inovasi, $user) {
@@ -179,24 +169,13 @@ class PengajuanLombaService
             $pengajuan->update(['is_inovasi_daerah' => $status]);
             $pengajuan->inovasi->update(['is_inovasi_daerah' => $status]);
 
-            ValidasiLog::create([
-                'inovasi_id' => $pengajuan->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuan->id,
-                'user_id' => $actor->id,
-                'status_sebelum' => $statusVal,
-                'status_sesudah' => $statusVal,
-                'catatan' => $status
-                    ? 'Ditetapkan sebagai Inovasi Daerah oleh Tim Penilai / Bappeda.'
-                    : 'Status Inovasi Daerah dicabut.',
-            ]);
-
             Notifikasi::create([
                 'user_id' => $pengajuan->user_id,
                 'tipe' => 'inovasi_daerah',
                 'pesan' => $status
                     ? "Inovasi '{$pengajuan->inovasi->nama_inovasi}' telah ditetapkan sebagai Inovasi Daerah."
                     : "Status Inovasi Daerah untuk '{$pengajuan->inovasi->nama_inovasi}' telah diperbarui.",
-                'link' => "/pengajuan-lomba/{$pengajuan->id}",
+                'link' => "/inovator/pengajuan-lomba/{$pengajuan->id}",
             ]);
         });
     }
@@ -259,15 +238,6 @@ class PengajuanLombaService
                 ]);
             }
 
-            ValidasiLog::create([
-                'inovasi_id' => $originalPengajuan->inovasi_id,
-                'pengajuan_lomba_id' => $newPengajuan->id,
-                'user_id' => $user->id,
-                'status_sebelum' => 'arsip',
-                'status_sesudah' => StatusPengajuan::DalamPendampingan->value,
-                'catatan' => "Diajukan kembali dari arsip periode {$originalPengajuan->periodeLomba?->tahun}. Penjelasan: {$penjelasan}",
-            ]);
-
             return $newPengajuan;
         });
     }
@@ -286,20 +256,11 @@ class PengajuanLombaService
             $sebelum = $pengajuan->status->value;
             $pengajuan->update(['status' => StatusPengajuan::DisahkanOpd]);
 
-            ValidasiLog::create([
-                'inovasi_id' => $pengajuan->inovasi_id,
-                'pengajuan_lomba_id' => $pengajuan->id,
-                'user_id' => $pendamping->id,
-                'status_sebelum' => $sebelum,
-                'status_sesudah' => StatusPengajuan::DisahkanOpd->value,
-                'catatan' => $catatan ?? 'Direkomendasikan oleh Pendamping ke Kepala OPD.',
-            ]);
-
             Notifikasi::create([
                 'user_id' => $pengajuan->user_id,
                 'tipe' => 'disahkan_opd',
                 'pesan' => "Inovasi '{$pengajuan->inovasi->nama_inovasi}' telah direkomendasikan pendamping ke tahap pengesahan OPD.",
-                'link' => "/pengajuan-lomba/{$pengajuan->id}",
+                'link' => "/inovator/pengajuan-lomba/{$pengajuan->id}",
             ]);
         });
     }

@@ -157,7 +157,6 @@ export default function ValidasiShow({ pengajuan, inovasi, auth }: Props) {
     const st = statusLabel[currentStatus] || { label: currentStatus, variant: 'secondary' };
 
     const dokumenList = activeInovasi?.dokumen || (activePengajuan?.dokumen as unknown as Dokumen[]) || [];
-    const validasiLogsList = activeInovasi?.validasi_logs || ((activePengajuan as any)?.validasiLogs as Log[]) || [];
 
     const handleSahkan = (e: React.FormEvent) => {
         e.preventDefault();
@@ -310,7 +309,7 @@ export default function ValidasiShow({ pengajuan, inovasi, auth }: Props) {
                                         size="sm"
                                         className="h-8 gap-1.5 text-xs bg-teal-600 hover:bg-teal-700 text-white shadow-xs font-semibold"
                                     >
-                                        <Link href={`/pengajuan-lomba/${targetPengajuanId}/indikator`}>
+                                        <Link href={`/inovasi-daerah/${targetPengajuanId}/indikator`}>
                                             <FolderOpen className="size-3.5" />
                                             <span>Buka 20 Indikator SID</span>
                                         </Link>
@@ -472,37 +471,6 @@ export default function ValidasiShow({ pengajuan, inovasi, auth }: Props) {
                             )}
                         </div>
 
-                        {/* Riwayat Validasi & Audit Trail */}
-                        <div>
-                            <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
-                                <Clock className="size-4 text-teal-600" />
-                                <span>Riwayat Validasi & Audit Trail</span>
-                            </h3>
-                            {validasiLogsList.length === 0 ? (
-                                <p className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg border border-dashed text-center">
-                                    Belum ada catatan riwayat validasi.
-                                </p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {validasiLogsList.map((log) => (
-                                        <div key={log.id} className="border-l-2 border-teal-600 pl-4 py-1 text-sm space-y-1">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-semibold">{log.user?.name || 'Sistem'}</span>
-                                                <span className="text-xs text-muted-foreground">{log.created_at}</span>
-                                            </div>
-                                            <div className="text-xs">
-                                                Status: <Badge variant="outline" className="mx-1">{log.status_sebelum}</Badge> → <Badge variant="default" className="mx-1">{log.status_sesudah}</Badge>
-                                            </div>
-                                            {log.catatan && (
-                                                <p className="text-muted-foreground bg-muted p-2 rounded text-xs mt-1">
-                                                    "{log.catatan}"
-                                                </p>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
                     </CardContent>
                 </Card>
             </div>

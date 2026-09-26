@@ -8,7 +8,6 @@ use App\Http\Requests\AjukanKembaliRequest;
 use App\Enums\StatusPengajuan;
 use App\Models\Inovasi;
 use App\Models\InovasiDokumen;
-use App\Models\ValidasiLog;
 use App\Repositories\InovasiRepository;
 use App\Services\InovasiService;
 use App\Services\PengajuanLombaService;
@@ -300,15 +299,6 @@ class InovasiController extends Controller
                 : (string) $pengajuanAktif->status;
 
             $pengajuanAktif->update(['status' => StatusPengajuan::DalamPendampingan]);
-
-            ValidasiLog::create([
-                'inovasi_id' => $inovasi->id,
-                'pengajuan_lomba_id' => $pengajuanAktif->id,
-                'user_id' => $request->user()->id,
-                'status_sebelum' => $statusSebelum,
-                'status_sesudah' => StatusPengajuan::DalamPendampingan->value,
-                'catatan' => 'Inovasi telah diperbaiki dan disubmit kembali ke Lomba oleh Inovator.',
-            ]);
         }
 
         Inertia::flash('toast', [
@@ -316,7 +306,7 @@ class InovasiController extends Controller
             'message' => __("Inovasi ':nama' berhasil dikirim ke Lomba Inovasi Daerah.", ['nama' => $inovasi->nama_inovasi]),
         ]);
 
-        return to_route('pengajuan-lomba.index');
+        return to_route('inovator.inovasi.index');
     }
 
     /**
@@ -464,15 +454,11 @@ class InovasiController extends Controller
             'opd',
             'dokumen',
             'pengajuanLomba.skorPengajuan.indikator',
-            'pengajuanLomba.validasiLogs.user',
             'pengajuanLomba.periodeLomba',
         ]);
 
         $activePengajuan = $inovasi->pengajuanAktif;
         $skorTotalSid = $activePengajuan ? round((float) $activePengajuan->skorPengajuan->sum('skor'), 2) : 0.0;
-        $logs = $activePengajuan
-            ? $activePengajuan->validasiLogs->sortByDesc('created_at')->values()
-            : collect();
 
         return Inertia::render('inovasi/print', [
             'inovasi' => [
@@ -504,14 +490,6 @@ class InovasiController extends Controller
                     'nomor_surat' => $d->nomor_surat ?? '-',
                     'tanggal_surat' => $d->tanggal_surat?->format('d/m/Y') ?? '-',
                     'keterangan' => $d->tentang ?? '-',
-                ])->values()->all(),
-                'validasi_logs' => $logs->map(fn($l) => [
-                    'id' => $l->id,
-                    'user_nama' => $l->user?->name ?? 'Sistem',
-                    'status_sebelum' => $l->status_sebelum,
-                    'status_sesudah' => $l->status_sesudah,
-                    'catatan' => $l->catatan,
-                    'created_at' => $l->created_at?->format('d/m/Y H:i') ?? '',
                 ])->values()->all(),
             ],
             'rantaiVersi' => $this->inovasiRepository->getVersionTree($inovasi),

@@ -104,12 +104,13 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
 
         // b. Inovasi Saya:
         // Sidebar item has href: `/inovator/inovasi`
-        // Direct alias routes: `/inovasi/{id}/edit`, `/inovasi/create`
+        // Direct alias routes: `/inovasi/{id}/edit`, `/inovasi/create`, `/inovator/pengajuan-lomba/*`
         if (
             targetPath.endsWith('/inovasi') &&
             !targetPath.endsWith('/inovasi-daerah') &&
             (urlToCompare === '/inovasi' ||
                 urlToCompare === '/inovasi/create' ||
+                urlToCompare.startsWith('/inovator/pengajuan-lomba') ||
                 (urlToCompare.startsWith('/inovasi/') && !urlToCompare.startsWith('/inovasi-daerah/')))
         ) {
             return true;
@@ -120,6 +121,10 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
         // Direct alias routes: `/pengajuan-lomba/{id}`
         if (
             targetPath.endsWith('/pengajuan-lomba') &&
+            !urlToCompare.startsWith('/inovator/pengajuan-lomba') &&
+            !urlToCompare.startsWith('/pendamping/pengajuan-lomba') &&
+            !urlToCompare.startsWith('/penilai/pengajuan-lomba') &&
+            !urlToCompare.startsWith('/pimpinan/pengajuan-lomba') &&
             (urlToCompare === '/pengajuan-lomba' || urlToCompare.startsWith('/pengajuan-lomba/'))
         ) {
             return true;

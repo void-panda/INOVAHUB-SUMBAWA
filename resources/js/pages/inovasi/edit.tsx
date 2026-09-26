@@ -189,7 +189,7 @@ const statusBadgeColor: Record<string, string> = {
     terkirim: 'bg-emerald-600/20 text-emerald-800 dark:text-emerald-200 border-emerald-400',
 };
 
-const TAB_KEYS = ['identitas', 'klasifikasi', 'anggaran', 'narasi', 'dokumen', 'riwayat'] as const;
+const TAB_KEYS = ['identitas', 'klasifikasi', 'anggaran', 'narasi', 'dokumen'] as const;
 type TabKey = typeof TAB_KEYS[number];
 
 const TAB_METADATA: Record<TabKey, { label: string; stepNumber: number }> = {
@@ -198,7 +198,6 @@ const TAB_METADATA: Record<TabKey, { label: string; stepNumber: number }> = {
     anggaran: { label: 'Waktu & Anggaran', stepNumber: 3 },
     narasi: { label: 'Rancang Bangun & Narasi', stepNumber: 4 },
     dokumen: { label: 'Dokumen Profil', stepNumber: 5 },
-    riwayat: { label: 'Riwayat Validasi', stepNumber: 6 },
 };
 
 function formatBytes(bytes?: number): string {
@@ -474,7 +473,7 @@ export default function EditInovasi({
                     </Button>
                 ) : (
                     <span className="text-xs text-muted-foreground font-medium">
-                        Bagian 1 dari 6
+                        Bagian {currentTabIndex + 1} dari {TAB_KEYS.length}
                     </span>
                 )}
             </div>
@@ -689,7 +688,7 @@ export default function EditInovasi({
                 {/* Form Tabs Container */}
                 <form onSubmit={handleSave}>
                     <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as TabKey)} className="w-full space-y-6">
-                        <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto p-1.5 bg-muted/60 border rounded-xl gap-1">
+                        <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto p-1.5 bg-muted/60 border rounded-xl gap-1">
                             <TabsTrigger
                                 value="identitas"
                                 className="text-xs py-2.5 data-[state=active]:bg-background data-[state=active]:font-bold data-[state=active]:shadow-xs"
@@ -719,12 +718,6 @@ export default function EditInovasi({
                                 className="text-xs py-2.5 data-[state=active]:bg-background data-[state=active]:font-bold data-[state=active]:shadow-xs"
                             >
                                 V. Dokumen
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="riwayat"
-                                className="text-xs py-2.5 data-[state=active]:bg-background data-[state=active]:font-bold data-[state=active]:shadow-xs"
-                            >
-                                VI. Riwayat
                             </TabsTrigger>
                         </TabsList>
 
@@ -2128,86 +2121,6 @@ export default function EditInovasi({
                                                 <FolderOpen className="h-4 w-4" /> Buka Lembar 20 Indikator SID
                                             </Link>
                                         </Button>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </TabsContent>
-
-                        {/* TAB 6: RIWAYAT & VALIDASI */}
-                        <TabsContent value="riwayat">
-                            <div className="space-y-6">
-                                {/* Rantai Versi (Jika Ada) */}
-                                {rantaiVersi && (
-                                    <Card className="shadow-xs border-border">
-                                        <CardHeader className="border-b bg-muted/20 pb-4">
-                                            <CardTitle className="text-base font-bold">
-                                                Silsilah Pohon Riwayat Versi Inovasi
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="p-6">
-                                            <RantaiVersi tree={rantaiVersi} />
-                                        </CardContent>
-                                    </Card>
-                                )}
-
-                                {/* Log Transisi Validasi */}
-                                <Card className="shadow-xs border-border">
-                                    <CardHeader className="border-b bg-muted/20 pb-4">
-                                        <CardTitle className="text-base font-bold">
-                                            Riwayat Log Alur Validasi 8 Langkah
-                                        </CardTitle>
-                                        <CardDescription className="text-xs">
-                                            Catatan audit trail setiap perubahan status dan verifikasi oleh Pendamping Inovasi & Bappeda.
-                                        </CardDescription>
-                                    </CardHeader>
-
-                                    <CardContent className="p-6">
-                                        {(!inovasi.validasi_logs || inovasi.validasi_logs.length === 0) ? (
-                                            <div className="p-6 text-center text-xs text-muted-foreground border border-dashed rounded-lg">
-                                                Belum ada riwayat aktivitas validasi pada inovasi ini.
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {(inovasi.validasi_logs ?? [])
-                                                    .slice()
-                                                    .reverse()
-                                                    .map((log: Log) => (
-                                                        <div
-                                                            key={log.id}
-                                                            className="border rounded-xl p-3.5 text-xs space-y-1.5 bg-card hover:bg-muted/10 transition-colors"
-                                                        >
-                                                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                                                <span className="font-bold text-foreground">
-                                                                    {log.user?.name || 'Sistem'}
-                                                                </span>
-                                                                <span className="text-muted-foreground text-xs font-mono">
-                                                                    {new Date(log.created_at).toLocaleString('id-ID')}
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                                                                <Badge variant="outline" className="text-xs">
-                                                                    {statusLabel[log.status_sebelum] ?? log.status_sebelum}
-                                                                </Badge>
-                                                                <span aria-hidden="true">→</span>
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className={`text-xs font-bold ${statusBadgeColor[log.status_sesudah] || ''
-                                                                        }`}
-                                                                >
-                                                                    {statusLabel[log.status_sesudah] ?? log.status_sesudah}
-                                                                </Badge>
-                                                            </div>
-                                                            {log.catatan && (
-                                                                <div className="mt-1.5 p-2 rounded-md bg-muted/40 border text-xs italic text-foreground">
-                                                                    "{log.catatan}"
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        )}
-
-                                        {renderTabFooter()}
                                     </CardContent>
                                 </Card>
 

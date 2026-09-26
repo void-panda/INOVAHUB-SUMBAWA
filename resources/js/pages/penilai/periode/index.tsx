@@ -303,7 +303,7 @@ export default function PeriodeLombaIndex({ periodes }: Props) {
                                 className="h-8 px-2.5 text-xs gap-1.5 border-border text-foreground hover:bg-muted"
                                 title="Lihat daftar inovasi pada periode arsip ini"
                             >
-                                <Link href={`/pengajuan-lomba?periode_id=${row.id}`}>
+                                <Link href={`/penilai/skoring?periode_id=${row.id}`}>
                                     <FolderOpen className="h-3.5 w-3.5 text-teal-600" />
                                     <span>Lihat Inovasi</span>
                                 </Link>

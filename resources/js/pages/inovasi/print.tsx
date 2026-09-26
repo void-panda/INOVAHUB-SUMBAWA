@@ -36,24 +36,12 @@ interface PrintProps {
             tanggal_surat: string;
             keterangan: string;
         }>;
-        validasi_logs: Array<{
-            id: number;
-            user_nama: string;
-            status_sebelum: string;
-            status_sesudah: string;
-            catatan: string;
-            created_at: string;
-        }>;
     };
     rantaiVersi?: VersiNode;
     tanggalCetak: string;
 }
 
 export default function InovasiPrint({ inovasi, rantaiVersi, tanggalCetak }: PrintProps) {
-    const validasiLogs = (Array.isArray(inovasi.validasi_logs)
-        ? inovasi.validasi_logs
-        : Object.values(inovasi.validasi_logs || {})) as typeof inovasi.validasi_logs;
-
     const dokumenList = (Array.isArray(inovasi.dokumen_list)
         ? inovasi.dokumen_list
         : Object.values(inovasi.dokumen_list || {})) as typeof inovasi.dokumen_list;
@@ -272,46 +260,13 @@ export default function InovasiPrint({ inovasi, rantaiVersi, tanggalCetak }: Pri
                     </table>
                 </div>
 
-                {/* Section 4: Riwayat Log Validasi Internal */}
-                <div className="mb-8">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-teal-900 border-b border-teal-700 pb-1 mb-3">
-                        4. RIWAYAT VERIFIKASI & PENGESAHAN (AUDIT TRAIL)
-                    </h2>
-                    <table className="w-full text-xs border-collapse border border-slate-300">
-                        <thead>
-                            <tr className="bg-slate-200 text-slate-800 font-bold">
-                                <th className="py-2 px-3 border border-slate-300 text-left">Tanggal</th>
-                                <th className="py-2 px-3 border border-slate-300 text-left">Verifikator</th>
-                                <th className="py-2 px-3 border border-slate-300 text-center">Transisi Status</th>
-                                <th className="py-2 px-3 border border-slate-300 text-left">Catatan Verifikasi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {validasiLogs.length === 0 ? (
-                                <tr>
-                                    <td colSpan={4} className="py-3 text-center text-slate-500">Belum ada catatan riwayat validasi.</td>
-                                </tr>
-                            ) : (
-                                validasiLogs.map((log) => (
-                                    <tr key={log.id} className="border-b border-slate-200">
-                                        <td className="py-2 px-3 border border-slate-300 whitespace-nowrap">{log.created_at}</td>
-                                        <td className="py-2 px-3 border border-slate-300 font-semibold">{log.user_nama}</td>
-                                        <td className="py-2 px-3 border border-slate-300 text-center font-bold">
-                                            {log.status_sebelum} ➔ {log.status_sesudah}
-                                        </td>
-                                        <td className="py-2 px-3 border border-slate-300">{log.catatan || '-'}</td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
 
-                {/* Section 4.5: Silsilah Versi Inovasi */}
+
+                {/* Section 4: Silsilah Versi Inovasi */}
                 {rantaiVersi && (
                     <div className="mb-8 print:break-inside-avoid">
                         <h2 className="text-xs font-bold uppercase tracking-wider text-teal-900 border-b border-teal-700 pb-1 mb-3">
-                            5. SILSILAH VERSI & RIWAYAT PENGEMBANGAN INOVASI
+                            4. SILSILAH VERSI & RIWAYAT PENGEMBANGAN INOVASI
                         </h2>
                         <div className="p-4 bg-slate-50 border border-slate-300 rounded">
                             <RantaiVersi tree={rantaiVersi} />

@@ -206,8 +206,11 @@ export default function InovasiDaerahPage({
         if (!lastPengajuan) return;
 
         setIsSubmittingAjukanKembali(true);
+        const ajukanUrl = isPersonalScope
+            ? `/inovator/pengajuan-lomba/${lastPengajuan.id}/ajukan-kembali`
+            : `/pengajuan-lomba/${lastPengajuan.id}/ajukan-kembali`;
         router.post(
-            `/pengajuan-lomba/${lastPengajuan.id}/ajukan-kembali`,
+            ajukanUrl,
             { penjelasan_pengembangan: penjelasanPengembangan.trim() },
             {
                 onFinish: () => {
@@ -417,7 +420,7 @@ export default function InovasiDaerahPage({
                                 className="h-8 px-2.5 text-xs gap-1 text-foreground"
                                 title="Pantau riwayat alur validasi & status lomba"
                             >
-                                <Link href={`/pengajuan-lomba/${activePengajuan.id}`}>
+                                <Link href={isPersonalScope ? `/inovator/pengajuan-lomba/${activePengajuan.id}` : `/pengajuan-lomba/${activePengajuan.id}`}>
                                     <Eye className="h-3.5 w-3.5" />
                                     <span className="hidden sm:inline">Alur</span>
                                 </Link>

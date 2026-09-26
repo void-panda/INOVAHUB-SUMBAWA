@@ -1,32 +1,19 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    AlertCircle,
     ArrowLeft,
     Award,
     Calculator,
     CheckCircle2,
-    Clock,
-    Download,
-    ExternalLink,
     Eye,
-    FileCheck,
-    FileText,
-    FolderOpen,
-    History,
-    Layers,
+
     Lock,
-    MessageSquare,
     Send,
-    ShieldAlert,
-    Sparkles,
-    Star,
-    Video,
 } from 'lucide-react';
 import { useState } from 'react';
 import { HeroBanner } from '@/components/hero-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -88,6 +75,17 @@ export default function PengajuanLombaShow({
     const inovasi = pengajuan.inovasi;
     const currentStepIndex = statusOrder[pengajuan.status] ?? 1;
 
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+    const domainPrefix = currentPath.startsWith('/pendamping')
+        ? '/pendamping'
+        : currentPath.startsWith('/penilai')
+            ? '/penilai'
+            : currentPath.startsWith('/inovator')
+                ? '/inovator'
+                : currentPath.startsWith('/pimpinan')
+                    ? '/pimpinan'
+                    : '/superadmin';
+
     const openActionDialog = (type: string) => {
         setActionType(type);
         setActionCatatan('');
@@ -99,9 +97,9 @@ export default function PengajuanLombaShow({
         setIsProcessing(true);
 
         const endpoints: Record<string, string> = {
-            rekomendasikan: `/pengajuan-lomba/${pengajuan.id}/rekomendasikan`,
-            sahkan_opd: `/pengajuan-lomba/${pengajuan.id}/sahkan-opd`,
-            kirim: `/pengajuan-lomba/${pengajuan.id}/kirim`,
+            rekomendasikan: `${domainPrefix}/pengajuan-lomba/${pengajuan.id}/rekomendasikan`,
+            sahkan_opd: `${domainPrefix}/pengajuan-lomba/${pengajuan.id}/sahkan-opd`,
+            kirim: `${domainPrefix}/pengajuan-lomba/${pengajuan.id}/kirim`,
         };
 
         const targetUrl = endpoints[actionType];
@@ -120,10 +118,30 @@ export default function PengajuanLombaShow({
     };
 
     const toggleInovasiDaerah = () => {
-        router.post(`/pengajuan-lomba/${pengajuan.id}/tetapkan`, {
+        router.post(`${domainPrefix}/pengajuan-lomba/${pengajuan.id}/tetapkan`, {
             status: !pengajuan.is_inovasi_daerah,
         });
     };
+
+    const backHref = isInovator
+        ? '/inovator/inovasi'
+        : domainPrefix === '/pendamping'
+            ? '/pendamping/validasi'
+            : domainPrefix === '/penilai'
+                ? '/penilai/skoring'
+                : domainPrefix === '/pimpinan'
+                    ? '/pimpinan/inovasi-daerah'
+                    : '/superadmin/pengajuan-lomba';
+
+    const backLabel = isInovator
+        ? 'Kembali ke Inovasi Saya'
+        : domainPrefix === '/pendamping'
+            ? 'Kembali ke Lembar Validasi'
+            : domainPrefix === '/penilai'
+                ? 'Kembali ke Lembar Skoring'
+                : domainPrefix === '/pimpinan'
+                    ? 'Kembali ke Inovasi Daerah'
+                    : 'Kembali ke Daftar Pengajuan';
 
     return (
         <>
@@ -133,9 +151,9 @@ export default function PengajuanLombaShow({
                 {/* Header Toolbar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-xs w-fit">
-                        <Link href={isInovator ? '/inovator/inovasi' : '/pengajuan-lomba'}>
+                        <Link href={backHref}>
                             <ArrowLeft className="h-3.5 w-3.5" />
-                            <span>{isInovator ? 'Kembali ke Inovasi Saya' : 'Kembali ke Daftar Pengajuan'}</span>
+                            <span>{backLabel}</span>
                         </Link>
                     </Button>
 
@@ -158,7 +176,7 @@ export default function PengajuanLombaShow({
                 {/* Hero Banner Sumbawa */}
                 <HeroBanner
                     title={inovasi?.nama_inovasi ?? 'Detail Pengajuan Lomba'}
-                    subtitle={`Periode Lomba: ${pengajuan.periode_lomba?.nama ?? '2026'}. Inisiator: ${inovasi?.nama_inisiator} (${inovasi?.opd?.nama ?? 'Umum'}).`}
+                    description={`Periode Lomba: ${pengajuan.periode_lomba?.nama ?? '2026'}. Inisiator: ${inovasi?.nama_inisiator} (${inovasi?.opd?.nama ?? 'Umum'}).`}
                     badgeText="Berkas Pengajuan Lomba Inovasi"
                 />
 
@@ -179,19 +197,19 @@ export default function PengajuanLombaShow({
                                     <div
                                         key={step.key}
                                         className={`flex sm:flex-col items-center sm:items-start gap-3 p-3 rounded-lg border transition-all ${isCurrent
-                                                ? 'bg-teal-50/80 border-teal-500/50 dark:bg-teal-950/30 text-teal-800 dark:text-teal-200 shadow-xs'
-                                                : isPassed
-                                                    ? 'bg-muted/40 border-border text-foreground'
-                                                    : 'bg-muted/10 border-border/40 text-muted-foreground'
+                                            ? 'bg-teal-50/80 border-teal-500/50 dark:bg-teal-950/30 text-teal-800 dark:text-teal-200 shadow-xs'
+                                            : isPassed
+                                                ? 'bg-muted/40 border-border text-foreground'
+                                                : 'bg-muted/10 border-border/40 text-muted-foreground'
                                             }`}
                                     >
                                         <div className="flex items-center gap-2">
                                             <div
                                                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isCurrent
-                                                        ? 'bg-teal-600 text-white'
-                                                        : isPassed
-                                                            ? 'bg-primary/20 text-primary'
-                                                            : 'bg-muted text-muted-foreground'
+                                                    ? 'bg-teal-600 text-white'
+                                                    : isPassed
+                                                        ? 'bg-primary/20 text-primary'
+                                                        : 'bg-muted text-muted-foreground'
                                                     }`}
                                             >
                                                 {isPassed ? (
@@ -332,53 +350,6 @@ export default function PengajuanLombaShow({
                     daftarPenilaianJuri={daftarPenilaianJuri}
                     nilaiRataRataJuri={nilaiRataRataJuri}
                 />
-
-
-                {/* Audit Trail / Validasi Log History */}
-                <Card className="border-border bg-card">
-                    <CardHeader className="p-4 pb-2 border-b border-border">
-                        <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-                            <History className="h-4 w-4 text-teal-600" />
-                            Riwayat Transisi & Log Penjaminan Mutu
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                        {(!pengajuan.validasi_logs || pengajuan.validasi_logs.length === 0) ? (
-                            <p className="text-xs text-muted-foreground italic text-center py-4">
-                                Belum ada riwayat aktivitas transisi tercatat.
-                            </p>
-                        ) : (
-                            <div className="space-y-3">
-                                {pengajuan.validasi_logs.map((log) => (
-                                    <div
-                                        key={log.id}
-                                        className="flex items-start gap-3 p-3 rounded-lg border border-border/70 bg-muted/20 text-xs"
-                                    >
-                                        <div className="w-2 h-2 rounded-full bg-teal-600 shrink-0 mt-1.5" />
-                                        <div className="flex-1 space-y-0.5">
-                                            <div className="flex flex-wrap items-center justify-between gap-1">
-                                                <span className="font-semibold text-foreground">
-                                                    {log.user?.name ?? 'Sistem'}
-                                                </span>
-                                                <span className="text-[10px] text-muted-foreground font-mono">
-                                                    {log.created_at?.slice(0, 16)}
-                                                </span>
-                                            </div>
-                                            <div className="text-[11px] text-teal-700 dark:text-teal-400 font-medium">
-                                                Transisi: {log.status_sebelum ?? 'Draft'} ➔ {log.status_sesudah}
-                                            </div>
-                                            {log.catatan && (
-                                                <p className="text-muted-foreground leading-relaxed pt-1">
-                                                    {log.catatan}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
             </div>
 
             {/* Dialog Transisi Status */}

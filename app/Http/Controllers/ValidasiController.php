@@ -54,14 +54,12 @@ class ValidasiController extends Controller
             'inovasi.opd',
             'inovasi.dokumen',
             'periodeLomba',
-            'validasiLogs.user',
             'skorPengajuan.indikator',
             'kelengkapanIndikator.indikatorSid',
         ]);
 
         $inovasi = $pengajuan->inovasi;
         if ($inovasi) {
-            $inovasi->setRelation('validasiLogs', $pengajuan->validasiLogs);
             $inovasi->setRelation('dokumen', $pengajuan->inovasi->dokumen);
             $inovasi->setAttribute('status', $pengajuan->status instanceof \App\Enums\StatusPengajuan ? $pengajuan->status->value : (string) $pengajuan->status);
             $inovasi->setAttribute('estimasi_skor_kematangan', $pengajuan->estimasi_skor_kematangan);

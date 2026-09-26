@@ -118,7 +118,7 @@ export default function InovasiIndex({
         if (!selectedInovasiForLomba) return;
         setIsSubmittingLomba(true);
         router.post(
-            '/pengajuan-lomba',
+            '/inovator/pengajuan-lomba',
             { inovasi_id: selectedInovasiForLomba.id },
             {
                 onFinish: () => {
@@ -331,7 +331,7 @@ export default function InovasiIndex({
                                 className="h-8 px-2.5 text-xs gap-1.5 border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/30 font-medium"
                                 title="Buka detail lembar lomba & rekapitulasi nilai juri"
                             >
-                                <Link href={`/pengajuan-lomba/${activePengajuan.id}`}>
+                                <Link href={`/inovator/pengajuan-lomba/${activePengajuan.id}`}>
                                     <Trophy className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
                                     <span>Status Lomba & Juri</span>
                                 </Link>

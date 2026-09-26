@@ -287,8 +287,6 @@ class InovasiRepository
                 'dokumen',
                 'pengajuanAktif',
                 'pengajuanLomba.periodeLomba',
-                'pengajuanLomba.validasiLogs.user',
-                'validasiLogs.user',
             ])
             ->first();
     }
@@ -304,8 +302,6 @@ class InovasiRepository
             'dokumen',
             'pengajuanAktif',
             'pengajuanLomba.periodeLomba',
-            'pengajuanLomba.validasiLogs.user',
-            'validasiLogs.user',
         ]);
     }
 

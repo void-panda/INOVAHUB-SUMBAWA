@@ -50,7 +50,7 @@ export function KematanganSidCard({ pengajuan }: KematanganSidCardProps) {
 
                     <div className="flex flex-col justify-center">
                         <Button asChild variant="outline" className="w-full text-xs border-teal-600 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/30 gap-1.5 cursor-pointer">
-                            <Link href={`/pengajuan-lomba/${pengajuan.id}/indikator`}>
+                            <Link href={`/inovasi-daerah/${pengajuan.id}/indikator`}>
                                 <FolderOpen className="h-3.5 w-3.5" />
                                 <span>Buka Lembar Kerja 20 Indikator SID</span>
                             </Link>
