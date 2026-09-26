@@ -161,6 +161,7 @@ class MakeSuperadminCommand extends Command
         ]);
 
         $user->forceFill(['email_verified_at' => now()])->save();
+        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'bapperida', 'guard_name' => 'web']);
         $user->syncRoles(['bapperida']);
         Cache::forget($cacheKey);
 
