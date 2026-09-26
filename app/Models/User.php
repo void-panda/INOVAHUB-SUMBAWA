@@ -39,7 +39,7 @@ use Spatie\Permission\Traits\HasRoles;
  */
 #[Fillable(['name', 'nama_pemda', 'tipe_inovator', 'opd_id', 'status_aktif', 'email', 'no_whatsapp', 'pekerjaan', 'nip', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
