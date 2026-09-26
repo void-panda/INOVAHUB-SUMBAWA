@@ -37,7 +37,9 @@ class ProfileController extends Controller
 
         if (($validated['pekerjaan'] ?? null) === 'ASN') {
             $validated['tipe_inovator'] = 'dinas';
-            if (! empty($validated['opd_id'])) {
+            $validated['opd_id'] = ! empty($validated['opd_id']) ? (int) $validated['opd_id'] : null;
+            $validated['nip'] = ! empty($validated['nip']) ? trim($validated['nip']) : null;
+            if ($validated['opd_id']) {
                 $opd = \App\Models\Opd::find($validated['opd_id']);
                 if ($opd) {
                     $validated['nama_pemda'] = $opd->nama;
@@ -49,10 +51,17 @@ class ProfileController extends Controller
             $validated['nip'] = null;
         }
 
+        $validated['no_whatsapp'] = ! empty($validated['no_whatsapp']) ? trim($validated['no_whatsapp']) : null;
+
         $request->user()->fill($validated);
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
+            try {
+                $request->user()->sendEmailVerificationNotification();
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Gagal mengirim verifikasi email saat ubah profil: ' . $e->getMessage());
+            }
         }
 
         $request->user()->save();
