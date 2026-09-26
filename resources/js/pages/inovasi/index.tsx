@@ -410,33 +410,43 @@ export default function InovasiIndex({
                     title="Inovasi Saya"
                     description="Kelola seluruh ide, inisiatif, dan penerapan inovasi sebelum diusulkan menjadi Inovasi Daerah resmi Kabupaten Sumbawa."
                     variant="teal"
+                    childrenClassName="shrink-0"
                 >
-                    <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex flex-col items-start lg:items-end gap-3.5 w-full lg:w-auto">
+                        {/* Status Deadline / Countdown Pill */}
                         {countdown && (
-                            <CountdownTimer countdown={countdown} variant="banner" />
+                            <div className="flex items-center">
+                                <CountdownTimer countdown={countdown} variant="banner" />
+                            </div>
                         )}
 
-                        <Button
-                            asChild
-                            variant="outline"
-                            size="sm"
-                            className="bg-white/10 hover:bg-white/20 text-white border-white/20 rounded-xl h-9 text-xs font-semibold"
-                        >
-                            <Link href="/inovasi/create">
-                                <Plus className="h-3.5 w-3.5 mr-1" /> Input Inovasi Baru
-                            </Link>
-                        </Button>
+                        {/* Action Buttons Group with Clear Visual Hierarchy */}
+                        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                            {/* Primary CTA */}
+                            <Button
+                                asChild
+                                size="default"
+                                className="bg-white hover:bg-emerald-50 text-teal-900 hover:text-teal-950 font-bold shadow-md hover:shadow-lg h-9 sm:h-10 px-4 text-xs rounded-xl gap-1.5 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer border-0"
+                            >
+                                <Link href="/inovasi/create">
+                                    <Plus className="h-4 w-4 text-teal-700 stroke-[2.5]" />
+                                    <span>Input Inovasi Baru</span>
+                                </Link>
+                            </Button>
 
-                        <Button
-                            asChild
-                            variant="outline"
-                            size="sm"
-                            className="bg-emerald-500/20 hover:bg-emerald-500/30 text-white border-emerald-400/40 rounded-xl h-9 text-xs font-semibold shadow-xs"
-                        >
-                            <Link href="/inovasi-daerah">
-                                <Award className="h-3.5 w-3.5 mr-1 text-emerald-300" /> Buka Inovasi Daerah
-                            </Link>
-                        </Button>
+                            {/* Secondary Action */}
+                            <Button
+                                asChild
+                                variant="outline"
+                                size="default"
+                                className="bg-white/10 hover:bg-white/20 text-white border-white/25 backdrop-blur-md font-semibold shadow-xs h-9 sm:h-10 px-3.5 text-xs rounded-xl gap-1.5 transition-colors cursor-pointer"
+                            >
+                                <Link href="/inovasi-daerah">
+                                    <Award className="h-4 w-4 text-emerald-300" />
+                                    <span>Buka Inovasi Daerah</span>
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
                 </HeroBanner>
 

@@ -195,12 +195,17 @@ class InovasiController extends Controller
         $story = $this->inovasiRepository->findWithDetails($inovasi->id);
         $rantaiVersi = $this->inovasiRepository->getVersionTree($inovasi);
 
+        $activePengajuan = $story->pengajuanAktif ?? $story->pengajuanLomba->first();
+        $periode = $activePengajuan?->periodeLomba ?? $this->inovasiRepository->getAktifPeriode();
+        $isPeriodeBerakhir = $periode ? ! $periode->isLombaBerjalan() : true;
+
         $pemilikInovasi = $inovasi->user;
         $tipeInovator = $pemilikInovasi?->tipe_inovator ?? $request->user()?->tipe_inovator ?? 'dinas';
 
         return Inertia::render('inovasi/edit', [
             'inovasi' => $story,
             'rantaiVersi' => $rantaiVersi,
+            'isPeriodeBerakhir' => $isPeriodeBerakhir,
             ...$this->formProps($request, $tipeInovator),
         ]);
     }

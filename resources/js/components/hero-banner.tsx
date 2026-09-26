@@ -8,6 +8,7 @@ interface HeroBannerProps {
     description: string;
     variant?: string; // Maintained for API compatibility, all use uniform teal motif banner
     children?: React.ReactNode;
+    childrenClassName?: string;
     extraContent?: React.ReactNode;
 }
 
@@ -57,6 +58,7 @@ export function HeroBanner({
     title,
     description,
     children,
+    childrenClassName,
     extraContent,
 }: HeroBannerProps) {
     return (
@@ -64,8 +66,8 @@ export function HeroBanner({
             {/* Motif Kemang Satange Background Silhouette Overlay */}
             <KemangSatangeMotif />
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-3 max-w-3xl">
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="space-y-3 max-w-2xl">
                     <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground border-none backdrop-blur-md text-xs font-semibold px-3 py-1 flex items-center gap-1.5">
                             {BadgeIcon && <BadgeIcon className="h-3.5 w-3.5 text-amber-300 shrink-0" />}
@@ -75,7 +77,7 @@ export function HeroBanner({
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-primary-foreground">
                         {title}
                     </h1>
-                    <p className="text-xs md:text-sm text-primary-foreground/80 leading-relaxed max-w-2xl">
+                    <p className="text-xs md:text-sm text-primary-foreground/85 leading-relaxed">
                         {description}
                     </p>
                     {extraContent && (
@@ -86,7 +88,7 @@ export function HeroBanner({
                 </div>
 
                 {children && (
-                    <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                    <div className={childrenClassName ?? "flex items-center gap-3 shrink-0 flex-wrap"}>
                         {children}
                     </div>
                 )}

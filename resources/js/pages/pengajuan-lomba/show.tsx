@@ -49,6 +49,7 @@ type Props = {
     jumlahJuriMenilai?: number;
     daftarPenilaianJuri?: PenilaianItem[];
     dokumenUmum?: DokumenUmumItem[];
+    isInovator?: boolean;
 };
 
 const statusSteps = [
@@ -77,6 +78,7 @@ export default function PengajuanLombaShow({
     jumlahJuriMenilai = 0,
     daftarPenilaianJuri = [],
     dokumenUmum = [],
+    isInovator = false,
 }: Props) {
     const [actionDialogOpen, setActionDialogOpen] = useState(false);
     const [actionType, setActionType] = useState<string>('');
@@ -131,9 +133,9 @@ export default function PengajuanLombaShow({
                 {/* Header Toolbar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-xs w-fit">
-                        <Link href="/pengajuan-lomba">
+                        <Link href={isInovator ? '/inovator/inovasi' : '/pengajuan-lomba'}>
                             <ArrowLeft className="h-3.5 w-3.5" />
-                            <span>Kembali ke Daftar Pengajuan</span>
+                            <span>{isInovator ? 'Kembali ke Inovasi Saya' : 'Kembali ke Daftar Pengajuan'}</span>
                         </Link>
                     </Button>
 

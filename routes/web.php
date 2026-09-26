@@ -223,9 +223,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/inovasi/create', fn () => redirect()->route('inovator.inovasi.create'))->name('inovasi.create');
     Route::get('/inovasi/{inovasi}/edit', fn (\App\Models\Inovasi $inovasi) => redirect()->route('inovator.inovasi.edit', $inovasi))->name('inovasi.edit');
 
-    Route::get('/pengajuan-lomba', fn () => redirect()->route('superadmin.pengajuan.index'))->name('pengajuan-lomba.index');
-    Route::get('/pengajuan-lomba/{pengajuan}', fn (\App\Models\PengajuanLomba $pengajuan) => redirect()->route('superadmin.pengajuan.show', $pengajuan))->name('pengajuan-lomba.show');
-    Route::get('/pengajuan-lomba/{pengajuan}/indikator', fn (\App\Models\PengajuanLomba $pengajuan) => redirect()->route('inovasi-daerah.indikator.index', $pengajuan))->name('pengajuan-lomba.indikator.index');
+    Route::prefix('pengajuan-lomba')->name('pengajuan-lomba.')->group(function () {
+        Route::get('/', function (Request $request) {
+            $user = $request->user();
+            if ($user && $user->hasRole('inovator') && ! $user->hasAnyRole(['bapperida', 'tim_penilai', 'pimpinan', 'pendamping'])) {
+                return redirect()->route('inovator.inovasi.index');
+            }
+            return redirect()->route('superadmin.pengajuan.index');
+        })->name('index');
+        Route::post('/', [PengajuanLombaController::class, 'store'])->name('store');
+        Route::get('/{pengajuan}', [PengajuanLombaController::class, 'show'])->name('show');
+        Route::post('/{pengajuan}/tetapkan', [PengajuanLombaController::class, 'tetapkanInovasiDaerah'])->name('tetapkan');
+        Route::post('/{pengajuan}/ajukan-kembali', [PengajuanLombaController::class, 'ajukanKembali'])->name('ajukan-kembali');
+        Route::post('/{pengajuan}/rekomendasikan', [PengajuanLombaController::class, 'rekomendasikan'])->name('rekomendasikan');
+        Route::post('/{pengajuan}/sahkan-opd', [ValidasiController::class, 'sahkanOpd'])->name('sahkan-opd');
+        Route::post('/{pengajuan}/review-internal', [ValidasiController::class, 'reviewInternal'])->name('review-internal');
+        Route::post('/{pengajuan}/siap-kirim', [ValidasiController::class, 'siapKirim'])->name('siap-kirim');
+        Route::post('/{pengajuan}/kirim', [ValidasiController::class, 'kirim'])->name('kirim');
+        Route::get('/{pengajuan}/indikator', fn (\App\Models\PengajuanLomba $pengajuan) => redirect()->route('inovasi-daerah.indikator.index', $pengajuan))->name('indikator.index');
+    });
 
     Route::get('/penilai/periode', fn () => redirect()->route('superadmin.periode.index'))->name('penilai.periode.index');
     Route::get('/penilai/indikator', fn () => redirect()->route('superadmin.indikator.index'))->name('penilai.indikator.index');

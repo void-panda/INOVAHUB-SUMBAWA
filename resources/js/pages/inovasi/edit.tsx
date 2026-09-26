@@ -160,6 +160,7 @@ type Props = {
     urusanWajibList: string[];
     rantaiVersi?: VersiNode;
     tipeInovator?: 'dinas' | 'masyarakat';
+    isPeriodeBerakhir?: boolean;
 };
 
 const statusLabel: Record<string, string> = {
@@ -220,6 +221,7 @@ export default function EditInovasi({
     urusanWajibList,
     rantaiVersi,
     tipeInovator = 'dinas',
+    isPeriodeBerakhir = false,
 }: Props) {
     const isMasyarakat = tipeInovator === 'masyarakat';
     const minWordCount = isMasyarakat ? 100 : 300;
@@ -604,19 +606,21 @@ export default function EditInovasi({
                                     </Link>
                                 </Button>
 
-                                {/* 2. 20 Indikator SID: Navigasi/Sekunder (Outline Aksen Teal Halus) */}
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    asChild
-                                    className="gap-1.5 text-xs border-teal-500/40 text-teal-700 bg-teal-50/70 hover:bg-teal-100 hover:text-teal-800 dark:border-teal-700/60 dark:text-teal-300 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 font-semibold shadow-2xs"
-                                    title="Buka 20 Indikator SID & Bukti Dukung"
-                                >
-                                    <Link href={`/inovasi/${inovasi.id}/indikator`}>
-                                        <FolderOpen className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
-                                        <span>20 Indikator SID</span>
-                                    </Link>
-                                </Button>
+                                {/* 2. 20 Indikator SID: Hanya muncul ketika periode lomba telah berakhir / ditutup */}
+                                {isPeriodeBerakhir && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        asChild
+                                        className="gap-1.5 text-xs border-teal-500/40 text-teal-700 bg-teal-50/70 hover:bg-teal-100 hover:text-teal-800 dark:border-teal-700/60 dark:text-teal-300 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 font-semibold shadow-2xs"
+                                        title="Buka 20 Indikator SID & Bukti Dukung"
+                                    >
+                                        <Link href={`/inovasi/${inovasi.id}/indikator`}>
+                                            <FolderOpen className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+                                            <span>20 Indikator SID</span>
+                                        </Link>
+                                    </Button>
+                                )}
 
                                 {/* 3. Simpan Perubahan: Aksi Form Primer (Solid Primary) */}
                                 {!isReadOnly && (

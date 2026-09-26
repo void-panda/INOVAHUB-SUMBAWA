@@ -174,6 +174,7 @@ class PengajuanLombaController extends Controller
             'canManageInovasiDaerah' => $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
             'canRekomendasikan' => $request->user()->hasRole('pendamping') || $request->user()->hasAnyRole(['bapperida', 'tim_penilai']),
             'canNilaiJuri' => $request->user()->hasRole('tim_penilai') || $request->user()->can('scoring-spd') || $request->user()->can('scoring-sid'),
+            'isInovator' => $request->user()->hasRole('inovator') && ! $request->user()->hasAnyRole(['bapperida', 'tim_penilai', 'pimpinan', 'pendamping']),
         ]);
     }
 
